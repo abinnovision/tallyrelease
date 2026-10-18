@@ -1,4 +1,4 @@
-import { TallyError } from "./errors.js";
+import { coreCodes } from "./codes.js";
 import { compare, uniqueSorted } from "./util.js";
 
 import type { GroupConfig } from "./config.js";
@@ -29,7 +29,7 @@ export const resolveGroups = (
 		const { units: ids = [], tags = [] } = config?.[name] ?? {};
 		const unknown = ids.find((id) => !known.has(id));
 		if (unknown !== undefined) {
-			throw new TallyError(
+			throw coreCodes.error(
 				"E_GROUP_UNKNOWN_UNIT",
 				`group "${name}" names unknown unit "${unknown}"`,
 				{ group: name, unit: unknown },
@@ -45,17 +45,16 @@ export const resolveGroups = (
 				.map((u) => u.id),
 		]);
 		if (members.length === 0) {
-			warnings.push({
-				code: "W_GROUP_EMPTY",
-				message: `group "${name}" selects no unit`,
-			});
+			warnings.push(
+				coreCodes.warning("W_GROUP_EMPTY", `group "${name}" selects no unit`),
+			);
 			continue;
 		}
 
 		for (const id of members) {
 			const other = owner.get(id);
 			if (other !== undefined) {
-				throw new TallyError(
+				throw coreCodes.error(
 					"E_GROUP_OVERLAP",
 					`unit "${id}" is in groups "${other}" and "${name}"`,
 					{ unit: id, groups: [other, name] },

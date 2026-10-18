@@ -1,3 +1,4 @@
+import { coreCodes } from "./codes.js";
 import { renderFloatingTags } from "./floating.js";
 import { schemeRegistry } from "./schemes.js";
 import { matchUnitTags } from "./tags.js";
@@ -130,19 +131,20 @@ export const withReleased = async (
 		...(omitted === 0
 			? []
 			: [
-					{
-						code: "W_RELEASED_NO_BASE",
-						message:
-							"the build base is unknown; released leaves out earlier releases on the first-parent chain",
-					},
+					coreCodes.warning(
+						"W_RELEASED_NO_BASE",
+						"the build base is unknown; released leaves out earlier releases on the first-parent chain",
+					),
 				]),
 		...released
 			.filter((r) => r.releaseSha === head && r.catchUp)
-			.map((r) => ({
-				code: "W_RELEASE_NOT_BUILT",
-				message: `release ${r.tag} is at HEAD but unit ${r.id} is not in the build set; it is listed as a catch-up`,
-				unit: r.id,
-			})),
+			.map((r) =>
+				coreCodes.warning(
+					"W_RELEASE_NOT_BUILT",
+					`release ${r.tag} is at HEAD but unit ${r.id} is not in the build set; it is listed as a catch-up`,
+					{ unit: r.id },
+				),
+			),
 	];
 
 	return { ...plan, released, warnings: [...plan.warnings, ...warnings] };

@@ -655,6 +655,25 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@internal/docs@workspace:packages/docs":
+  version: 0.0.0-use.local
+  resolution: "@internal/docs@workspace:packages/docs"
+  dependencies:
+    "@abinnovision/eslint-config-base": "npm:^3.4.2"
+    "@abinnovision/prettier-config": "npm:^2.2.0"
+    "@internal/tsconfig": "workspace:*"
+    "@tallyrelease/cli": "workspace:*"
+    "@tallyrelease/core": "workspace:*"
+    "@types/node": "npm:^24.19.2"
+    "@vitest/coverage-v8": "npm:^5.0.4"
+    eslint: "npm:^10.12.0"
+    prettier: "npm:^3.9.10"
+    typescript: "npm:^6.0.3"
+    vite: "npm:^8.3.4"
+    vitest: "npm:^5.0.4"
+  languageName: unknown
+  linkType: soft
+
 "@internal/tsconfig@workspace:*, @internal/tsconfig@workspace:packages/tsconfig":
   version: 0.0.0-use.local
   resolution: "@internal/tsconfig@workspace:packages/tsconfig"
@@ -1029,7 +1048,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@tallyrelease/cli@workspace:packages/cli":
+"@tallyrelease/cli@workspace:*, @tallyrelease/cli@workspace:packages/cli":
   version: 0.0.0-use.local
   resolution: "@tallyrelease/cli@workspace:packages/cli"
   dependencies:
@@ -1057,7 +1076,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@tallyrelease/core@workspace:^, @tallyrelease/core@workspace:packages/core":
+"@tallyrelease/core@workspace:*, @tallyrelease/core@workspace:^, @tallyrelease/core@workspace:packages/core":
   version: 0.0.0-use.local
   resolution: "@tallyrelease/core@workspace:packages/core"
   dependencies:

@@ -3,8 +3,8 @@ import {
 	changelogSection,
 	updateChangelog,
 } from "./changelog.js";
+import { coreCodes } from "./codes.js";
 import { normalizeRoot } from "./discover.js";
-import { TallyError } from "./errors.js";
 import { runHook } from "./plugins.js";
 import { schemeRegistry } from "./schemes.js";
 
@@ -28,7 +28,7 @@ const ALNUM = /[0-9A-Za-z]/u;
 const escape = (text: string) => text.replace(SPECIAL, "\\$&");
 
 const configError = (pattern: string, unit: string, problem: string) =>
-	new TallyError(
+	coreCodes.error(
 		"E_CONFIG",
 		`version file pattern "${pattern}" of unit "${unit}" ${problem}`,
 		{ unit, pattern },
@@ -177,7 +177,7 @@ const applyTemplate = <V>(
 /** Repo-relative template file; `E_CONFIG` for `.`, absolute or `..` paths. */
 const templateFile = (file: string, unit: string): string => {
 	const invalid = () =>
-		new TallyError(
+		coreCodes.error(
 			"E_CONFIG",
 			`version file "${file}" of unit "${unit}" must be a repo-relative file without ".." segments`,
 			{ unit, file },
@@ -220,7 +220,7 @@ export const versionFileClaims = async (
 		for (const { path } of list) {
 			const prior = claims.get(path);
 			if (prior !== undefined) {
-				throw new TallyError(
+				throw coreCodes.error(
 					"E_VERSION_FILE_CLAIM",
 					`version file "${path}" is claimed by units "${prior}" and "${id}"`,
 					{ path, units: [prior, id] },
@@ -236,7 +236,7 @@ export const versionFileClaims = async (
 			const path = templateFile(file, id);
 			const owner = claims.get(path);
 			if (owner !== undefined) {
-				throw new TallyError(
+				throw coreCodes.error(
 					"E_VERSION_FILE_CLAIM",
 					`version file template of unit "${id}" targets "${path}", a version file of unit "${owner}"`,
 					{ path, units: [owner, id] },
@@ -290,7 +290,7 @@ export const releaseFiles = async (
 	const required = (path: string, unit: string) => {
 		const content = read(path);
 		if (content === undefined) {
-			throw new TallyError(
+			throw coreCodes.error(
 				"E_VERSION_FILE_MISSING",
 				`version file "${path}" of unit "${unit}" does not exist`,
 				{ path, unit },
@@ -337,11 +337,13 @@ export const releaseFiles = async (
 				});
 				files.set(file, result.content);
 				if (!result.hit) {
-					warnings.push({
-						code: "W_VERSION_FILE_NO_MATCH",
-						message: `version file pattern "${pattern}" of unit "${id}" matches nothing in "${file}"`,
-						unit: id,
-					});
+					warnings.push(
+						coreCodes.warning(
+							"W_VERSION_FILE_NO_MATCH",
+							`version file pattern "${pattern}" of unit "${id}" matches nothing in "${file}"`,
+							{ unit: id },
+						),
+					);
 				}
 			}
 

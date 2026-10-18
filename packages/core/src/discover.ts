@@ -1,4 +1,4 @@
-import { TallyError } from "./errors.js";
+import { coreCodes } from "./codes.js";
 import { defaultUnitId } from "./plugin.js";
 import { runHook } from "./plugins.js";
 import { compare, uniqueSorted } from "./util.js";
@@ -44,7 +44,7 @@ const globSegments = (
 ): string[] => {
 	const segments = root.split("/");
 	if (segments.some((s) => s !== "*" && s.includes("*"))) {
-		throw new TallyError(
+		throw coreCodes.error(
 			"E_UNIT_GLOB",
 			`unit overlay "${key}" may use "*" only as a whole path segment`,
 			{ key },
@@ -53,7 +53,7 @@ const globSegments = (
 
 	const field = GLOB_REJECTED.find((f) => overlay[f] !== undefined);
 	if (field !== undefined) {
-		throw new TallyError(
+		throw coreCodes.error(
 			"E_UNIT_GLOB",
 			`unit overlay "${key}" cannot set "${field}" on a glob key`,
 			{ key, field },
@@ -97,7 +97,7 @@ const applyOverlay = (
 export const normalizeRoot = (root: string): string => {
 	const segments = root.split("/");
 	if (root.startsWith("/") || segments.includes("..")) {
-		throw new TallyError(
+		throw coreCodes.error(
 			"E_ROOT_INVALID",
 			`root "${root}" must be repo-relative without ".." segments`,
 			{ root },
@@ -130,7 +130,7 @@ export const discoverUnits = async (
 			const root = normalizeRoot(draft.root);
 			const prior = byRoot.get(root);
 			if (prior) {
-				throw new TallyError(
+				throw coreCodes.error(
 					"E_DUPLICATE_ROOT",
 					`root "${root}" is discovered by "${prior.plugin}" and "${plugin.name}"`,
 					{ root, plugins: [prior.plugin, plugin.name] },
@@ -151,7 +151,7 @@ export const discoverUnits = async (
 		const root = normalizeRoot(key);
 		const invalid = overlay.tags?.find((t) => !UNIT_TAG.test(t));
 		if (invalid !== undefined) {
-			throw new TallyError(
+			throw coreCodes.error(
 				"E_UNIT_TAG",
 				`tag "${invalid}" of unit at "${root}" must match ${UNIT_TAG.source}`,
 				{ tag: invalid, root },
@@ -181,10 +181,12 @@ export const discoverUnits = async (
 			globMatches(segments, root),
 		);
 		if (matched.length === 0) {
-			warnings.push({
-				code: "W_UNIT_GLOB_UNMATCHED",
-				message: `unit overlay "${key}" matches no unit`,
-			});
+			warnings.push(
+				coreCodes.warning(
+					"W_UNIT_GLOB_UNMATCHED",
+					`unit overlay "${key}" matches no unit`,
+				),
+			);
 		}
 
 		for (const [, entry] of matched) {
@@ -200,7 +202,7 @@ export const discoverUnits = async (
 	for (const entry of byRoot.values()) {
 		const { id, root } = entry.draft;
 		if (!UNIT_ID.test(id)) {
-			throw new TallyError(
+			throw coreCodes.error(
 				"E_UNIT_ID",
 				`unit id "${id}" at "${root}" must match ${UNIT_ID.source}`,
 				{ id, root, plugin: entry.plugin },
@@ -209,7 +211,7 @@ export const discoverUnits = async (
 
 		const prior = byId.get(id);
 		if (prior) {
-			throw new TallyError(
+			throw coreCodes.error(
 				"E_DUPLICATE_UNIT",
 				`unit id "${id}" is used by "${prior.plugin}" at "${prior.draft.root}" and "${entry.plugin}" at "${root}"`,
 				{
@@ -224,7 +226,7 @@ export const discoverUnits = async (
 
 		byId.set(id, entry);
 		if (root !== "." && !env.fs.exists(root)) {
-			throw new TallyError(
+			throw coreCodes.error(
 				"E_ROOT_MISSING",
 				`root "${root}" of unit "${id}" does not exist`,
 				{ id, root },

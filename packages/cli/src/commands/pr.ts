@@ -5,9 +5,9 @@ import {
 	releaseEntries,
 	releaseFiles,
 	releaseItems,
-	TallyError,
 } from "@tallyrelease/core";
 
+import { cliCodes } from "../codes.js";
 import { effectSkipped, repoRef } from "./effects.js";
 import { planOptions } from "./plan.js";
 import { LABELS } from "../forge/forge.js";
@@ -217,7 +217,7 @@ export const releasePrs = async (
 
 	const { forge, gitWriter } = session;
 	if (!forge) {
-		throw new TallyError(
+		throw cliCodes.error(
 			"E_NO_FORGE",
 			"pr needs a forge token; pass --token or set GITHUB_TOKEN",
 		);
@@ -228,10 +228,10 @@ export const releasePrs = async (
 	const tip = await forge.branchSha(repo, base);
 	if (tip !== head) {
 		session.warn([
-			{
-				code: "W_PR_HEAD_BEHIND",
-				message: `HEAD ${short(head)} is not the tip of "${base}" (${tip === undefined ? "missing" : short(tip)}); release PRs stay unchanged`,
-			},
+			cliCodes.warning(
+				"W_PR_HEAD_BEHIND",
+				`HEAD ${short(head)} is not the tip of "${base}" (${tip === undefined ? "missing" : short(tip)}); release PRs stay unchanged`,
+			),
 		]);
 
 		return;
@@ -242,7 +242,7 @@ export const releasePrs = async (
 	).filter((p) => opts.reconciled?.has(p.number) !== true);
 	if (merged.length > 0) {
 		const numbers = merged.map((p) => `#${String(p.number)}`).join(", ");
-		throw new TallyError(
+		throw cliCodes.error(
 			"E_PENDING_RECONCILE",
 			`merged release PRs ${numbers} are not tagged yet; run tallyrelease release first`,
 			{ prs: merged.map((p) => p.number) },

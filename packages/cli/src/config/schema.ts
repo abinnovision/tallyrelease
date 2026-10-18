@@ -236,8 +236,14 @@ export const configSchema = z.strictObject({
 				.exactOptional(),
 			preMajor: z
 				.strictObject({
-					breaking: bumpLevel.exactOptional(),
-					feat: bumpLevel.exactOptional(),
+					breaking: bumpLevel
+						.meta({
+							description: "Bump level for breaking changes. Default minor.",
+						})
+						.exactOptional(),
+					feat: bumpLevel
+						.meta({ description: "Bump level for feat. Default minor." })
+						.exactOptional(),
 				})
 				.meta({
 					description:

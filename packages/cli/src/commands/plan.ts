@@ -2,14 +2,15 @@ import { TallyError } from "@tallyrelease/core";
 import { appendFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 
+import { repoRef } from "./effects.js";
 import { baseLabel, baseLine, resolveBuildBase } from "../ci/base.js";
 import { planGithubOutput, releasesGithubOutput } from "../ci/outputs.js";
 import { appendStepSummary } from "../ci/summary.js";
+import { cliCodes } from "../codes.js";
 import { alignColumns } from "../output/columns.js";
 import { count } from "../output/count.js";
 import { painter } from "../output/paint.js";
 import { branchName } from "../session.js";
-import { repoRef } from "./effects.js";
 import { version } from "../version.js";
 
 import type { BuildBase } from "../ci/base.js";
@@ -152,7 +153,7 @@ export const planOptions = async (
 	if (current === undefined) {
 		// Surfaces E_NOT_A_REPO and E_NOT_REPO_ROOT first.
 		await session.workspace();
-		throw new TallyError(
+		throw cliCodes.error(
 			"E_NO_HEAD",
 			"HEAD does not resolve to a commit; the repository has no commits",
 		);
@@ -161,7 +162,7 @@ export const planOptions = async (
 	const head =
 		flags.head === undefined ? current : await git.resolve(flags.head);
 	if (head === undefined) {
-		throw new TallyError(
+		throw cliCodes.error(
 			"E_HEAD_UNRESOLVED",
 			`--head "${flags.head ?? ""}" does not resolve to a commit`,
 			{ ref: flags.head },
@@ -183,10 +184,10 @@ export const planOptions = async (
 	const headBranch: Warning[] =
 		replay && flags.branch === undefined
 			? [
-					{
-						code: "W_HEAD_BRANCH",
-						message: `planning --head under the branch rule for "${branch}"; pass --branch to choose`,
-					},
+					cliCodes.warning(
+						"W_HEAD_BRANCH",
+						`planning --head under the branch rule for "${branch}"; pass --branch to choose`,
+					),
 				]
 			: [];
 
@@ -286,7 +287,7 @@ export const writePlan = (
 	if (flags.githubOutput) {
 		const outputPath = session.env["GITHUB_OUTPUT"];
 		if (!outputPath) {
-			throw new TallyError(
+			throw cliCodes.error(
 				"E_GITHUB_OUTPUT",
 				"--github-output requires GITHUB_OUTPUT to be set",
 			);
@@ -294,7 +295,7 @@ export const writePlan = (
 
 		const temp = session.env["RUNNER_TEMP"];
 		if (out === undefined && !temp) {
-			throw new TallyError(
+			throw cliCodes.error(
 				"E_GITHUB_OUTPUT",
 				"--github-output requires --out or RUNNER_TEMP to be set",
 			);
@@ -346,10 +347,12 @@ export const plan = async (
 			throw error;
 		}
 
-		prWarnings.push({
-			code: "W_FORGE_ERROR",
-			message: `cannot read the PRs and releases of released commits: ${error instanceof Error ? error.message : String(error)}`,
-		});
+		prWarnings.push(
+			cliCodes.warning(
+				"W_FORGE_ERROR",
+				`cannot read the PRs and releases of released commits: ${error instanceof Error ? error.message : String(error)}`,
+			),
+		);
 	}
 
 	const doc = {

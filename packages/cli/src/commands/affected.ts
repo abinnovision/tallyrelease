@@ -1,9 +1,10 @@
-import { computeAffected, TallyError } from "@tallyrelease/core";
+import { computeAffected } from "@tallyrelease/core";
 import { appendFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 import { baseLabel, resolveBuildBase } from "../ci/base.js";
 import { affectedGithubOutput } from "../ci/outputs.js";
+import { cliCodes } from "../codes.js";
 import { alignColumns } from "../output/columns.js";
 import { count } from "../output/count.js";
 import { painter } from "../output/paint.js";
@@ -57,7 +58,7 @@ export const affected = async (
 	const workspace = await session.workspace();
 	const head = await git.resolve("HEAD");
 	if (head === undefined) {
-		throw new TallyError(
+		throw cliCodes.error(
 			"E_NO_HEAD",
 			"HEAD does not resolve to a commit; the repository has no commits",
 		);
@@ -83,10 +84,7 @@ export const affected = async (
 	const known = new Set(workspace.units.flatMap((u) => u.tags));
 	const unknownTags = [...tags]
 		.filter((t) => !known.has(t))
-		.map((t) => ({
-			code: "W_TAG_UNKNOWN",
-			message: `no unit has tag "${t}"`,
-		}));
+		.map((t) => cliCodes.warning("W_TAG_UNKNOWN", `no unit has tag "${t}"`));
 	const selected = (u: { tags: readonly string[] }) =>
 		tags.size === 0 || u.tags.some((t) => tags.has(t));
 	const doc = {
@@ -104,7 +102,7 @@ export const affected = async (
 	if (flags.githubOutput) {
 		const path = session.env["GITHUB_OUTPUT"];
 		if (!path) {
-			throw new TallyError(
+			throw cliCodes.error(
 				"E_GITHUB_OUTPUT",
 				"--github-output requires GITHUB_OUTPUT to be set",
 			);

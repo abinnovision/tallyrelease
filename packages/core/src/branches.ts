@@ -1,4 +1,4 @@
-import { TallyError } from "./errors.js";
+import { coreCodes } from "./codes.js";
 import { schemeRegistry } from "./schemes.js";
 import { maxLevel } from "./util.js";
 
@@ -13,7 +13,7 @@ const PART = /\{(major|minor)\}|\*/gu;
 const CHANNEL = /^[0-9A-Za-z-]+$/u;
 
 const ruleError = (rule: BranchRule, problem: string) =>
-	new TallyError("E_BRANCH_RULE", `branch rule "${rule.name}" ${problem}`, {
+	coreCodes.error("E_BRANCH_RULE", `branch rule "${rule.name}" ${problem}`, {
 		rule: rule.name,
 	});
 
@@ -122,7 +122,7 @@ export const validateBranches = (rules: readonly BranchRule[]): void => {
 		}
 
 		if (rule.name.includes("*")) {
-			throw new TallyError(
+			throw coreCodes.error(
 				"E_CHANNEL_WILDCARD",
 				`branch rule "${rule.name}" contains * and cannot set a channel`,
 				{ rule: rule.name, channel },
@@ -136,7 +136,7 @@ export const validateBranches = (rules: readonly BranchRule[]): void => {
 			!CHANNEL.test(literal) ||
 			!/[A-Za-z-]/u.test(channel.replace(/\{(major|minor)\}/gu, ""))
 		) {
-			throw new TallyError(
+			throw coreCodes.error(
 				"E_CHANNEL_INVALID",
 				`channel "${channel}" of branch rule "${rule.name}" must match ${CHANNEL.source}, contain a letter or dash and use only tokens captured by the rule`,
 				{ rule: rule.name, channel },
@@ -145,7 +145,7 @@ export const validateBranches = (rules: readonly BranchRule[]): void => {
 
 		const other = channels.get(channel);
 		if (other !== undefined) {
-			throw new TallyError(
+			throw coreCodes.error(
 				"E_CHANNEL_DUPLICATE",
 				`channel "${channel}" is set by branch rules "${other}" and "${rule.name}"`,
 				{ channel, rules: [other, rule.name] },
@@ -270,7 +270,7 @@ export const checkLimits = (
 			(absolute.minor !== undefined && from.minor !== absolute.minor)
 		) {
 			const expected = [absolute.major, absolute.minor ?? "x"].join(".");
-			throw new TallyError(
+			throw coreCodes.error(
 				"E_CAP_BASE",
 				`branch "${branch}": ${itemLabel(target)}${implicit ? " (the only release item)" : ""} is at ${from.version}, off the ${expected} line of branch rule "${line.rule}"; the branch was cut from or merged with a commit carrying a newer tag, or names a next major, which maintenance rules do not support (use a default-line rule with a channel)`,
 				{
@@ -297,7 +297,7 @@ export const checkLimits = (
 				(c.releaseAs !== undefined && !within(limit, from, c.releaseAs)),
 		);
 		const listed = commits.map(commitLabel).join("; ");
-		throw new TallyError(
+		throw coreCodes.error(
 			"E_CAP",
 			`${itemLabel(item)}: ${from.version} to ${next.version} exceeds the ${limit} limit of branch rule "${line.rule}"${listed === "" ? "" : `; commits: ${listed}`}`,
 			{

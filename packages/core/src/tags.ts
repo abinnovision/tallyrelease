@@ -1,4 +1,4 @@
-import { TallyError } from "./errors.js";
+import { coreCodes } from "./codes.js";
 import { compare } from "./util.js";
 
 import type { Warning } from "./errors.js";
@@ -7,7 +7,7 @@ import type { TagRef, Unit, VersionScheme } from "./plugin.js";
 const SPECIAL = /[\\^$.*+?()[\]{}|/]/gu;
 
 const overlap = (units: string[], detail: Record<string, string>) =>
-	new TallyError(
+	coreCodes.error(
 		"E_TAG_FORMAT_OVERLAP",
 		`released units "${units.join('", "')}" share tags (${Object.values(detail).join(", ")})`,
 		{ units, ...detail },
@@ -32,7 +32,7 @@ export interface UnitTag {
 export const compileTagFormat = (format: string, unitId: string): TagFormat => {
 	const parts = format.split("{version}");
 	if (parts.length !== 2) {
-		throw new TallyError(
+		throw coreCodes.error(
 			"E_TAG_FORMAT",
 			`tag format "${format}" of unit "${unitId}" must contain {version} exactly once`,
 			{ unit: unitId, format },
@@ -83,7 +83,7 @@ export const matchUnitTags = (
 		.map((unit) => {
 			const scheme = schemes.get(unit.scheme);
 			if (!scheme) {
-				throw new TallyError(
+				throw coreCodes.error(
 					"E_SCHEME_UNKNOWN",
 					`unit "${unit.id}" uses unknown scheme "${unit.scheme}"`,
 					{ unit: unit.id, scheme: unit.scheme },
@@ -169,11 +169,11 @@ export const noMatchingTag = (
 		}
 
 		return [
-			{
-				code: "W_NO_MATCHING_TAG",
-				message: `released unit "${m.id}" has no tag matching "${unit.tagFormat.replaceAll("{id}", m.id)}", but "${similar}" contains its id`,
-				unit: m.id,
-			},
+			coreCodes.warning(
+				"W_NO_MATCHING_TAG",
+				`released unit "${m.id}" has no tag matching "${unit.tagFormat.replaceAll("{id}", m.id)}", but "${similar}" contains its id`,
+				{ unit: m.id },
+			),
 		];
 	});
 };

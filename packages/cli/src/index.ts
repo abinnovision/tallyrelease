@@ -1,4 +1,5 @@
 export { version } from "./version.js";
+export { cliCodes } from "./codes.js";
 export { main } from "./main.js";
 export type { Deps, Writer } from "./session.js";
 export type {

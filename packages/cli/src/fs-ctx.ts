@@ -1,10 +1,10 @@
-import { TallyError } from "@tallyrelease/core";
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import picomatch from "picomatch/posix.js";
 import { globSync } from "tinyglobby";
 
+import { cliCodes } from "./codes.js";
 import { gitEnv } from "./git/exec.js";
 
 import type { Env } from "./ci/github-env.js";
@@ -16,7 +16,7 @@ const readError = (error: unknown, ref: string, path: string) => {
 	const stderr = (error as { stderr?: Buffer }).stderr?.toString("utf8");
 	const reason = stderr?.match(/^.+$/m)?.[0] ?? String(error);
 
-	return new TallyError(
+	return cliCodes.error(
 		"E_GIT_READ",
 		`cannot read "${path}" at ${ref}: ${reason}`,
 		{ ref, path },

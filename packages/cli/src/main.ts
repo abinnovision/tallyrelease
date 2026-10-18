@@ -16,6 +16,7 @@ import { painter } from "./output/paint.js";
 import { createSession } from "./session.js";
 import { version } from "./version.js";
 
+import type { cliCodes } from "./codes.js";
 import type { AffectedFlags } from "./commands/affected.js";
 import type { ExplainFlags } from "./commands/explain.js";
 import type { GraphFlags } from "./commands/graph.js";
@@ -26,6 +27,9 @@ import type { RunFlags } from "./commands/run.js";
 import type { ShadowFlags } from "./commands/shadow.js";
 import type { VersionFlags } from "./commands/version.js";
 import type { Deps, GlobalOptions } from "./session.js";
+import type { CodeOf, ErrorCode } from "@tallyrelease/core";
+
+const internal = "E_INTERNAL" satisfies ErrorCode<CodeOf<typeof cliCodes>>;
 
 /** Runs the cli; returns the exit code (0 ok, 1 error, 2 usage). */
 export const main = async (
@@ -243,7 +247,7 @@ export const main = async (
 			);
 		} else {
 			deps.stderr.write(
-				`${paint("red", "error[E_INTERNAL]")}: ${error instanceof Error ? error.message : String(error)}\n`,
+				`${paint("red", `error[${internal}]`)}: ${error instanceof Error ? error.message : String(error)}\n`,
 			);
 			if (program.opts<GlobalOptions>().verbose) {
 				deps.stderr.write(`${inspect(error)}\n`);

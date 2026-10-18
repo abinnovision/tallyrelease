@@ -1,4 +1,4 @@
-import { TallyError } from "./errors.js";
+import { coreCodes } from "./codes.js";
 import { compare, uniqueSorted } from "./util.js";
 
 import type { Warning } from "./errors.js";
@@ -126,7 +126,7 @@ export const buildGraph = (
 	for (const { from, to, reason, pinned, source } of drafts) {
 		for (const id of [from, to]) {
 			if (!known.has(id)) {
-				throw new TallyError(
+				throw coreCodes.error(
 					"E_EDGE_UNKNOWN_UNIT",
 					`edge ${from} -> ${to} from "${source}" names unknown unit "${id}"`,
 					{ from, to, source, unit: id },
@@ -135,7 +135,7 @@ export const buildGraph = (
 		}
 
 		if (from === to) {
-			throw new TallyError(
+			throw coreCodes.error(
 				"E_EDGE_SELF",
 				`edge ${from} -> ${to} from "${source}" points to itself`,
 				{ from, to, source },
@@ -181,10 +181,12 @@ export const buildGraph = (
 	const components = stronglyConnected(ids, dependencies);
 	const warnings = components
 		.filter((c) => c.length > 1)
-		.map((c): Warning => ({
-			code: "W_CYCLE",
-			message: `dependency cycle: ${cyclePath(c, dependents).join(" -> ")}`,
-		}));
+		.map((c): Warning =>
+			coreCodes.warning(
+				"W_CYCLE",
+				`dependency cycle: ${cyclePath(c, dependents).join(" -> ")}`,
+			),
+		);
 
 	return {
 		edges,

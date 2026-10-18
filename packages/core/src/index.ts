@@ -9,6 +9,13 @@ export type {
 	BaseSource,
 } from "./affected.js";
 export type { ChangelogDependency, ChangelogInput } from "./changelog.js";
+export type {
+	CodeDoc,
+	CodeOf,
+	CodeRegistry,
+	ErrorCode,
+	WarningCode,
+} from "./codes.js";
 export type { ParsedCommit } from "./conventional.js";
 export type {
 	ExplainedChange,
@@ -76,6 +83,7 @@ export {
 	renderChangelogSection,
 	updateChangelog,
 } from "./changelog.js";
+export { coreCodes, defineCodes } from "./codes.js";
 export { CONFIG_FILE } from "./config.js";
 export { conventionalCommits, parseCommit } from "./conventional.js";
 export { discoverUnits } from "./discover.js";

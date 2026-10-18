@@ -1,5 +1,5 @@
 import { CORE_PLUGIN } from "./builtin.js";
-import { TallyError } from "./errors.js";
+import { coreCodes } from "./codes.js";
 import { assertPlugin } from "./plugin.js";
 
 import type { TallyConfig } from "./config.js";
@@ -33,7 +33,9 @@ export const pluginCtx =
 			fs: env.fs,
 			log: Object.freeze({
 				warn: (message: string) => {
-					warnings.push({ code: "W_PLUGIN", message, plugin: name });
+					warnings.push(
+						coreCodes.warning("W_PLUGIN", message, { plugin: name }),
+					);
 				},
 				debug: (message: string) => env.debug?.(`${name}: ${message}`),
 			}),
@@ -48,14 +50,14 @@ export const activatePlugins = async (
 	for (const [name, raw] of Object.entries(env.config.plugins)) {
 		const plugin = env.plugins.find((p) => p.name === name);
 		if (!plugin) {
-			throw new TallyError("E_PLUGIN_UNKNOWN", `unknown plugin "${name}"`, {
+			throw coreCodes.error("E_PLUGIN_UNKNOWN", `unknown plugin "${name}"`, {
 				plugin: name,
 			});
 		}
 
 		assertPlugin(plugin);
 		if (plugin.name === CORE_PLUGIN) {
-			throw new TallyError(
+			throw coreCodes.error(
 				"E_PLUGIN_NAME",
 				`plugin name "${CORE_PLUGIN}" is reserved for core built-ins`,
 				{ plugin: name },
@@ -68,7 +70,7 @@ export const activatePlugins = async (
 			// eslint-disable-next-line no-await-in-loop -- plugins load sequentially in config order
 			const result = await plugin.options["~standard"].validate(rest);
 			if (result.issues) {
-				throw new TallyError(
+				throw coreCodes.error(
 					"E_PLUGIN_OPTIONS",
 					`invalid options for plugin "${name}": ${result.issues.map((i) => i.message).join("; ")}`,
 					{ plugin: name, issues: result.issues },
@@ -95,7 +97,7 @@ export const runHook = async <T>(
 		return await call();
 	} catch (error) {
 		const reason = error instanceof Error ? error.message : String(error);
-		throw new TallyError(
+		throw coreCodes.error(
 			"E_PLUGIN_HOOK",
 			`plugin "${plugin}" failed in ${hook}: ${reason}`,
 			{ plugin, hook, error },

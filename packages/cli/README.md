@@ -27,6 +27,8 @@ units:
 
 Units are build-only unless opted in with `release: true` (per unit) or `defaults.release: true`.
 
+Every key is listed in the [configuration reference](../../docs/configuration.md).
+
 Tags label units so CI can split the build set by kind:
 
 ```yaml
@@ -47,6 +49,8 @@ units:
 ## Commands
 
 Global flags: `--cwd <dir>` (repository root), `--config <file>` (default `tallyrelease.yaml`), `--token <token>` (forge token, default `GITHUB_TOKEN`), `--remote <name>` (git remote to push to and read the repository from, default `origin`), `--verbose`.
+
+Errors print as `error[E_*]` and warnings as `warning[W_*]`. The [error and warning reference](../../docs/errors.md) lists the cause and fix of each code.
 
 - `tallyrelease check` validates config, plugins, units, graph and release config; with released units it also checks the repository's tags.
 - `tallyrelease graph [--format text|json|mermaid] [--json]` prints units and edges.
