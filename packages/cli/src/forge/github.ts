@@ -102,7 +102,7 @@ export const githubForge = (opts: GithubForgeOptions): Forge => {
 	};
 
 	return {
-		lastSuccessfulPushRuns: async ({ owner, repo, workflow, branch }) => {
+		lastSuccessfulPushRuns: async ({ owner, repo, workflow, branch, page }) => {
 			// A renamed or deleted workflow has no runs to build on.
 			const runs = await unless(
 				octokit.rest.actions.listWorkflowRuns({
@@ -113,6 +113,7 @@ export const githubForge = (opts: GithubForgeOptions): Forge => {
 					status: "success",
 					event: "push",
 					per_page: 100,
+					page,
 				}),
 				404,
 			);

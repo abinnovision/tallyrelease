@@ -91,7 +91,13 @@ describe("affected", () => {
 		expect(result.build).toEqual({ base: "p1", source: "forge-last-success" });
 		expect(result.ids).toEqual(["api", "ui", "web"]);
 		expect(forge.queries).toEqual([
-			{ owner: "acme", repo: "repo", workflow: "ci.yaml", branch: "main" },
+			{
+				owner: "acme",
+				repo: "repo",
+				workflow: "ci.yaml",
+				branch: "main",
+				page: 1,
+			},
 		]);
 	});
 

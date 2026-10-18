@@ -18,6 +18,9 @@ const CI_VARS = [
 	"BITBUCKET_BUILD_NUMBER",
 ];
 
+/** Pages of workflow runs searched for a usable last success. */
+const RUN_PAGES = 5;
+
 const DEFAULT_REFS = ["origin/main", "origin/master", "main", "master"];
 
 const isCi = (env: Env): boolean => {
@@ -133,23 +136,31 @@ export const resolveBuildBase = async (
 			return noWorkflowContext;
 		}
 
-		let shas: string[];
-		try {
-			shas = await from.lastSuccessfulPushRuns({
-				...github.repository,
-				workflow: github.workflow,
-				branch: github.refName,
-			});
-		} catch (error) {
-			return forgeError(error);
-		}
+		for (let page = 1; page <= RUN_PAGES; page++) {
+			let shas: string[];
+			try {
+				// eslint-disable-next-line no-await-in-loop -- older pages only while no run is usable
+				shas = await from.lastSuccessfulPushRuns({
+					...github.repository,
+					workflow: github.workflow,
+					branch: github.refName,
+					page,
+				});
+			} catch (error) {
+				return forgeError(error);
+			}
 
-		for (const candidate of shas) {
-			// eslint-disable-next-line no-await-in-loop -- newest usable run wins
-			const sha = await local(candidate, "last successful run");
-			// eslint-disable-next-line no-await-in-loop -- newest usable run wins
-			if (sha !== undefined && (await git.isAncestor(sha, head))) {
-				return sha;
+			if (shas.length === 0) {
+				break;
+			}
+
+			for (const candidate of shas) {
+				// eslint-disable-next-line no-await-in-loop -- newest usable run wins
+				const sha = await local(candidate, "last successful run");
+				// eslint-disable-next-line no-await-in-loop -- newest usable run wins
+				if (sha !== undefined && (await git.isAncestor(sha, head))) {
+					return sha;
+				}
 			}
 		}
 
