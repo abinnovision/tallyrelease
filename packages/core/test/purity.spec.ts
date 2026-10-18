@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 const root = resolve(import.meta.dirname, "..");
 
 const run = (entry: string) =>
-	promisify(execFile)("node", ["scripts/check-purity.mjs", entry], {
+	promisify(execFile)("node", ["../../tools/check-purity.mjs", entry], {
 		cwd: root,
 	});
 

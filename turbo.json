@@ -44,7 +44,7 @@
 		},
 		"check:purity": {
 			"dependsOn": ["^build"],
-			"inputs": ["src/**/*", "scripts/**/*"]
+			"inputs": ["src/**/*", "$TURBO_ROOT$/tools/check-purity.mjs"]
 		}
 	},
 	"agentGuidance": false

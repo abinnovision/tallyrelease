@@ -33,7 +33,7 @@
 	],
 	"scripts": {
 		"build": "tsc --build tsconfig.build.json",
-		"check:purity": "node scripts/check-purity.mjs src/index.ts",
+		"check:purity": "node ../../tools/check-purity.mjs src/index.ts",
 		"format:check": "prettier --check '{{src,test}/**/*,*}.{{t,j}s{,x},json{,5},md,y{,a}ml,css,html,gql,graphql}'",
 		"format:fix": "prettier --write '{{src,test}/**/*,*}.{{t,j}s{,x},json{,5},md,y{,a}ml,css,html,gql,graphql}'",
 		"lint:check": "eslint '{{src,test}/**/*,*}.{t,j}s{,x}'",
@@ -60,7 +60,6 @@
 		"@types/picomatch": "^4.0.3",
 		"@types/semver": "^7.8.0",
 		"@vitest/coverage-v8": "^5.0.4",
-		"esbuild": "^0.28.2",
 		"eslint": "^10.12.0",
 		"prettier": "^3.9.10",
 		"typescript": "^6.0.3",
