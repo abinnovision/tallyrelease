@@ -1,0 +1,46 @@
+{
+	"name": "@internal/docs",
+	"version": "0.0.0",
+	"private": true,
+	"description": "Generators for the docs/*.md references",
+	"license": "Apache-2.0",
+	"author": {
+		"name": "abi group GmbH",
+		"email": "info@abigroup.io",
+		"url": "https://abigroup.io"
+	},
+	"type": "module",
+	"files": [],
+	"scripts": {
+		"docs:check": "node src/generate.ts --check",
+		"docs:fix": "node src/generate.ts",
+		"format:check": "prettier --check '{src/**/*,*}.{{t,j}s{,x},json{,5},md,y{,a}ml,css,html,gql,graphql}'",
+		"format:fix": "prettier --write '{src/**/*,*}.{{t,j}s{,x},json{,5},md,y{,a}ml,css,html,gql,graphql}'",
+		"lint:check": "eslint '{src/**/*,*}.{t,j}s{,x}'",
+		"lint:fix": "eslint '{src/**/*,*}.{t,j}s{,x}' --fix",
+		"test-unit": "vitest --passWithNoTests --run --coverage --config vitest.config.ts --project='*#unit'",
+		"typecheck": "tsc -p tsconfig.json"
+	},
+	"lint-staged": {
+		"{src/**/*,*}.{{t,j}s{,x},json{,5},md,y{,a}ml,css,html,gql,graphql}": "prettier --write",
+		"{src/**/*,*}.{t,j}s{,x}": "eslint --fix"
+	},
+	"prettier": "@abinnovision/prettier-config",
+	"devDependencies": {
+		"@abinnovision/eslint-config-base": "^3.4.2",
+		"@abinnovision/prettier-config": "^2.2.0",
+		"@internal/tsconfig": "workspace:*",
+		"@tallyrelease/cli": "workspace:*",
+		"@tallyrelease/core": "workspace:*",
+		"@types/node": "^24.19.2",
+		"@vitest/coverage-v8": "^5.0.4",
+		"eslint": "^10.12.0",
+		"prettier": "^3.9.10",
+		"typescript": "^6.0.3",
+		"vite": "^8.3.4",
+		"vitest": "^5.0.4"
+	},
+	"engines": {
+		"node": ">=24"
+	}
+}
