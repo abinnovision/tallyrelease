@@ -9,13 +9,14 @@ Yarn 4 monorepo with Turbo orchestration. Names in parentheses are used for `tur
 - `packages/core` (`@tallyrelease/core`) - pure planning core and the plugin contract. Exports `.` and `./testing` (fakes: `memoryFs`, `memoryCtx`, `memoryGit`).
 - `packages/cli` (`@tallyrelease/cli`) - imperative shell, binary `tallyrelease`. Config loading, git, forge, CI integration, built-in plugins (`node`, `php`, `kustomize`).
 - `packages/tsconfig` (`@internal/tsconfig`) - shared TypeScript configs.
+- `packages/docs` (`@internal/docs`) - private generators for `docs/*.md`, run with Node type stripping.
 
 ## Commands
 
 ```bash
 yarn build                    # Build all packages
-yarn fix                      # Fix linting and formatting
-yarn check                    # Format, lint, sort, typecheck and core purity checks
+yarn fix                      # Fix linting and formatting, and regenerate docs
+yarn check                    # Format, lint, sort, typecheck, core purity and docs freshness checks
 yarn test-unit                # Unit tests (all packages)
 yarn turbo test-integration   # Integration tests (cli)
 yarn clean                    # Remove build artifacts

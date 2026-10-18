@@ -44,12 +44,12 @@
 			"inputs": ["src/**/*", "test/**/*"]
 		},
 		"docs:fix": {
-			"dependsOn": ["build"],
+			"dependsOn": ["^build"],
 			"cache": false
 		},
 		"docs:check": {
-			"dependsOn": ["build"],
-			"inputs": ["scripts/**/*", "$TURBO_ROOT$/docs/configuration.md"]
+			"dependsOn": ["^build"],
+			"inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/docs/configuration.md"]
 		},
 		"check:purity": {
 			"dependsOn": ["^build"],
