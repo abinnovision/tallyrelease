@@ -1,3 +1,4 @@
+/** @deprecated Unused, will be removed in 1.0. */
 export const version = "0.0.0";
 
 export type {
