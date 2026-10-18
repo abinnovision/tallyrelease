@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { memoryFs } from "./testing.js";
+import { memoryFs } from "./testing/index.js";
 import { validateRelease } from "./validate.js";
 import { loadWorkspace } from "./workspace.js";
 

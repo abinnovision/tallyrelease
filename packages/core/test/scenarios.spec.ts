@@ -15,7 +15,7 @@ import {
 	releaseItems,
 	withReleased,
 } from "../src/index.js";
-import { memoryFs, memoryGit } from "../src/testing.js";
+import { memoryFs, memoryGit } from "../src/testing/index.js";
 
 import type {
 	Change,
@@ -25,7 +25,7 @@ import type {
 	TallyConfig,
 	UnitDraft,
 } from "../src/index.js";
-import type { Dag } from "../src/testing.js";
+import type { Dag } from "../src/testing/index.js";
 import type { StandardSchemaV1 } from "@standard-schema/spec";
 
 /** Declarative plugin stub; every hook resolves asynchronously. */

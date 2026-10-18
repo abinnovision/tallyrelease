@@ -1,6 +1,6 @@
 import { expect, it } from "vitest";
 
-import { gitReaderConformance, memoryGit } from "../src/testing.js";
+import { gitReaderConformance, memoryGit } from "../src/testing/index.js";
 
 gitReaderConformance((dag) => ({ git: memoryGit(dag), sha: (id) => id }));
 

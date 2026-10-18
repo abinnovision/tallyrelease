@@ -26,7 +26,7 @@ See `Plugin` in [`src/plugin.ts`](https://github.com/abinnovision/tallyrelease/b
 
 ## Testing
 
-The `@tallyrelease/core/testing` export provides in-memory fakes: `memoryFs`, `memoryCtx` and `memoryGit`.
+The `@tallyrelease/core/testing` export provides in-memory fakes: `memoryFs`, `memoryCtx` and `memoryGit`. The `@tallyrelease/core/testing/conformance` export provides `gitReaderConformance`, a shared `GitReader` spec that requires vitest.
 
 ## Licence
 

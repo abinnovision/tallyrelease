@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { maintenanceCut } from "./branches.js";
 import { computePlan } from "./plan.js";
 import { releaseItems } from "./release-items.js";
-import { memoryFs, memoryGit } from "./testing.js";
+import { memoryFs, memoryGit } from "./testing/index.js";
 import { loadWorkspace } from "./workspace.js";
 
 import type { BranchConfig, TallyConfig } from "./config.js";

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { defaultUnitId, definePlugin } from "../src/index.js";
-import { memoryCtx, memoryFs } from "../src/testing.js";
+import { memoryCtx, memoryFs } from "../src/testing/index.js";
 
 describe("definePlugin", () => {
 	it("returns a valid plugin unchanged", () => {
