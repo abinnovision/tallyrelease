@@ -55,7 +55,7 @@
 		"picomatch": "^4.0.7",
 		"tinyglobby": "^0.2.17",
 		"yaml": "^2.9.1",
-		"zod": "^4.6.6"
+		"zod": "^4.6.7"
 	},
 	"devDependencies": {
 		"@abinnovision/eslint-config-base": "^3.4.2",
