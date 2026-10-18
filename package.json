@@ -14,9 +14,9 @@
 	],
 	"scripts": {
 		"build": "yarn turbo run build",
-		"check": "yarn format:check & yarn sort:check & turbo run check",
+		"check": "yarn format:check && yarn sort:check && turbo run check",
 		"clean": "rimraf -g -I 'coverage/' 'packages/*/{coverage,dist,.turbo}' 'out/'",
-		"fix": "yarn format:fix & yarn sort:fix & turbo run fix",
+		"fix": "yarn format:fix && yarn sort:fix && turbo run fix",
 		"format:check": "prettier --check '{.github/**/*,*,docs/**/*}.{json{,5},md,y{,a}ml,gql}'",
 		"format:fix": "prettier --write '{.github/**/*,*,docs/**/*}.{json{,5},md,y{,a}ml,gql}'",
 		"postinstall": "husky",
