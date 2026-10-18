@@ -1,5 +1,5 @@
 import { validateBranches } from "./branches.js";
-import { TallyError } from "./errors.js";
+import { coreCodes } from "./codes.js";
 import { validateFloating } from "./floating.js";
 import { validateReleaseItems } from "./release-items.js";
 import { schemeRegistry } from "./schemes.js";
@@ -28,7 +28,7 @@ export const validateRelease = (
 
 		const scheme = schemes.get(unit.scheme);
 		if (!scheme) {
-			throw new TallyError(
+			throw coreCodes.error(
 				"E_SCHEME_UNKNOWN",
 				`unit "${unit.id}" uses unknown scheme "${unit.scheme}"`,
 				{ unit: unit.id, scheme: unit.scheme },
@@ -40,7 +40,7 @@ export const validateRelease = (
 			unit.initialVersion !== null &&
 			scheme.parse(unit.initialVersion) === undefined
 		) {
-			throw new TallyError(
+			throw coreCodes.error(
 				"E_INITIAL_VERSION",
 				`initial version "${unit.initialVersion}" of unit "${unit.id}" is not a ${unit.scheme} version`,
 				{ unit: unit.id, version: unit.initialVersion },
@@ -52,7 +52,7 @@ export const validateRelease = (
 	for (const { name, members } of workspace.groups) {
 		const unreleased = members.find((id) => units.get(id)?.version === "none");
 		if (unreleased !== undefined) {
-			throw new TallyError(
+			throw coreCodes.error(
 				"E_GROUP_NOT_RELEASED",
 				`group "${name}" names unit "${unreleased}", which is not released`,
 				{ group: name, unit: unreleased },
@@ -63,7 +63,7 @@ export const validateRelease = (
 			members.map((id) => units.get(id)?.scheme ?? ""),
 		);
 		if (schemeNames.length > 1) {
-			throw new TallyError(
+			throw coreCodes.error(
 				"E_GROUP_SCHEME",
 				`members of group "${name}" use different schemes: ${schemeNames.join(", ")}`,
 				{ group: name, schemes: schemeNames },
@@ -88,7 +88,7 @@ export const validateRelease = (
 					? `names unknown group "${group}"`
 					: undefined;
 		if (problem !== undefined) {
-			throw new TallyError(
+			throw coreCodes.error(
 				"E_BRANCH_RULE",
 				`branch rule "${rule.name}" ${problem}`,
 				{

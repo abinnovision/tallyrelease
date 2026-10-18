@@ -1,5 +1,6 @@
-import { TallyError } from "@tallyrelease/core";
 import { readFileSync } from "node:fs";
+
+import { cliCodes } from "../codes.js";
 
 const nonEmpty = (value: string | undefined) =>
 	value === "" ? undefined : value;
@@ -8,7 +9,7 @@ const parseEvent = (path: string): Record<string, unknown> => {
 	try {
 		return JSON.parse(readFileSync(path, "utf8")) as Record<string, unknown>;
 	} catch (error) {
-		throw new TallyError(
+		throw cliCodes.error(
 			"E_GITHUB_EVENT",
 			`cannot read GITHUB_EVENT_PATH "${path}": ${error instanceof Error ? error.message : String(error)}`,
 			{ path },

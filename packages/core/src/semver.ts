@@ -1,6 +1,6 @@
 import lib from "semver";
 
-import { TallyError } from "./errors.js";
+import { coreCodes } from "./codes.js";
 
 import type { VersionScheme } from "./plugin.js";
 
@@ -32,7 +32,7 @@ const parse = (raw: string): SemVer | undefined => {
 const mustParse = (raw: string): SemVer => {
 	const v = parse(raw);
 	if (!v) {
-		throw new TallyError("E_VERSION_INVALID", `invalid version "${raw}"`, {
+		throw coreCodes.error("E_VERSION_INVALID", `invalid version "${raw}"`, {
 			version: raw,
 		});
 	}
@@ -67,7 +67,7 @@ export const semver: VersionScheme<SemVer> = {
 		const raw = `${[major, minor, patch].join(".")}-${ctx.channel}.${n}`;
 		const v = parse(raw);
 		if (!v) {
-			throw new TallyError(
+			throw coreCodes.error(
 				"E_CHANNEL_INVALID",
 				`channel "${ctx.channel}" does not form a valid prerelease`,
 				{ channel: ctx.channel },

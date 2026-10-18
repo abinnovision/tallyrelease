@@ -1,4 +1,4 @@
-import { TallyError } from "./errors.js";
+import { coreCodes } from "./codes.js";
 import { releasedEdges } from "./propagate.js";
 import { renderTag } from "./tags.js";
 
@@ -141,7 +141,7 @@ export const validateReleaseItems = (workspace: Workspace): void => {
 	for (const id of workspace.release.releasePr.units.keys()) {
 		const item = byUnit.get(id);
 		if (item?.kind === "group") {
-			throw new TallyError(
+			throw coreCodes.error(
 				"E_CONFIG",
 				`unit "${id}" sets releasePr but is in group "${item.name}"; set it on the group`,
 				{ unit: id, group: item.name },
@@ -156,7 +156,7 @@ export const validateReleaseItems = (workspace: Workspace): void => {
 				? "is also a group name"
 				: itemNameProblem(item.name);
 		if (problem !== undefined) {
-			throw new TallyError(
+			throw coreCodes.error(
 				"E_RELEASE_ITEM_NAME",
 				`release item "${item.name}" ${problem}`,
 				{ item: item.name },
@@ -178,7 +178,7 @@ export const validateReleaseItems = (workspace: Workspace): void => {
 				continue;
 			}
 
-			throw new TallyError(
+			throw coreCodes.error(
 				"E_RELEASE_PR_SPLIT_EDGE",
 				`edge "${from}" -> "${to}" propagates a patch between release items "${a.name}" and "${b.name}" in different release PRs`,
 				{ from, to, items: [a.name, b.name] },

@@ -1,5 +1,5 @@
 import { attribution, matcher } from "./attribution.js";
-import { TallyError } from "./errors.js";
+import { coreCodes } from "./codes.js";
 import { pluginCtx, runHook } from "./plugins.js";
 import { schemeRegistry } from "./schemes.js";
 import { matchUnitTags } from "./tags.js";
@@ -20,7 +20,7 @@ import type { Workspace } from "./workspace.js";
 const instant = (commit: RawCommit): number => {
 	const time = Date.parse(commit.date);
 	if (Number.isNaN(time)) {
-		throw new TallyError(
+		throw coreCodes.error(
 			"E_GIT_DATE",
 			`commit ${commit.sha} has an invalid committer date "${commit.date}"`,
 			{ sha: commit.sha, date: commit.date },
@@ -196,11 +196,13 @@ export const collectPlanFacts = async (
 			const key = `${plugin}\0${id}`;
 			if (!known.has(id) && !warned.has(key)) {
 				warned.add(key);
-				warnings.push({
-					code: "W_UNIT_UNKNOWN",
-					message: `intent names unknown unit "${id}"`,
-					plugin,
-				});
+				warnings.push(
+					coreCodes.warning(
+						"W_UNIT_UNKNOWN",
+						`intent names unknown unit "${id}"`,
+						{ plugin },
+					),
+				);
 			}
 		}
 	};

@@ -4,9 +4,9 @@ import {
 	planEquals,
 	releasedFromTags,
 	releaseNotes,
-	TallyError,
 } from "@tallyrelease/core";
 
+import { cliCodes } from "../codes.js";
 import { effectSkipped, repoRef } from "./effects.js";
 import { planOptions } from "./plan.js";
 import { LABELS } from "../forge/forge.js";
@@ -229,7 +229,7 @@ export const reconcile = async (
 
 		const current = await git.resolve(name);
 		if (current !== undefined && current !== sha && !force) {
-			throw new TallyError(
+			throw cliCodes.error(
 				"E_TAG_EXISTS",
 				`tag "${name}" exists at ${current}, not at ${sha}`,
 				{ tag: name, sha: current, expected: sha },
@@ -240,7 +240,7 @@ export const reconcile = async (
 	};
 
 	if (!forge) {
-		throw new TallyError(
+		throw cliCodes.error(
 			"E_NO_FORGE",
 			"release needs a forge token; pass --token or set GITHUB_TOKEN",
 		);

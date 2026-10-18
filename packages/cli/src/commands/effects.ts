@@ -1,4 +1,4 @@
-import { TallyError } from "@tallyrelease/core";
+import { cliCodes } from "../codes.js";
 
 import type { RepoRef } from "../forge/forge.js";
 import type { Session } from "../session.js";
@@ -29,10 +29,7 @@ export const effectSkipped = (
 				: undefined;
 	if (reason !== undefined) {
 		session.warn([
-			{
-				code: "W_EFFECT_SKIPPED",
-				message: `${command} does nothing ${reason}`,
-			},
+			cliCodes.warning("W_EFFECT_SKIPPED", `${command} does nothing ${reason}`),
 		]);
 	}
 
@@ -46,7 +43,7 @@ export const repoRef = async (session: Session): Promise<RepoRef> => {
 		(await session.repoUrl())?.split("/").slice(-2) ??
 		[];
 	if (!owner || !repo) {
-		throw new TallyError(
+		throw cliCodes.error(
 			"E_NO_FORGE",
 			`the forge repository is unknown; set GITHUB_REPOSITORY or an ${session.remote} remote`,
 		);

@@ -13,6 +13,24 @@ const nodeBuiltins = `^(node:)?(${[
 
 const impureGlobals = ["process", "fetch", "require", "Buffer"];
 
+const codeLiterals = (error: string, warning: string) => [
+	{
+		selector:
+			"NewExpression[callee.name='TallyError'][arguments.0.type='Literal']",
+		message: error,
+	},
+	{
+		selector:
+			"NewExpression[callee.name='TallyError'][arguments.0.type='TemplateLiteral']",
+		message: error,
+	},
+	{
+		selector:
+			"Property[key.name='code'][value.type='Literal'][value.value=/^W_/]",
+		message: warning,
+	},
+];
+
 export default defineConfig([
 	{
 		extends: [base, vitest, stylistic],
@@ -57,6 +75,10 @@ export default defineConfig([
 					selector: "ImportExpression",
 					message: "core is pure: no dynamic imports.",
 				},
+				...codeLiterals(
+					"raise registered codes via coreCodes.error()",
+					"raise registered codes via coreCodes.warning()",
+				),
 			],
 		},
 	},

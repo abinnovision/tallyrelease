@@ -1,6 +1,6 @@
 import { attribution, matcher } from "./attribution.js";
 import { changelogPath } from "./changelog.js";
-import { TallyError } from "./errors.js";
+import { coreCodes } from "./codes.js";
 import { planWithFacts } from "./plan.js";
 
 import type { Warning } from "./errors.js";
@@ -58,7 +58,7 @@ export const explainUnit = async (
 	{ unit: id, ...opts }: ExplainOptions,
 ): Promise<UnitExplanation> => {
 	if (!workspace.units.some((u) => u.id === id)) {
-		throw new TallyError("E_UNIT_UNKNOWN", `unknown unit "${id}"`, {
+		throw coreCodes.error("E_UNIT_UNKNOWN", `unknown unit "${id}"`, {
 			unit: id,
 		});
 	}

@@ -1,8 +1,8 @@
-import { TallyError } from "@tallyrelease/core";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
+import { cliCodes } from "../codes.js";
 import { gitOk, git as run } from "./exec.js";
 
 import type { Env } from "../ci/github-env.js";
@@ -200,7 +200,7 @@ export const gitWriter = (
 			}
 
 			if (current !== undefined && opts?.force !== true) {
-				throw new TallyError(
+				throw cliCodes.error(
 					"E_TAG_EXISTS",
 					`tag "${name}" exists at ${current}, not at ${sha}`,
 					{ tag: name, sha: current, expected: sha },
@@ -231,7 +231,7 @@ export const gitWriter = (
 			}
 
 			if (result.stdout.includes("(stale info)")) {
-				throw new TallyError(
+				throw cliCodes.error(
 					"E_PUSH_LEASE",
 					`push rejected, a remote ref moved since it was read: ${refspecs.join(" ")}`,
 					{ refspecs },
@@ -239,7 +239,7 @@ export const gitWriter = (
 			}
 
 			if (result.stdout.includes("(already exists)")) {
-				throw new TallyError(
+				throw cliCodes.error(
 					"E_TAG_EXISTS",
 					`push rejected, a tag exists on the remote at another commit: ${refspecs.join(" ")}`,
 					{ refspecs },

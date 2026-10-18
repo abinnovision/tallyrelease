@@ -1,9 +1,4 @@
-import {
-	computePlan,
-	loadWorkspace,
-	TallyError,
-	withReleased,
-} from "@tallyrelease/core";
+import { computePlan, loadWorkspace, withReleased } from "@tallyrelease/core";
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import {
 	basename,
@@ -15,6 +10,7 @@ import {
 } from "node:path";
 
 import { githubContext } from "./ci/github-env.js";
+import { cliCodes } from "./codes.js";
 import { loadConfig } from "./config/load.js";
 import { githubForge } from "./forge/github.js";
 import { gitBlob, gitTreeFs, nodeFs } from "./fs-ctx.js";
@@ -165,7 +161,7 @@ export const createSession = (deps: Deps, opts: GlobalOptions): Session => {
 
 	const assertRepoRoot = async () => {
 		if (!existsSync(root)) {
-			throw new TallyError(
+			throw cliCodes.error(
 				"E_CWD_MISSING",
 				`directory "${root}" does not exist`,
 				{
@@ -180,14 +176,14 @@ export const createSession = (deps: Deps, opts: GlobalOptions): Session => {
 			{ debug, env: deps.env },
 		);
 		if (result.code !== 0) {
-			throw new TallyError("E_NOT_A_REPO", `not a git repository: ${root}`, {
+			throw cliCodes.error("E_NOT_A_REPO", `not a git repository: ${root}`, {
 				cwd: root,
 			});
 		}
 
 		const [toplevel = "", prefix = ""] = result.stdout.split("\n");
 		if (prefix !== "") {
-			throw new TallyError(
+			throw cliCodes.error(
 				"E_NOT_REPO_ROOT",
 				`"${root}" is below the repository root "${toplevel}"; run from the root or pass --cwd`,
 				{ cwd: root, toplevel },
@@ -296,7 +292,7 @@ export const createSession = (deps: Deps, opts: GlobalOptions): Session => {
 					rel.startsWith(`..${sep}`) ||
 					isAbsolute(rel)
 				) {
-					throw new TallyError(
+					throw cliCodes.error(
 						"E_PATH_OUTSIDE_ROOT",
 						`"${path}" is outside the repository root`,
 						{ path },

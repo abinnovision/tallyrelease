@@ -3,6 +3,7 @@ import { writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 import { appendStepSummary } from "../ci/summary.js";
+import { cliCodes } from "../codes.js";
 import { alignColumns } from "../output/columns.js";
 import { count } from "../output/count.js";
 import { branchName } from "../session.js";
@@ -12,9 +13,17 @@ import { version } from "../version.js";
 import type { RepoGit } from "../git/reader.js";
 import type { Session } from "../session.js";
 import type { ShadowRow } from "../shadow/compare.js";
-import type { Plan, Warning } from "@tallyrelease/core";
+import type {
+	CodeOf,
+	coreCodes,
+	ErrorCode,
+	Plan,
+	Warning,
+} from "@tallyrelease/core";
 
-const CAP_ERRORS = new Set(["E_CAP", "E_CAP_BASE"]);
+const CAP_ERRORS: ReadonlySet<string> = new Set<
+	ErrorCode<CodeOf<typeof coreCodes>>
+>(["E_CAP", "E_CAP_BASE"]);
 
 const short = (sha: string | null) => sha?.slice(0, 7) ?? "-";
 
@@ -38,7 +47,7 @@ const readJson = (
 	try {
 		value = JSON.parse(content);
 	} catch (error) {
-		throw new TallyError(
+		throw cliCodes.error(
 			"E_SHADOW_INPUT",
 			`cannot parse "${path}": ${error instanceof Error ? error.message : String(error)}`,
 			{ path },
@@ -49,7 +58,7 @@ const readJson = (
 		!isObject(value) ||
 		(strings && Object.values(value).some((v) => typeof v !== "string"))
 	) {
-		throw new TallyError(
+		throw cliCodes.error(
 			"E_SHADOW_INPUT",
 			`"${path}" must be a JSON object${strings ? " of version strings" : ""}`,
 			{ path },
@@ -235,10 +244,12 @@ const missingInputs = (
 	[flags.manifest, flags.rpConfig]
 		.filter((path) => path !== undefined)
 		.filter((path) => session.readAt(head, path) === undefined)
-		.map((path) => ({
-			code: "W_SHADOW_INPUT_MISSING",
-			message: `"${path}" does not exist at ${short(head)}`,
-		}));
+		.map((path) =>
+			cliCodes.warning(
+				"W_SHADOW_INPUT_MISSING",
+				`"${path}" does not exist at ${short(head)}`,
+			),
+		);
 
 export interface ShadowFlags {
 	manifest?: string;
@@ -285,7 +296,7 @@ export const shadow = async (
 			await session.workspace();
 		}
 
-		throw new TallyError(
+		throw cliCodes.error(
 			"E_HEAD_UNRESOLVED",
 			`"${flags.head ?? "HEAD"}" does not resolve to a commit`,
 			{ ref: flags.head },
@@ -325,10 +336,12 @@ export const shadow = async (
 	}
 
 	if (report.skipped) {
-		report.warnings.push({
-			code: "W_SHADOW_SKIPPED",
-			message: `shadow skipped (${report.skipped.reason}): ${report.skipped.message}`,
-		});
+		report.warnings.push(
+			cliCodes.warning(
+				"W_SHADOW_SKIPPED",
+				`shadow skipped (${report.skipped.reason}): ${report.skipped.message}`,
+			),
+		);
 	}
 
 	session.warn(report.warnings);
@@ -336,7 +349,7 @@ export const shadow = async (
 
 	const open = unlabelled(report.rows).length;
 	if (flags.strict && open > 0) {
-		throw new TallyError(
+		throw cliCodes.error(
 			"E_SHADOW_MISMATCH",
 			`${count(open, "unlabelled row")} (--strict)`,
 		);

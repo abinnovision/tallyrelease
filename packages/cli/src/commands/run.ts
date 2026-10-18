@@ -1,10 +1,10 @@
 import {
 	computePlan,
 	releasedFromTags,
-	TallyError,
 	withReleased,
 } from "@tallyrelease/core";
 
+import { cliCodes } from "../codes.js";
 import { effectSkipped } from "./effects.js";
 import { planOptions, releasedForge, writePlan } from "./plan.js";
 import { releasePrs } from "./pr.js";
@@ -46,7 +46,7 @@ export const run = async (session: Session, flags: RunFlags): Promise<void> => {
 				});
 				const { base, warnings } = setup.base;
 				if (base === null && warnings.some((w) => w.code === "W_FORGE_ERROR")) {
-					throw new TallyError(
+					throw cliCodes.error(
 						"E_BASE_REQUIRED",
 						`the build base is unknown because the forge failed (${warnings.map((w) => w.message).join("; ")}); re-run when the forge is healthy`,
 					);

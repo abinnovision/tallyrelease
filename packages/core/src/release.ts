@@ -1,6 +1,8 @@
+import { coreCodes } from "./codes.js";
 import { normalizeRoot } from "./discover.js";
 import { compare, maxLevel, uniqueSorted } from "./util.js";
 
+import type { CodeOf, WarningCode } from "./codes.js";
 import type { ReleasePrMode, TallyConfig, VersionTemplate } from "./config.js";
 import type { Warning } from "./errors.js";
 import type {
@@ -103,19 +105,23 @@ const pickReleaseAs = <V>(
 					? `is not a ${unit.scheme} version`
 					: releaseAsProblem(scheme, version, from);
 			if (problem !== undefined || version === undefined) {
-				warnings.push({
-					code: "W_RELEASE_AS_INVALID",
-					message: `unit "${unit.id}": Release-As "${raw}"${at(sha)} ${problem ?? ""}; ignored`,
-					unit: unit.id,
-				});
+				warnings.push(
+					coreCodes.warning(
+						"W_RELEASE_AS_INVALID",
+						`unit "${unit.id}": Release-As "${raw}"${at(sha)} ${problem ?? ""}; ignored`,
+						{ unit: unit.id },
+					),
+				);
 			} else if (!winner) {
 				winner = { ...(sha === undefined ? {} : { sha }), raw, version };
 			} else if (scheme.compare(version, winner.version) !== 0) {
-				warnings.push({
-					code: "W_RELEASE_AS_CONFLICT",
-					message: `unit "${unit.id}": Release-As "${winner.raw}"${at(winner.sha)} wins over "${raw}"${at(sha)}`,
-					unit: unit.id,
-				});
+				warnings.push(
+					coreCodes.warning(
+						"W_RELEASE_AS_CONFLICT",
+						`unit "${unit.id}": Release-As "${winner.raw}"${at(winner.sha)} wins over "${raw}"${at(sha)}`,
+						{ unit: unit.id },
+					),
+				);
 			}
 		}
 	}
@@ -198,11 +204,11 @@ const initialBelowPrerelease = <V>(
 	return scheme.compare(initial, version) > 0
 		? []
 		: [
-				{
-					code: "W_INITIAL_BELOW_PRERELEASE",
-					message: `unit "${facts.id}": initial version ${scheme.format(initial)} does not exceed prerelease tag "${highest.name}"`,
-					unit: facts.id,
-				},
+				coreCodes.warning(
+					"W_INITIAL_BELOW_PRERELEASE",
+					`unit "${facts.id}": initial version ${scheme.format(initial)} does not exceed prerelease tag "${highest.name}"`,
+					{ unit: facts.id },
+				),
 			];
 };
 
@@ -475,12 +481,15 @@ export const releaseAsWarnings = (
 		units.filter((u) => u.version !== "none").map((u) => u.id),
 	);
 	const warnings = new Map<string, Warning>();
-	const warn = (code: string, message: string, unit?: string) => {
-		warnings.set(`${code}\0${message}`, {
-			code,
-			message,
-			...(unit === undefined ? {} : { unit }),
-		});
+	const warn = (
+		code: WarningCode<CodeOf<typeof coreCodes>>,
+		message: string,
+		unit?: string,
+	) => {
+		warnings.set(
+			`${code}\0${message}`,
+			coreCodes.warning(code, message, unit === undefined ? {} : { unit }),
+		);
 	};
 
 	for (const { changes } of ranges) {

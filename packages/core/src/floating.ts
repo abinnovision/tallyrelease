@@ -1,4 +1,4 @@
-import { TallyError } from "./errors.js";
+import { coreCodes } from "./codes.js";
 import { compileTagFormat } from "./tags.js";
 
 import type { Unit, VersionScheme } from "./plugin.js";
@@ -13,7 +13,7 @@ export const validateFloating = (formats: readonly string[]): void => {
 			([, token]) => !TOKENS.has(token ?? ""),
 		);
 		if (unknown) {
-			throw new TallyError(
+			throw coreCodes.error(
 				"E_CONFIG",
 				`floating tag format "${format}" uses unknown token "${unknown[0]}"; use {id}, {major} or {minor}`,
 				{ format },

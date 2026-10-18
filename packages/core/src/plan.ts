@@ -1,5 +1,6 @@
 import { computeAffected } from "./affected.js";
 import { checkLimits, matchBranch } from "./branches.js";
+import { coreCodes } from "./codes.js";
 import { collectPlanFacts } from "./facts.js";
 import { propagate } from "./propagate.js";
 import {
@@ -53,19 +54,19 @@ const lineWarnings = (
 ): Warning[] => {
 	if (!line) {
 		return [
-			{
-				code: "W_NO_BRANCH_RULE",
-				message: `no branch rule matches "${branch}"; versions are null`,
-			},
+			coreCodes.warning(
+				"W_NO_BRANCH_RULE",
+				`no branch rule matches "${branch}"; versions are null`,
+			),
 		];
 	}
 
 	return workspace.units.every((u) => u.version === "none")
 		? [
-				{
-					code: "W_NO_RELEASED_UNITS",
-					message: `branch rule "${line.rule}" matches, but no unit is released`,
-				},
+				coreCodes.warning(
+					"W_NO_RELEASED_UNITS",
+					`branch rule "${line.rule}" matches, but no unit is released`,
+				),
 			]
 		: [];
 };

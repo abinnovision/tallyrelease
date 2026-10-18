@@ -1,5 +1,5 @@
 import { corePlugin } from "./builtin.js";
-import { TallyError } from "./errors.js";
+import { coreCodes } from "./codes.js";
 
 import type { Plugin, VersionScheme } from "./plugin.js";
 
@@ -30,7 +30,7 @@ export const schemeRegistry = (
 	for (const { plugin, name, scheme } of list) {
 		const owner = owners.get(name);
 		if (owner !== undefined) {
-			throw new TallyError(
+			throw coreCodes.error(
 				"E_SCHEME_CLASH",
 				`scheme "${name}" is registered by "${owner}" and "${plugin}"`,
 				{ scheme: name, plugins: [owner, plugin] },

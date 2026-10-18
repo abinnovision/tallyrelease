@@ -1,4 +1,4 @@
-import { TallyError } from "./errors.js";
+import { coreCodes } from "./codes.js";
 
 import type { StandardSchemaV1 } from "@standard-schema/spec";
 
@@ -216,7 +216,7 @@ export const assertPlugin = (plugin: {
 }): void => {
 	const name = String(plugin.name);
 	if (plugin.apiVersion !== PLUGIN_API_VERSION) {
-		throw new TallyError(
+		throw coreCodes.error(
 			"E_PLUGIN_API",
 			`plugin "${name}" uses API version ${String(plugin.apiVersion)}, supported is ${String(PLUGIN_API_VERSION)}`,
 			{ plugin: name, apiVersion: plugin.apiVersion },
@@ -224,7 +224,7 @@ export const assertPlugin = (plugin: {
 	}
 
 	if (typeof plugin.name !== "string" || !PLUGIN_NAME.test(plugin.name)) {
-		throw new TallyError(
+		throw coreCodes.error(
 			"E_PLUGIN_NAME",
 			`plugin name "${name}" must match ${PLUGIN_NAME.source}`,
 			{ plugin: name },

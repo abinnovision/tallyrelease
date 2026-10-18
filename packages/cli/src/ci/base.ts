@@ -1,4 +1,4 @@
-import { TallyError } from "@tallyrelease/core";
+import { cliCodes } from "../codes.js";
 
 import type { Env, GithubContext } from "./github-env.js";
 import type { Forge } from "../forge/forge.js";
@@ -40,31 +40,30 @@ const field = (value: unknown, key: string): unknown =>
 		? (value as Record<string, unknown>)[key]
 		: undefined;
 
-const noForge: Warning = {
-	code: "W_NO_FORGE",
-	message: "no token for the forge; the last successful run is unknown",
-};
+const noForge: Warning = cliCodes.warning(
+	"W_NO_FORGE",
+	"no token for the forge; the last successful run is unknown",
+);
 
-const noWorkflowContext: Warning = {
-	code: "W_NO_WORKFLOW_CONTEXT",
-	message:
-		"GITHUB_REPOSITORY, GITHUB_WORKFLOW_REF or GITHUB_REF_NAME is missing; the last successful run is unknown",
-};
+const noWorkflowContext: Warning = cliCodes.warning(
+	"W_NO_WORKFLOW_CONTEXT",
+	"GITHUB_REPOSITORY, GITHUB_WORKFLOW_REF or GITHUB_REF_NAME is missing; the last successful run is unknown",
+);
 
 const forgeError = (error: unknown): Warning => {
 	const status = (error as { status?: unknown } | null)?.status;
 	const reason = error instanceof Error ? error.message : String(error);
 
-	return {
-		code: "W_FORGE_ERROR",
-		message: `forge request failed${typeof status === "number" ? ` (${String(status)})` : ""}: ${reason}; the last successful run is unknown`,
-	};
+	return cliCodes.warning(
+		"W_FORGE_ERROR",
+		`forge request failed${typeof status === "number" ? ` (${String(status)})` : ""}: ${reason}; the last successful run is unknown`,
+	);
 };
 
-const noLastSuccess: Warning = {
-	code: "W_NO_LAST_SUCCESS",
-	message: "no successful push run of this workflow on this branch",
-};
+const noLastSuccess: Warning = cliCodes.warning(
+	"W_NO_LAST_SUCCESS",
+	"no successful push run of this workflow on this branch",
+);
 
 export interface BuildBase {
 	base: string | null;
@@ -98,7 +97,7 @@ export const resolveBuildBase = async (
 	const local = async (ref: string, what: string) => {
 		const sha = await git.resolve(ref);
 		if (sha === undefined && (await git.isShallow())) {
-			throw new TallyError(
+			throw cliCodes.error(
 				"E_SHALLOW_BASE",
 				`${what} "${ref}" is missing in this shallow clone; fetch with fetch-depth: 0`,
 				{ ref },
@@ -111,7 +110,7 @@ export const resolveBuildBase = async (
 	const required = async (ref: string | undefined, what: string) => {
 		const sha = ref === undefined ? undefined : await local(ref, what);
 		if (sha === undefined) {
-			throw new TallyError(
+			throw cliCodes.error(
 				"E_BASE_UNRESOLVED",
 				`${what} "${ref ?? ""}" does not resolve to a commit`,
 				{ ref },
@@ -124,7 +123,7 @@ export const resolveBuildBase = async (
 	// A named sha that is not an ancestor may only be cut off by a shallow clone.
 	const shallowBase = async (ref: string, what: string) => {
 		if (await git.isShallow()) {
-			throw new TallyError(
+			throw cliCodes.error(
 				"E_SHALLOW_BASE",
 				`${what} "${ref}" has no history in common with HEAD in this shallow clone; fetch with fetch-depth: 0`,
 				{ ref },
@@ -234,7 +233,7 @@ export const resolveBuildBase = async (
 			const base = await git.mergeBase(head, target);
 			if (base === undefined) {
 				await shallowBase(target, "pull_request.base.sha");
-				throw new TallyError(
+				throw cliCodes.error(
 					"E_BASE_UNRESOLVED",
 					`no merge base of HEAD and "${target}"`,
 					{ ref: target },
