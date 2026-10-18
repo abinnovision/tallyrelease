@@ -1,6 +1,8 @@
 import { createServer } from "node:http";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
+import { memoryRepo } from "./harness/memory-repo.js";
+import { actionsEnv, runCli } from "./harness/run-cli.js";
 import { githubForge } from "../../src/forge/github.js";
 
 import type { IncomingHttpHeaders, Server } from "node:http";
@@ -100,6 +102,59 @@ describe("github forge", () => {
 		await expect(
 			forge.lastSuccessfulPushRuns({ ...query, workflow: "broken.yaml" }),
 		).rejects.toMatchObject({ status: 502 });
+	});
+
+	it("searches older pages of runs for a local ancestor", async () => {
+		const runs = "GET /repos/acme/repo/actions/workflows/ci.yaml/runs";
+		const page = (...shas: string[]) =>
+			[200, { workflow_runs: shas.map((head_sha) => ({ head_sha })) }] as [
+				number,
+				unknown,
+			];
+		const affected = async () => {
+			const result = await runCli(["affected", "--json"], {
+				...memoryRepo({
+					commits: [
+						{ id: "p0", files: { "tallyrelease.yaml": "units: {}" } },
+						{ id: "x", files: { a: "x" } },
+						{ id: "p1", parents: ["p0"], files: { a: "1" } },
+						{ id: "p2", files: { a: "2" } },
+					],
+				}),
+				env: { ...actionsEnv, GITHUB_TOKEN: "t" },
+				event: { name: "push", payload: { before: "0".repeat(40) } },
+				forge: githubForge({ token: "t", baseUrl }),
+			});
+			const doc = JSON.parse(result.stdout) as {
+				build: { base: string | null };
+				warnings: { code: string }[];
+			};
+
+			return {
+				base: doc.build.base,
+				warnings: doc.warnings.map((w) => w.code),
+				pages: requests.map((r) => r.query["page"]),
+			};
+		};
+
+		// After a history rewrite: "x" is not an ancestor, "gone" no longer exists.
+		routes = {
+			[`${runs}?page=1`]: page("x", "gone"),
+			[`${runs}?page=2`]: page("p1", "p0"),
+		};
+		expect(await affected()).toEqual({
+			base: "p1",
+			warnings: [],
+			pages: ["1", "2"],
+		});
+
+		requests = [];
+		routes = { [runs]: page("x") };
+		expect(await affected()).toEqual({
+			base: null,
+			warnings: ["W_NO_LAST_SUCCESS"],
+			pages: ["1", "2", "3", "4", "5"],
+		});
 	});
 
 	describe("release effects (G38)", () => {

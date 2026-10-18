@@ -76,7 +76,7 @@ export const fakeForge = (
 		lastSuccessfulPushRuns: async (query) => {
 			queries.push(query);
 
-			return await Promise.resolve(runs);
+			return await Promise.resolve((query.page ?? 1) === 1 ? runs : []);
 		},
 		releasePrs: async (_repo, { base, state }) => {
 			const prs = remote.prs

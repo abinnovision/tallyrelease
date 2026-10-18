@@ -7,6 +7,8 @@ export interface WorkflowRunQuery extends RepoRef {
 	/** Workflow file name, for example `ci.yaml`. */
 	workflow: string;
 	branch: string;
+	/** 1-based page of runs, defaults to 1. */
+	page?: number;
 }
 
 /** Labels of release PRs; `setLabel` keeps one of them per PR. */
@@ -54,7 +56,7 @@ export interface NewRelease {
 
 /** Code host API used by the cli. */
 export interface Forge {
-	/** Head shas of successful push runs of a workflow on a branch, newest first. */
+	/** Head shas of successful push runs of a workflow on a branch, newest first; empty past the last page. */
 	lastSuccessfulPushRuns: (query: WorkflowRunQuery) => Promise<string[]>;
 	/** PRs labelled `tallyrelease: pending` on a base branch, from heads in this repository. */
 	releasePrs: (repo: RepoRef, query: ReleasePrQuery) => Promise<ReleasePr[]>;
