@@ -6,7 +6,7 @@ import { renderChangelogSection, updateChangelog } from "./changelog.js";
 import { conventionalCommits, parseCommit } from "./conventional.js";
 import { encodeMarker } from "./marker.js";
 import { semver } from "./semver.js";
-import { memoryCtx } from "./testing.js";
+import { memoryCtx } from "./testing/index.js";
 import { history } from "../test/fixtures/release-please-history.js";
 
 import type { ChangelogInput } from "./changelog.js";

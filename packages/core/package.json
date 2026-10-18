@@ -22,10 +22,16 @@
 			"default": "./dist/index.js"
 		},
 		"./testing": {
-			"types": "./dist/testing.d.ts",
-			"development": "./src/testing.ts",
-			"import": "./dist/testing.js",
-			"default": "./dist/testing.js"
+			"types": "./dist/testing/index.d.ts",
+			"development": "./src/testing/index.ts",
+			"import": "./dist/testing/index.js",
+			"default": "./dist/testing/index.js"
+		},
+		"./testing/conformance": {
+			"types": "./dist/testing/conformance.d.ts",
+			"development": "./src/testing/conformance.ts",
+			"import": "./dist/testing/conformance.js",
+			"default": "./dist/testing/conformance.js"
 		}
 	},
 	"files": [
@@ -88,9 +94,14 @@
 				"default": "./dist/index.js"
 			},
 			"./testing": {
-				"types": "./dist/testing.d.ts",
-				"import": "./dist/testing.js",
-				"default": "./dist/testing.js"
+				"types": "./dist/testing/index.d.ts",
+				"import": "./dist/testing/index.js",
+				"default": "./dist/testing/index.js"
+			},
+			"./testing/conformance": {
+				"types": "./dist/testing/conformance.d.ts",
+				"import": "./dist/testing/conformance.js",
+				"default": "./dist/testing/conformance.js"
 			}
 		},
 		"npm": true

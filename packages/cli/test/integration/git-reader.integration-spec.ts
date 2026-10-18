@@ -1,4 +1,4 @@
-import { gitReaderConformance } from "@tallyrelease/core/testing";
+import { gitReaderConformance } from "@tallyrelease/core/testing/conformance";
 import { afterAll } from "vitest";
 
 import { createRepo, removeTmpDirs } from "./harness/git-repo.js";

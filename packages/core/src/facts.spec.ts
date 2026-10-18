@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { collectPlanFacts } from "./facts.js";
-import { memoryFs, memoryGit } from "./testing.js";
+import { memoryFs, memoryGit } from "./testing/index.js";
 import { loadWorkspace } from "./workspace.js";
 
 import type { Change, IntentSource } from "./plugin.js";

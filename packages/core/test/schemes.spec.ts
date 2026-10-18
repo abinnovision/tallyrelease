@@ -5,7 +5,7 @@ import { loadWorkspace } from "../src/index.js";
 import { PLUGIN_API_VERSION } from "../src/plugin.js";
 import { collectSchemes, schemeRegistry } from "../src/schemes.js";
 import { semver } from "../src/semver.js";
-import { memoryFs } from "../src/testing.js";
+import { memoryFs } from "../src/testing/index.js";
 
 import type { Plugin } from "../src/plugin.js";
 

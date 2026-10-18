@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { conventionalCommits, parseCommit } from "./conventional.js";
-import { memoryCtx } from "./testing.js";
+import { memoryCtx } from "./testing/index.js";
 
 import type { RawCommit } from "./plugin.js";
 
