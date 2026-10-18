@@ -4,7 +4,7 @@
 	"noUpdateNotifier": true,
 	"tasks": {
 		"fix": {
-			"dependsOn": ["format:fix", "lint:fix", "sort:fix"]
+			"dependsOn": ["format:fix", "lint:fix", "sort:fix", "docs:fix"]
 		},
 		"check": {
 			"dependsOn": [
@@ -12,7 +12,8 @@
 				"lint:check",
 				"sort:check",
 				"typecheck",
-				"check:purity"
+				"check:purity",
+				"docs:check"
 			]
 		},
 		"format:fix": {},
@@ -41,6 +42,14 @@
 		"test-integration": {
 			"dependsOn": ["^build"],
 			"inputs": ["src/**/*", "test/**/*"]
+		},
+		"docs:fix": {
+			"dependsOn": ["build"],
+			"cache": false
+		},
+		"docs:check": {
+			"dependsOn": ["build"],
+			"inputs": ["scripts/**/*", "$TURBO_ROOT$/docs/configuration.md"]
 		},
 		"check:purity": {
 			"dependsOn": ["^build"],

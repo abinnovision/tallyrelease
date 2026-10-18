@@ -1,0 +1,123 @@
+# Configuration reference
+
+<!-- Generated from the JSON schema by packages/cli/scripts/generate-config-docs.mjs. Run `yarn fix` to update. -->
+
+tallyrelease reads `tallyrelease.yaml` at the repository root. The JSON schema is exported as `@tallyrelease/cli/tallyrelease.schema.json`. `<name>` stands for a key you choose and `[]` for each list item.
+
+## `plugins`
+
+Enabled plugins and their options, run in the listed order. Only listed plugins run.
+
+Type: map of object or null.
+
+## `defaults`
+
+Defaults applied to every unit.
+
+Type: object.
+
+| Key                       | Type                                 | Required | Description                                                                                                                                                    |
+| ------------------------- | ------------------------------------ | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `defaults.release`        | boolean                              | no       | Release all units unless a unit sets release: false. Default false.                                                                                            |
+| `defaults.tagFormat`      | string                               | no       | Tag template. Defaults to {id}-v{version}, or v{version} for the root unit.                                                                                    |
+| `defaults.propagate`      | `"auto"` or `"patch"` or `"rebuild"` | no       | Policy for this unit when a dependency is released: patch (at least a patch bump), rebuild (rebuild only) or auto (patch if the edge is pinned, else rebuild). |
+| `defaults.initialVersion` | string                               | no       | Version of the first release, parsed by the unit's scheme. Defaults to the scheme's initial version (semver: 1.0.0).                                           |
+| `defaults.releasePr`      | `"shared"` or `"separate"`           | no       | Release PR of every release item: shared (default) or separate.                                                                                                |
+
+## `units`
+
+Unit overlays keyed by root path or glob. A root without a discovered unit becomes a config-only unit. In a glob key, * matches one path segment and skips dot directories; globs never create units, cannot set id, include, exclude or versionFiles, and exact keys win over them per field.
+
+Type: map of object.
+
+| Key                                   | Type                                 | Required | Description                                                                                                                                                    |
+| ------------------------------------- | ------------------------------------ | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `units.<name>.id`                     | string                               | no       | Unit id (letters, digits, dot, underscore, dash). Defaults to the discovered id, or the repo name for the root unit.                                           |
+| `units.<name>.include`                | list of string                       | no       | Globs of files owned by the unit. Replaces the default (the unit root).                                                                                        |
+| `units.<name>.exclude`                | list of string                       | no       | Globs excluded from the unit, appended to the default (roots of nested units).                                                                                 |
+| `units.<name>.release`                | boolean                              | no       | Whether the unit is versioned and tagged. Default false (build-only).                                                                                          |
+| `units.<name>.version`                | `"file"` or `"tag"`                  | no       | Where a released unit's version lives. file: version file written by the plugin. tag: git tags only. Defaults to the plugin's version source.                  |
+| `units.<name>.scheme`                 | string                               | no       | Versioning scheme. Defaults to semver.                                                                                                                         |
+| `units.<name>.tagFormat`              | string                               | no       | Tag template. Defaults to {id}-v{version}, or v{version} for the root unit.                                                                                    |
+| `units.<name>.propagate`              | `"auto"` or `"patch"` or `"rebuild"` | no       | Policy for this unit when a dependency is released: patch (at least a patch bump), rebuild (rebuild only) or auto (patch if the edge is pinned, else rebuild). |
+| `units.<name>.tags`                   | list of string                       | no       | Labels for filtering with affected --tag (letters, digits, dot, underscore, dash), for example docker or npm.                                                  |
+| `units.<name>.initialVersion`         | string                               | no       | Version of the first release, parsed by the unit's scheme. Defaults to the scheme's initial version (semver: 1.0.0).                                           |
+| `units.<name>.releasePr`              | `"shared"` or `"separate"`           | no       | Release PR of this ungrouped unit; set it on the group for grouped units. Defaults to defaults.releasePr.                                                      |
+| `units.<name>.versionFiles`           | list of object                       | no       | Text files updated on release: matches of pattern rendering a version from the previous release up to the next are replaced with the next version.             |
+| `units.<name>.versionFiles[].file`    | string                               | yes      | File relative to the repository root.                                                                                                                          |
+| `units.<name>.versionFiles[].pattern` | string                               | yes      | Text holding the version, with {id}, {version}, {major}, {minor} and {patch}; needs a version token and literal text.                                          |
+
+## `deps`
+
+Extra dependency edges between units.
+
+Type: list of object.
+
+| Key             | Type    | Required | Description                                  |
+| --------------- | ------- | -------- | -------------------------------------------- |
+| `deps[].from`   | string  | yes      | Id of the dependency.                        |
+| `deps[].to`     | string  | yes      | Id of the dependent unit.                    |
+| `deps[].pinned` | boolean | no       | Whether the dependent pins an exact version. |
+| `deps[].reason` | string  | no       | Why the edge exists.                         |
+
+## `ignore`
+
+Globs of files that never affect any unit, for example docs.
+
+Type: list of string.
+
+## `globalInputs`
+
+Globs of files whose change affects all units, unioned with plugin defaults.
+
+Type: list of string.
+
+## `branches`
+
+Branch rules; the first rule matching the branch wins.
+
+Type: list of object.
+
+| Key                  | Type                           | Required | Description                                                                                                    |
+| -------------------- | ------------------------------ | -------- | -------------------------------------------------------------------------------------------------------------- |
+| `branches[].name`    | string                         | yes      | Branch name pattern; supports * and the captures {major} and {minor}.                                          |
+| `branches[].line`    | `"default"` or `"maintenance"` | yes      | Release line of matching branches.                                                                             |
+| `branches[].channel` | string                         | no       | Prerelease channel (letters, digits, dash); may use {major} and {minor} captured by name.                      |
+| `branches[].unit`    | string                         | no       | Maintenance rules: ungrouped released unit whose version must be on the line captured by name. Excludes group. |
+| `branches[].group`   | string                         | no       | Maintenance rules: fixed group whose version must be on the line captured by name. Excludes unit.              |
+
+## `bumps`
+
+How commits map to bump levels.
+
+Type: object.
+
+| Key                       | Type                                       | Required | Description                                                                                                                                                             |
+| ------------------------- | ------------------------------------------ | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bumps.types`             | map of `"major"` or `"minor"` or `"patch"` | no       | Commit type to bump level, merged over feat: minor, fix: patch, perf: patch, revert: patch. Breaking changes bump major.                                                |
+| `bumps.preMajor`          | object                                     | no       | Bump levels for breaking changes and feat while the major version is 0. Default minor for both.                                                                         |
+| `bumps.preMajor.breaking` | `"major"` or `"minor"` or `"patch"`        | no       | Bump level for breaking changes. Default minor.                                                                                                                         |
+| `bumps.preMajor.feat`     | `"major"` or `"minor"` or `"patch"`        | no       | Bump level for feat. Default minor.                                                                                                                                     |
+| `bumps.absorbed`          | `"patch"` or `"minor"`                     | no       | Level a released unit gets from bump-producing changes absorbed from unreleased dependencies: patch (default) or minor (feat and breaking give minor, fix gives patch). |
+
+## `groups`
+
+Fixed groups by name (unit id characters): members release together with one version. Each group needs units, tags or both.
+
+Type: map of object.
+
+| Key                       | Type                       | Required | Description                                                                                    |
+| ------------------------- | -------------------------- | -------- | ---------------------------------------------------------------------------------------------- |
+| `groups.<name>.units`     | list of string             | no       | Member unit ids.                                                                               |
+| `groups.<name>.tags`      | list of string             | no       | Selects released units with any of these tags.                                                 |
+| `groups.<name>.releasePr` | `"shared"` or `"separate"` | no       | Release PR of the release item: shared (one PR for all shared items) or separate (its own PR). |
+
+## `tags`
+
+Tags beyond the version tag of each release.
+
+Type: object.
+
+| Key             | Type           | Required | Description                                                                                                 |
+| --------------- | -------------- | -------- | ----------------------------------------------------------------------------------------------------------- |
+| `tags.floating` | list of string | no       | Floating tag formats moved to the highest stable release they render for; tokens {id}, {major} and {minor}. |

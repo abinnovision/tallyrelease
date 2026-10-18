@@ -27,6 +27,8 @@ units:
 
 Units are build-only unless opted in with `release: true` (per unit) or `defaults.release: true`.
 
+Every key is listed in the [configuration reference](../../docs/configuration.md).
+
 Tags label units so CI can split the build set by kind:
 
 ```yaml
