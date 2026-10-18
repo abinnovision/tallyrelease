@@ -48,6 +48,8 @@ units:
 
 Global flags: `--cwd <dir>` (repository root), `--config <file>` (default `tallyrelease.yaml`), `--token <token>` (forge token, default `GITHUB_TOKEN`), `--verbose`.
 
+Errors print as `error[E_*]` and warnings as `warning[W_*]`. The [error and warning reference](../../docs/errors.md) lists the cause and fix of each code.
+
 - `tallyrelease check` validates config, plugins, units, graph and release config; with released units it also checks the repository's tags.
 - `tallyrelease graph [--format text|json|mermaid] [--json]` prints units and edges.
 - `tallyrelease affected [--base <ref>] [--format text|json|tsv] [--json] [--out <file>] [--github-output] [--tag <tag>]` computes the build set. `--out` writes the affected document as JSON, `--github-output` appends outputs to `$GITHUB_OUTPUT`. `--tag` (repeatable) keeps units with any of the given tags.
