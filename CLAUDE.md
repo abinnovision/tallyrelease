@@ -29,7 +29,7 @@ Every `make` target runs `tools/<target>.sh`; ordering and flags live in the scr
 
 - Core does no I/O. It reads files and git only through injected `ReadonlyFs`, `Ctx` and `GitReader`.
 - Core `src/**` (except specs) must not import Node builtins or `@tallyrelease/cli`, and must not use `process`, `fetch`, `require` or `Buffer` (ESLint). Core `tsconfig.build.json` sets `"types": []`.
-- `yarn workspace @tallyrelease/core check:purity` bundles `src/index.ts` with esbuild for the neutral platform and fails on any Node builtin, including transitive ones. It runs as part of `yarn check`. `test/purity/violation.ts` is a deliberate violation used by `test/purity.spec.ts`.
+- `yarn workspace @tallyrelease/core check:purity` runs `tools/check-purity.mjs`, which bundles `src/index.ts` with esbuild for the neutral platform and fails on any Node builtin, including transitive ones. It runs as part of `yarn check`. `test/purity/violation.ts` is a deliberate violation used by `test/purity.spec.ts`.
 - Built-in plugins (`packages/cli/src/plugins/**`) use only `@tallyrelease/core` public API and other plugin files; lint forbids Node builtins and relative imports out of the plugin folder, and `yarn workspace @tallyrelease/cli check:purity` bundles `src/plugins/index.ts` the same way.
 
 ## Testing

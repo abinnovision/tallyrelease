@@ -33,7 +33,7 @@
 	],
 	"scripts": {
 		"build": "tsc --build tsconfig.build.json && node scripts/generate-schemas.mjs",
-		"check:purity": "node ../core/scripts/check-purity.mjs src/plugins/index.ts",
+		"check:purity": "node ../../tools/check-purity.mjs src/plugins/index.ts",
 		"format:check": "prettier --check '{{src,test}/**/*,*}.{{t,j}s{,x},json{,5},md,y{,a}ml,css,html,gql,graphql}'",
 		"format:fix": "prettier --write '{{src,test}/**/*,*}.{{t,j}s{,x},json{,5},md,y{,a}ml,css,html,gql,graphql}'",
 		"lint:check": "eslint '{{src,test}/**/*,*}.{t,j}s{,x}'",

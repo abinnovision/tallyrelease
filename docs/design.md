@@ -835,7 +835,7 @@ Core stays free of I/O so that `computePlan()` is deterministic and testable. En
 
 - Lint (`packages/core/eslint.config.ts`): `src/**/*.ts` (except specs) may not import Node builtins (`fs`, `path`, `os`, `child_process`, `net`, `http`, `https`, `http2`, `dgram`, `dns`, `tls`, `worker_threads`, `cluster`, `process`, `vm`) or `@tallyrelease/cli`, and may not use the globals `process`, `fetch`, `require`, `Buffer`.
 - Types: core `tsconfig.build.json` sets `"types": []`.
-- Bundle check: `check:purity` (`packages/core/scripts/check-purity.mjs`) bundles `src/index.ts` with esbuild for `--platform=neutral`. Any Node builtin import fails, including imports pulled in by dependencies, which lint cannot see. It runs in turbo `check` and CI. `test/purity.spec.ts` proves the check fails on a `node:fs` import (`test/purity/violation.ts`).
+- Bundle check: `check:purity` (`tools/check-purity.mjs`) bundles `src/index.ts` with esbuild for `--platform=neutral`. Any Node builtin import fails, including imports pulled in by dependencies, which lint cannot see. It runs in turbo `check` and CI. `test/purity.spec.ts` proves the check fails on a `node:fs` import (`test/purity/violation.ts`).
 
 Built-in plugins in `packages/cli/src/plugins/**` use the public API only. Lint there forbids Node builtins, the same globals, and relative imports that leave `src/plugins/**`; plugins import only `@tallyrelease/core` and other plugin files.
 
