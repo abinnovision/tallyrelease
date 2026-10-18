@@ -170,6 +170,16 @@ describe("git writer (E30)", () => {
 		expect(remote(BRANCH)).toBe("");
 	});
 
+	it("pushes to the configured remote", async () => {
+		const { dir, head, remote } = setup();
+		git(dir, "remote", "rename", "origin", "upstream");
+
+		await gitWriter(dir, undefined, { remote: "upstream" }).push([
+			`${head}:${BRANCH}`,
+		]);
+		expect(remote(BRANCH)).toBe(head);
+	});
+
 	it("sends the token as the only auth header", async () => {
 		const { dir, writer } = setup();
 		const auth: string[][] = [];

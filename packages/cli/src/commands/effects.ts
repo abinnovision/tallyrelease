@@ -48,7 +48,7 @@ export const repoRef = async (session: Session): Promise<RepoRef> => {
 	if (!owner || !repo) {
 		throw new TallyError(
 			"E_NO_FORGE",
-			"the forge repository is unknown; set GITHUB_REPOSITORY or an origin remote",
+			`the forge repository is unknown; set GITHUB_REPOSITORY or an ${session.remote} remote`,
 		);
 	}
 

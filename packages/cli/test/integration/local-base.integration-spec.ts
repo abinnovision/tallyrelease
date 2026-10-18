@@ -80,6 +80,24 @@ describe("local merge base (G29)", () => {
 		});
 	});
 
+	it("diffs against the HEAD of --remote", async () => {
+		const { dir, sha } = createRepo(dag);
+		git(dir, "update-ref", "refs/remotes/upstream/main", sha("c0"));
+		git(
+			dir,
+			"symbolic-ref",
+			"refs/remotes/upstream/HEAD",
+			"refs/remotes/upstream/main",
+		);
+
+		const text = await runCli(["affected", "--remote", "upstream"], {
+			cwd: dir,
+		});
+		expect(text.stdout.split("\n")[0]).toBe(
+			`base  ${sha("c0").slice(0, 7)} (merge base with upstream/main)`,
+		);
+	});
+
 	it("uses local main without a remote, else builds everything", async () => {
 		const { dir, sha } = createRepo(dag);
 		expect(await affected(dir)).toEqual({
