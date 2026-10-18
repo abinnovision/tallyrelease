@@ -14,7 +14,7 @@ import type { PlanChange } from "./plan.js";
 import type { Change } from "./plugin.js";
 
 // Repository URL in the release-please written CHANGELOG sections.
-const REPO = "https://github.com/abinnovision/tally-release";
+const REPO = "https://github.com/abinnovision/tallyrelease";
 
 /** The plan change of a commit, as the conventional-commits source yields it. */
 const change = (sha: string, message: string): PlanChange => {
