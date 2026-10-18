@@ -42,14 +42,14 @@ describe("git blob reads", () => {
 	it("returns undefined for an absent path and content for a present one", () => {
 		const { dir, sha } = makeRepo();
 
-		expect(gitBlob(dir, sha, "a.txt")).toBe("hello\n");
-		expect(gitBlob(dir, sha, "missing.txt")).toBeUndefined();
+		expect(gitBlob(dir)(sha, "a.txt")).toBe("hello\n");
+		expect(gitBlob(dir)(sha, "missing.txt")).toBeUndefined();
 	});
 
 	it("throws E_GIT_READ for an unresolvable ref", () => {
 		const { dir } = makeRepo();
 
-		expect(readError(() => gitBlob(dir, "nope", "a.txt"))).toMatchObject({
+		expect(readError(() => gitBlob(dir)("nope", "a.txt"))).toMatchObject({
 			code: "E_GIT_READ",
 		});
 	});
@@ -63,7 +63,7 @@ describe("git blob reads", () => {
 		rmSync(join(objects, oid.slice(2)));
 
 		for (const read of [
-			() => gitBlob(dir, sha, "a.txt"),
+			() => gitBlob(dir)(sha, "a.txt"),
 			() => fs.read("a.txt"),
 		]) {
 			const error = readError(read);

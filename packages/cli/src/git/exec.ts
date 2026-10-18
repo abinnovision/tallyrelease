@@ -1,10 +1,28 @@
 import { execFile } from "node:child_process";
 
+import type { Env } from "../ci/github-env.js";
+
+// Set by a surrounding git hook; they would point git at another repository.
+const REPO_VARS = new Set(["GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE"]);
+
 export interface GitOptions {
 	debug?: ((message: string) => void) | undefined;
-	/** Added to the process environment. */
-	env?: Readonly<Record<string, string>>;
+	/** Environment of the subprocess; defaults to `process.env`. */
+	env?: Env | undefined;
+	/** Set over `env`. */
+	vars?: Readonly<Record<string, string>>;
 }
+
+/** `env` without `GIT_DIR`, `GIT_WORK_TREE` and `GIT_INDEX_FILE`, plus `vars`. */
+export const gitEnv = (
+	env: Env,
+	vars: Readonly<Record<string, string>> = {},
+): Record<string, string | undefined> => ({
+	...Object.fromEntries(
+		Object.entries(env).filter(([key]) => !REPO_VARS.has(key)),
+	),
+	...vars,
+});
 
 export interface GitResult {
 	code: number;
@@ -16,7 +34,7 @@ export interface GitResult {
 export const git = (
 	cwd: string,
 	args: readonly string[],
-	{ debug, env }: GitOptions = {},
+	{ debug, env, vars }: GitOptions = {},
 ): Promise<GitResult> => {
 	debug?.(`git ${args.join(" ")}`);
 
@@ -28,7 +46,7 @@ export const git = (
 				cwd,
 				encoding: "utf8",
 				maxBuffer: 256 * 1024 * 1024,
-				...(env && { env: { ...process.env, ...env } }),
+				env: gitEnv(env ?? process.env, vars),
 			},
 			(error, stdout, stderr) => {
 				if (error === null) {

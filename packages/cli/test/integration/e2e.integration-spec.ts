@@ -1,10 +1,11 @@
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { afterAll, describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it, vi } from "vitest";
 
 import { createRepo, git, removeTmpDirs, tmpDir } from "./harness/git-repo.js";
 import { runCli } from "./harness/run-cli.js";
 import { affectedDocSchema } from "../../src/affected-schema.js";
+import { planSchema } from "../../src/plan-schema.js";
 
 import type { Dag } from "@tallyrelease/core/testing";
 
@@ -144,5 +145,41 @@ describe("e2e", () => {
 		const result = await runCli(["affected"], { cwd: plain });
 		expect(result.code).toBe(1);
 		expect(result.stderr).toMatch(/^error\[E_NOT_A_REPO\]: /);
+	});
+
+	it("plans the cwd repo under a surrounding hook's GIT_DIR", async () => {
+		const { dir, sha } = createRepo({
+			commits: [
+				{
+					id: "c0",
+					files: {
+						"tallyrelease.yaml": "units:\n  .: { id: app, release: true }\n",
+						"a.ts": "0",
+					},
+				},
+				{ id: "c1", message: "feat: a", files: { "a.ts": "1" } },
+			],
+		});
+		const hook = {
+			GIT_DIR: "/elsewhere",
+			GIT_WORK_TREE: "/elsewhere",
+			GIT_INDEX_FILE: "/elsewhere/index",
+		};
+		for (const [key, value] of Object.entries(hook)) {
+			vi.stubEnv(key, value);
+		}
+
+		try {
+			const result = await runCli(
+				["plan", "--json", "--all", "--head", sha("c1")],
+				{ cwd: dir, env: hook },
+			);
+			expect(result).toMatchObject({ code: 0 });
+			const doc = planSchema.parse(JSON.parse(result.stdout));
+			expect(doc.head).toBe(sha("c1"));
+			expect(doc.units.map((u) => [u.id, u.next])).toEqual([["app", "1.0.0"]]);
+		} finally {
+			vi.unstubAllEnvs();
+		}
 	});
 });

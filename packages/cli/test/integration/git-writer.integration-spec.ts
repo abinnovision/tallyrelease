@@ -93,7 +93,7 @@ describe("git writer (E30)", () => {
 			},
 			committer: { name: "Committer", email: "c@example.com" },
 		};
-		const writer = gitWriter(dir, undefined, identity);
+		const writer = gitWriter(dir, undefined, { identity });
 		const commit = {
 			parent: head,
 			files: new Map([["a.txt", "x\n"]]),
