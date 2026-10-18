@@ -27,7 +27,7 @@
 		"sort:check": {},
 		"build": {
 			"dependsOn": ["^build"],
-			"inputs": ["src/**/*"],
+			"inputs": ["src/**/*", "scripts/**/*", "tsconfig*.json"],
 			"outputs": ["dist/**/*"]
 		},
 		"typecheck": {
