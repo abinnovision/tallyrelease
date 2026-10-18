@@ -1,5 +1,6 @@
 import { gitOk, git as run } from "./exec.js";
 
+import type { Env } from "../ci/github-env.js";
 import type {
 	GitReader,
 	MaybePromise,
@@ -23,7 +24,7 @@ export interface RepoGit extends GitReader {
 	isShallow: () => MaybePromise<boolean>;
 	/** Current branch, undefined when detached. */
 	branch: () => MaybePromise<string | undefined>;
-	/** Target of `origin/HEAD`, for example `origin/main`; undefined if unset. */
+	/** Target of `<remote>/HEAD`, for example `origin/main`; undefined if unset. */
 	defaultBranch: () => MaybePromise<string | undefined>;
 	/** Committer date of `ref`, ISO 8601. */
 	commitDate: (ref: string) => MaybePromise<string>;
@@ -33,13 +34,14 @@ export interface RepoGit extends GitReader {
 export const gitReader = (
 	cwd: string,
 	debug?: (message: string) => void,
+	{ env, remote = "origin" }: { env?: Env; remote?: string } = {},
 ): RepoGit => {
-	const ok = (args: string[]) => gitOk(cwd, args, { debug });
+	const ok = (args: string[]) => gitOk(cwd, args, { debug, env });
 	const resolve = async (ref: string) => {
 		const result = await run(
 			cwd,
 			["rev-parse", "--verify", "--quiet", `${ref}^{commit}`],
-			{ debug },
+			{ debug, env },
 		);
 
 		return result.code === 0 ? result.stdout.trim() : undefined;
@@ -99,6 +101,7 @@ export const gitReader = (
 		isAncestor: async (a, b) => {
 			const result = await run(cwd, ["merge-base", "--is-ancestor", a, b], {
 				debug,
+				env,
 			});
 			if (result.code > 1) {
 				throw new Error(`git merge-base failed: ${result.stderr.trim()}`);
@@ -194,7 +197,10 @@ export const gitReader = (
 		},
 		resolve,
 		mergeBase: async (a, b) => {
-			const result = await run(cwd, ["merge-base", a, b], { debug });
+			const result = await run(cwd, ["merge-base", a, b], {
+				debug,
+				env,
+			});
 
 			return result.code === 0 ? result.stdout.trim() : undefined;
 		},
@@ -204,7 +210,7 @@ export const gitReader = (
 			const result = await run(
 				cwd,
 				["symbolic-ref", "--quiet", "--short", "HEAD"],
-				{ debug },
+				{ debug, env },
 			);
 
 			return result.code === 0 ? result.stdout.trim() : undefined;
@@ -212,8 +218,8 @@ export const gitReader = (
 		defaultBranch: async () => {
 			const result = await run(
 				cwd,
-				["symbolic-ref", "--quiet", "--short", "refs/remotes/origin/HEAD"],
-				{ debug },
+				["symbolic-ref", "--quiet", "--short", `refs/remotes/${remote}/HEAD`],
+				{ debug, env },
 			);
 
 			return result.code === 0 ? result.stdout.trim() : undefined;

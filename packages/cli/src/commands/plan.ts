@@ -176,6 +176,7 @@ export const planOptions = async (
 		cliBase: flags.base,
 		github: replay ? undefined : session.github,
 		forge: replay ? undefined : session.forge,
+		remote: session.remote,
 	});
 
 	const branch = flags.branch ?? (await branchName(session));

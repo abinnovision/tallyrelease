@@ -38,6 +38,11 @@ export const main = async (
 		.option("--cwd <dir>", "repository root")
 		.option("--config <file>", "config file", CONFIG_FILE)
 		.option("--token <token>", "forge token (default: GITHUB_TOKEN)")
+		.option(
+			"--remote <name>",
+			"git remote to push to and read the repository from",
+			"origin",
+		)
 		.option("--verbose", "print debug output")
 		.exitOverride()
 		.configureOutput({

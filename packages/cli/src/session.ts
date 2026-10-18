@@ -67,6 +67,8 @@ export interface GlobalOptions {
 	config: string;
 	token?: string;
 	verbose?: boolean;
+	/** Git remote to push to and read the repository from; defaults to `origin`. */
+	remote?: string;
 }
 
 /** Resolved dependencies shared by all commands. */
@@ -82,6 +84,8 @@ export interface Session {
 	readonly forge: Forge | undefined;
 	/** `--token`, else `GITHUB_TOKEN`. */
 	readonly token: string | undefined;
+	/** `--remote`, else `origin`. */
+	readonly remote: string;
 	readonly gitWriter: GitWriter;
 	readonly writeFile: (path: string, content: string) => void;
 	readonly clock: () => Date;
@@ -152,6 +156,7 @@ export const createSession = (deps: Deps, opts: GlobalOptions): Session => {
 	const fs = deps.fs ?? nodeFs(root);
 	const github = githubContext(deps.env);
 	const token = opts.token ?? deps.env["GITHUB_TOKEN"];
+	const remote = opts.remote ?? "origin";
 	const configPath = relative(root, resolve(root, opts.config))
 		.split(sep)
 		.join("/");
@@ -172,7 +177,7 @@ export const createSession = (deps: Deps, opts: GlobalOptions): Session => {
 		const result = await runGit(
 			root,
 			["rev-parse", "--show-toplevel", "--show-prefix"],
-			{ debug },
+			{ debug, env: deps.env },
 		);
 		if (result.code !== 0) {
 			throw new TallyError("E_NOT_A_REPO", `not a git repository: ${root}`, {
@@ -190,7 +195,7 @@ export const createSession = (deps: Deps, opts: GlobalOptions): Session => {
 		}
 	};
 
-	// GITHUB_REPOSITORY, else the origin url, else the directory name.
+	// GITHUB_REPOSITORY, else the remote url, else the directory name.
 	const repoName = async () => {
 		const fromEnv = deps.env["GITHUB_REPOSITORY"]?.split("/")[1];
 		if (fromEnv) {
@@ -198,12 +203,13 @@ export const createSession = (deps: Deps, opts: GlobalOptions): Session => {
 		}
 
 		if (onDisk) {
-			const origin = await runGit(root, ["remote", "get-url", "origin"], {
+			const url = await runGit(root, ["remote", "get-url", remote], {
 				debug,
+				env: deps.env,
 			});
 			const name =
-				origin.code === 0
-					? /([^/:]+?)(?:\.git)?\/*$/.exec(origin.stdout.trim())?.[1]
+				url.code === 0
+					? /([^/:]+?)(?:\.git)?\/*$/.exec(url.stdout.trim())?.[1]
 					: undefined;
 			if (name) {
 				return name;
@@ -213,7 +219,7 @@ export const createSession = (deps: Deps, opts: GlobalOptions): Session => {
 		return basename(root);
 	};
 
-	// GITHUB_SERVER_URL and GITHUB_REPOSITORY, else the origin url as https.
+	// GITHUB_SERVER_URL and GITHUB_REPOSITORY, else the remote url as https.
 	const repoUrl = async () => {
 		const server = deps.env["GITHUB_SERVER_URL"];
 		const repository = deps.env["GITHUB_REPOSITORY"];
@@ -225,14 +231,16 @@ export const createSession = (deps: Deps, opts: GlobalOptions): Session => {
 			return null;
 		}
 
-		const origin = await runGit(root, ["remote", "get-url", "origin"], {
+		const url = await runGit(root, ["remote", "get-url", remote], {
 			debug,
+			env: deps.env,
 		});
 
-		return origin.code === 0 ? webUrl(origin.stdout.trim()) : null;
+		return url.code === 0 ? webUrl(url.stdout.trim()) : null;
 	};
 
-	const repoGit = deps.git ?? gitReader(root, debug);
+	const repoGit = deps.git ?? gitReader(root, debug, { env: deps.env, remote });
+	const blobAt = gitBlob(root, deps.env);
 
 	const workspaceAt = async <T>(
 		ref: string | null,
@@ -244,7 +252,7 @@ export const createSession = (deps: Deps, opts: GlobalOptions): Session => {
 
 		const config = loadConfig(fs, configPath);
 		const files =
-			ref === null ? fs : (deps.fsAt?.(ref) ?? gitTreeFs(root, ref));
+			ref === null ? fs : (deps.fsAt?.(ref) ?? gitTreeFs(root, ref, deps.env));
 		const workspace = await loadWorkspace({
 			config,
 			configFile: configPath,
@@ -269,8 +277,14 @@ export const createSession = (deps: Deps, opts: GlobalOptions): Session => {
 			? (deps.forge ?? githubForge({ token, baseUrl: github?.apiUrl }))
 			: undefined,
 		token,
+		remote,
 		gitWriter:
-			deps.gitWriter ?? gitWriter(root, debug, identityFromEnv(deps.env)),
+			deps.gitWriter ??
+			gitWriter(root, debug, {
+				identity: identityFromEnv(deps.env),
+				env: deps.env,
+				remote,
+			}),
 		writeFile:
 			deps.writeFile ??
 			((path, content) => {
@@ -297,7 +311,7 @@ export const createSession = (deps: Deps, opts: GlobalOptions): Session => {
 		workspace: async () =>
 			await workspaceAt(null, (workspace) => Promise.resolve(workspace)),
 		readAt: (ref, path) =>
-			deps.fsAt ? deps.fsAt(ref).read(path) : gitBlob(root, ref, path),
+			deps.fsAt ? deps.fsAt(ref).read(path) : blobAt(ref, path),
 		workspaceAt,
 		planAt: async (ref, opts, fill) =>
 			await workspaceAt(ref, async (workspace, files) => {

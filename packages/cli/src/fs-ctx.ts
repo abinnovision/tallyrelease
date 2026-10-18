@@ -5,6 +5,9 @@ import { join } from "node:path";
 import picomatch from "picomatch/posix.js";
 import { globSync } from "tinyglobby";
 
+import { gitEnv } from "./git/exec.js";
+
+import type { Env } from "./ci/github-env.js";
 import type { ReadonlyFs } from "@tallyrelease/core";
 
 const IGNORED = ["**/.git/**", "**/node_modules/**", "vendor/**"];
@@ -21,17 +24,20 @@ const readError = (error: unknown, ref: string, path: string) => {
 };
 
 /** Content of the blob `ref:path`; any git failure is `E_GIT_READ`. */
-const catBlob = (root: string, ref: string, path: string): string => {
-	try {
-		return execFileSync("git", ["cat-file", "blob", `${ref}:${path}`], {
-			cwd: root,
-			maxBuffer: 256 * 1024 * 1024,
-			stdio: ["ignore", "pipe", "pipe"],
-		}).toString("utf8");
-	} catch (error) {
-		throw readError(error, ref, path);
-	}
-};
+const catBlob =
+	(root: string, env: Env) =>
+	(ref: string, path: string): string => {
+		try {
+			return execFileSync("git", ["cat-file", "blob", `${ref}:${path}`], {
+				cwd: root,
+				env: gitEnv(env),
+				maxBuffer: 256 * 1024 * 1024,
+				stdio: ["ignore", "pipe", "pipe"],
+			}).toString("utf8");
+		} catch (error) {
+			throw readError(error, ref, path);
+		}
+	};
 
 /** `ReadonlyFs` over the directory `root`. */
 export const nodeFs = (root: string): ReadonlyFs => ({
@@ -59,13 +65,19 @@ export const nodeFs = (root: string): ReadonlyFs => ({
  * `ReadonlyFs` over the tree of commit `sha` in the repository at `root`,
  * matching `nodeFs`; paths are listed once, files read lazily.
  */
-export const gitTreeFs = (root: string, sha: string): ReadonlyFs => {
+export const gitTreeFs = (
+	root: string,
+	sha: string,
+	env: Env = process.env,
+): ReadonlyFs => {
 	const git = (args: string[]) =>
 		execFileSync("git", ["-c", "core.quotePath=false", ...args], {
 			cwd: root,
+			env: gitEnv(env),
 			maxBuffer: 256 * 1024 * 1024,
 			stdio: ["ignore", "pipe", "ignore"],
 		});
+	const blob = catBlob(root, env);
 	const ignored = picomatch(IGNORED, { dot: true });
 	const paths = git(["ls-tree", "-r", "-z", "--name-only", sha])
 		.toString("utf8")
@@ -94,7 +106,7 @@ export const gitTreeFs = (root: string, sha: string): ReadonlyFs => {
 			}
 
 			if (!cache.has(path)) {
-				cache.set(path, catBlob(root, sha, path));
+				cache.set(path, blob(sha, path));
 			}
 
 			return cache.get(path);
@@ -109,24 +121,25 @@ export const gitTreeFs = (root: string, sha: string): ReadonlyFs => {
 };
 
 /**
- * Content of `path` at commit `ref` in the repository at `root`, undefined when
- * absent. Any other git failure throws `E_GIT_READ`.
+ * Reader of `path` at commit `ref` in the repository at `root`: the content,
+ * undefined when absent. Any other git failure throws `E_GIT_READ`.
  */
-export const gitBlob = (
-	root: string,
-	ref: string,
-	path: string,
-): string | undefined => {
-	let listing: string;
+export const gitBlob = (root: string, env: Env = process.env) => {
+	const blob = catBlob(root, env);
 
-	try {
-		listing = execFileSync("git", ["ls-tree", "-z", ref, "--", path], {
-			cwd: root,
-			stdio: ["ignore", "pipe", "pipe"],
-		}).toString("utf8");
-	} catch (error) {
-		throw readError(error, ref, path);
-	}
+	return (ref: string, path: string): string | undefined => {
+		let listing: string;
 
-	return listing === "" ? undefined : catBlob(root, ref, path);
+		try {
+			listing = execFileSync("git", ["ls-tree", "-z", ref, "--", path], {
+				cwd: root,
+				env: gitEnv(env),
+				stdio: ["ignore", "pipe", "pipe"],
+			}).toString("utf8");
+		} catch (error) {
+			throw readError(error, ref, path);
+		}
+
+		return listing === "" ? undefined : blob(ref, path);
+	};
 };

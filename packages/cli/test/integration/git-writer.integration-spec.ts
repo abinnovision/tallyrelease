@@ -93,7 +93,7 @@ describe("git writer (E30)", () => {
 			},
 			committer: { name: "Committer", email: "c@example.com" },
 		};
-		const writer = gitWriter(dir, undefined, identity);
+		const writer = gitWriter(dir, undefined, { identity });
 		const commit = {
 			parent: head,
 			files: new Map([["a.txt", "x\n"]]),
@@ -168,6 +168,16 @@ describe("git writer (E30)", () => {
 		// Deleting a branch.
 		await writer.push([`:${BRANCH}`]);
 		expect(remote(BRANCH)).toBe("");
+	});
+
+	it("pushes to the configured remote", async () => {
+		const { dir, head, remote } = setup();
+		git(dir, "remote", "rename", "origin", "upstream");
+
+		await gitWriter(dir, undefined, { remote: "upstream" }).push([
+			`${head}:${BRANCH}`,
+		]);
+		expect(remote(BRANCH)).toBe(head);
 	});
 
 	it("sends the token as the only auth header", async () => {
