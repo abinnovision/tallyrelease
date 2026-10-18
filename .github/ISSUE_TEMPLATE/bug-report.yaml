@@ -1,0 +1,54 @@
+name: Bug report
+description: Something in tallyrelease does not work as expected.
+labels: ["bug"]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Output of `tallyrelease --version`.
+    validations:
+      required: true
+  - type: dropdown
+    id: command
+    attributes:
+      label: Command
+      options:
+        - check
+        - graph
+        - affected
+        - plan
+        - explain
+        - shadow
+        - version
+        - pr
+        - release
+        - run
+        - other
+    validations:
+      required: true
+  - type: textarea
+    id: config
+    attributes:
+      label: Config
+      description: Your `tallyrelease.yaml`, reduced to what reproduces the problem.
+      render: yaml
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened
+      description: Command, output and any `E_*` or `W_*` codes.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Repository context
+      description: Monorepo or single repo, plugins in use, branch, CI provider.

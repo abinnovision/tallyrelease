@@ -1,0 +1,33 @@
+name: Plugin request
+description: Support for an ecosystem that the built-in plugins (node, php, kustomize) do not cover.
+labels: ["enhancement"]
+body:
+  - type: input
+    id: ecosystem
+    attributes:
+      label: Ecosystem
+      description: For example Go modules, Cargo, Helm or Maven.
+    validations:
+      required: true
+  - type: textarea
+    id: units
+    attributes:
+      label: Units
+      description: Which files define a unit, and where its name and version live.
+    validations:
+      required: true
+  - type: textarea
+    id: edges
+    attributes:
+      label: Dependencies
+      description: How units reference each other, so tallyrelease can build edges.
+  - type: textarea
+    id: versionFiles
+    attributes:
+      label: Version files
+      description: Which files a release should update, if any.
+  - type: textarea
+    id: workaround
+    attributes:
+      label: Current workaround
+      description: For example config-only units versioned through git tags.
