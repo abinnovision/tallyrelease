@@ -21,3 +21,17 @@ updates:
       development-dependencies:
         dependency-type: development
         patterns: ["*"]
+  - package-ecosystem: github-actions
+    directory: /
+    open-pull-requests-limit: 15
+    schedule:
+      interval: daily
+    labels:
+      - dependencies
+    commit-message:
+      prefix: "ci(deps)"
+    cooldown:
+      default-days: 5
+    groups:
+      github-actions:
+        patterns: ["*"]
