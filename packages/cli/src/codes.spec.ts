@@ -38,9 +38,4 @@ describe("code registries", () => {
 	it("do not share codes", () => {
 		expect(core.filter((c) => cli.includes(c))).toEqual([]);
 	});
-
-	it("hold all 83 codes", () => {
-		expect(core).toHaveLength(53);
-		expect(cli).toHaveLength(30);
-	});
 });

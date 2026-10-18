@@ -46,4 +46,5 @@ Every `make` target runs `tools/<target>.sh`; ordering and flags live in the scr
 
 - Node >=24, ESM only, Apache-2.0.
 - Commits follow Conventional Commits; tallyrelease versions `packages/core` and `packages/cli` as the fixed group `tallyrelease` (one version) through release PRs on `tallyrelease/release/main/shared`.
+- Raise `E_*`/`W_*` codes through `coreCodes` or `cliCodes` (`src/codes.ts`). A new code needs a `cause` and `fix` entry, then `yarn fix` regenerates `docs/errors.md`. Codes are never renamed or removed.
 - Keep comments short and about the current code.
