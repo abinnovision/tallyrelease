@@ -70,6 +70,7 @@ export const affected = async (
 		cliBase: flags.base,
 		github,
 		forge: session.forge,
+		remote: session.remote,
 	});
 	const computed = await computeAffected(workspace, git, {
 		tool: `tallyrelease@${version}`,

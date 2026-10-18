@@ -182,7 +182,7 @@ export const releasePrs = async (
 								? [
 										[
 											item.name,
-											`**Maintenance line for ${item.name} ${cut.line}.** This PR releases a new major. To keep shipping fixes for ${cut.line}, cut the maintenance branch from the last ${cut.line} release (also possible later):\n\n\`\`\`\ngit push origin ${cut.tag}:refs/heads/${cut.branch}\n\`\`\`\n\n`,
+											`**Maintenance line for ${item.name} ${cut.line}.** This PR releases a new major. To keep shipping fixes for ${cut.line}, cut the maintenance branch from the last ${cut.line} release (also possible later):\n\n\`\`\`\ngit push ${session.remote} ${cut.tag}:refs/heads/${cut.branch}\n\`\`\`\n\n`,
 										] as const,
 									]
 								: [];
@@ -288,7 +288,8 @@ export const releasePrs = async (
 			lines.push(`commit as ${name} <${email}>`);
 		}
 
-		lines.push(...pushes.map((p) => `would push ${p.branch}`));
+		const to = session.remote === "origin" ? "" : ` to ${session.remote}`;
+		lines.push(...pushes.map((p) => `would push ${p.branch}${to}`));
 	} else if (pushes.length > 0) {
 		await gitWriter.push(
 			pushes.map((p) => `${p.sha}:refs/heads/${p.branch}`),

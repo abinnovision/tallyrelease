@@ -24,7 +24,7 @@ export interface RepoGit extends GitReader {
 	isShallow: () => MaybePromise<boolean>;
 	/** Current branch, undefined when detached. */
 	branch: () => MaybePromise<string | undefined>;
-	/** Target of `origin/HEAD`, for example `origin/main`; undefined if unset. */
+	/** Target of `<remote>/HEAD`, for example `origin/main`; undefined if unset. */
 	defaultBranch: () => MaybePromise<string | undefined>;
 	/** Committer date of `ref`, ISO 8601. */
 	commitDate: (ref: string) => MaybePromise<string>;
@@ -34,7 +34,7 @@ export interface RepoGit extends GitReader {
 export const gitReader = (
 	cwd: string,
 	debug?: (message: string) => void,
-	env?: Env,
+	{ env, remote = "origin" }: { env?: Env; remote?: string } = {},
 ): RepoGit => {
 	const ok = (args: string[]) => gitOk(cwd, args, { debug, env });
 	const resolve = async (ref: string) => {
@@ -218,7 +218,7 @@ export const gitReader = (
 		defaultBranch: async () => {
 			const result = await run(
 				cwd,
-				["symbolic-ref", "--quiet", "--short", "refs/remotes/origin/HEAD"],
+				["symbolic-ref", "--quiet", "--short", `refs/remotes/${remote}/HEAD`],
 				{ debug, env },
 			);
 

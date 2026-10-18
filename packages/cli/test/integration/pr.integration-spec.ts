@@ -471,6 +471,14 @@ branches:
 		expect(remote.calls).toEqual([]);
 	});
 
+	it("reports pushes to --remote with --dry-run", async () => {
+		const { pr } = setup(repo(config()));
+
+		expect((await pr(["--remote", "upstream", "--dry-run"])).stdout).toContain(
+			`\nwould push ${SHARED} to upstream\n`,
+		);
+	});
+
 	it("prints the commit identity from the git variables with --dry-run", async () => {
 		const { pr } = setup(repo(config()));
 

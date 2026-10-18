@@ -50,7 +50,7 @@ export interface PushOptions {
 	atomic?: boolean;
 	/** `--force-with-lease` per remote ref: expected sha, `""` when the ref must not exist. */
 	leases?: Readonly<Record<string, string>>;
-	/** Auth header for an http(s) `origin`, replacing persisted checkout credentials. */
+	/** Auth header for an http(s) remote, replacing persisted checkout credentials. */
 	token?: string | undefined;
 }
 
@@ -68,7 +68,7 @@ export interface GitWriter {
 	}) => Promise<string>;
 	/** Lightweight tag; no-op at `sha`, `E_TAG_EXISTS` elsewhere unless `force`. */
 	tag: (name: string, sha: string, opts?: { force?: boolean }) => Promise<void>;
-	/** Pushes refspecs to `origin`; a failed lease is `E_PUSH_LEASE`. */
+	/** Pushes refspecs to the remote; a failed lease is `E_PUSH_LEASE`. */
 	push: (refspecs: readonly string[], opts?: PushOptions) => Promise<void>;
 }
 
@@ -79,7 +79,8 @@ export const gitWriter = (
 	{
 		identity = { author: RELEASE_IDENTITY, committer: RELEASE_IDENTITY },
 		env,
-	}: { identity?: CommitIdentity; env?: Env } = {},
+		remote = "origin",
+	}: { identity?: CommitIdentity; env?: Env; remote?: string } = {},
 ): GitWriter => {
 	const ok = async (args: string[], vars?: Record<string, string>) =>
 		(await gitOk(cwd, args, { debug, env, ...(vars && { vars }) })).trim();
@@ -88,7 +89,7 @@ export const gitWriter = (
 	const authEnv = async (token: string): Promise<Record<string, string>> => {
 		let url: URL;
 		try {
-			url = new URL(await ok(["remote", "get-url", "--push", "origin"]));
+			url = new URL(await ok(["remote", "get-url", "--push", remote]));
 		} catch {
 			return {};
 		}
@@ -217,7 +218,7 @@ export const gitWriter = (
 				...Object.entries(opts.leases ?? {}).map(
 					([ref, expected]) => `--force-with-lease=${ref}:${expected}`,
 				),
-				"origin",
+				remote,
 				...refspecs,
 			];
 			const vars = {

@@ -46,7 +46,7 @@ units:
 
 ## Commands
 
-Global flags: `--cwd <dir>` (repository root), `--config <file>` (default `tallyrelease.yaml`), `--token <token>` (forge token, default `GITHUB_TOKEN`), `--verbose`.
+Global flags: `--cwd <dir>` (repository root), `--config <file>` (default `tallyrelease.yaml`), `--token <token>` (forge token, default `GITHUB_TOKEN`), `--remote <name>` (git remote to push to and read the repository from, default `origin`), `--verbose`.
 
 - `tallyrelease check` validates config, plugins, units, graph and release config; with released units it also checks the repository's tags.
 - `tallyrelease graph [--format text|json|mermaid] [--json]` prints units and edges.
@@ -138,7 +138,7 @@ Within a major, entries only gain fields. The entry schema is `releaseEntrySchem
 
 ### GitHub token
 
-The token comes from `--token` or `GITHUB_TOKEN`. It authenticates two things: REST calls to the forge, and `git push` to `origin` (sent as an `Authorization` header that replaces persisted checkout credentials). Names below are fine-grained token and GitHub App permissions. `Metadata: read` is always granted.
+The token comes from `--token` or `GITHUB_TOKEN`. It authenticates two things: REST calls to the forge, and `git push` to `origin` or `--remote` (sent as an `Authorization` header that replaces persisted checkout credentials). Names below are fine-grained token and GitHub App permissions. `Metadata: read` is always granted.
 
 #### Permissions per command
 

@@ -18,7 +18,7 @@ const CI_VARS = [
 	"BITBUCKET_BUILD_NUMBER",
 ];
 
-const DEFAULT_REFS = ["origin/main", "origin/master", "main", "master"];
+const DEFAULT_BRANCHES = ["main", "master"];
 
 const isCi = (env: Env): boolean => {
 	const ci = env["CI"];
@@ -81,6 +81,8 @@ export interface BuildBaseInput {
 	github?: GithubContext | undefined;
 	/** Present only when a token is available. */
 	forge?: Forge | undefined;
+	/** Remote of the default branch candidates; defaults to `origin`. */
+	remote?: string | undefined;
 }
 
 /** Resolves the build base from `--base`, the CI event, the forge, then the local default branch. */
@@ -174,9 +176,14 @@ export const resolveBuildBase = async (
 			: result(null, "none", last);
 	};
 
-	/** First of `origin/HEAD` and the common default branch names that resolves. */
+	/** First of `<remote>/HEAD` and the common default branch names that resolves. */
 	const defaultRef = async () => {
-		const candidates = [await git.defaultBranch(), ...DEFAULT_REFS];
+		const remote = input.remote ?? "origin";
+		const candidates = [
+			await git.defaultBranch(),
+			...DEFAULT_BRANCHES.map((b) => `${remote}/${b}`),
+			...DEFAULT_BRANCHES,
+		];
 		for (const candidate of candidates) {
 			if (candidate === undefined) {
 				continue;
