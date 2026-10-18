@@ -1,6 +1,8 @@
 import { defaultUnitId, definePlugin } from "@tallyrelease/core";
 import { parse as parseYaml } from "yaml";
 
+import { parseJson } from "../json.js";
+
 import type { Ctx, EdgeDraft, Unit, UnitDraft } from "@tallyrelease/core";
 
 interface Manifest {
@@ -21,9 +23,10 @@ const manifestPath = (root: string): string =>
 	root === "." ? "package.json" : `${root}/package.json`;
 
 const readManifest = (ctx: Ctx, root: string): Manifest | undefined => {
-	const raw = ctx.fs.read(manifestPath(root));
+	const path = manifestPath(root);
+	const raw = ctx.fs.read(path);
 
-	return raw === undefined ? undefined : (JSON.parse(raw) as Manifest);
+	return raw === undefined ? undefined : (parseJson(path, raw) as Manifest);
 };
 
 /** Workspace globs from `pnpm-workspace.yaml` or `package.json`, if any. */
@@ -124,12 +127,18 @@ export const nodePlugin = definePlugin({
 		{
 			path: manifestPath(unit.root),
 			read: (content) => {
-				const { version } = JSON.parse(content) as Manifest;
+				const { version } = parseJson(
+					manifestPath(unit.root),
+					content,
+				) as Manifest;
 
 				return typeof version === "string" ? version : undefined;
 			},
 			write: (content, next, { units, versions }) => {
-				const manifest = JSON.parse(content) as Manifest;
+				const manifest = parseJson(
+					manifestPath(unit.root),
+					content,
+				) as Manifest;
 				manifest["version"] = next;
 				const released = new Map<string, string>();
 				for (const u of units) {
