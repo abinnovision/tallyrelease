@@ -172,7 +172,7 @@ export const createSession = (deps: Deps, opts: GlobalOptions): Session => {
 		const result = await runGit(
 			root,
 			["rev-parse", "--show-toplevel", "--show-prefix"],
-			{ debug },
+			{ debug, env: deps.env },
 		);
 		if (result.code !== 0) {
 			throw new TallyError("E_NOT_A_REPO", `not a git repository: ${root}`, {
@@ -200,6 +200,7 @@ export const createSession = (deps: Deps, opts: GlobalOptions): Session => {
 		if (onDisk) {
 			const origin = await runGit(root, ["remote", "get-url", "origin"], {
 				debug,
+				env: deps.env,
 			});
 			const name =
 				origin.code === 0
@@ -227,12 +228,14 @@ export const createSession = (deps: Deps, opts: GlobalOptions): Session => {
 
 		const origin = await runGit(root, ["remote", "get-url", "origin"], {
 			debug,
+			env: deps.env,
 		});
 
 		return origin.code === 0 ? webUrl(origin.stdout.trim()) : null;
 	};
 
-	const repoGit = deps.git ?? gitReader(root, debug);
+	const repoGit = deps.git ?? gitReader(root, debug, deps.env);
+	const blobAt = gitBlob(root, deps.env);
 
 	const workspaceAt = async <T>(
 		ref: string | null,
@@ -244,7 +247,7 @@ export const createSession = (deps: Deps, opts: GlobalOptions): Session => {
 
 		const config = loadConfig(fs, configPath);
 		const files =
-			ref === null ? fs : (deps.fsAt?.(ref) ?? gitTreeFs(root, ref));
+			ref === null ? fs : (deps.fsAt?.(ref) ?? gitTreeFs(root, ref, deps.env));
 		const workspace = await loadWorkspace({
 			config,
 			configFile: configPath,
@@ -270,7 +273,11 @@ export const createSession = (deps: Deps, opts: GlobalOptions): Session => {
 			: undefined,
 		token,
 		gitWriter:
-			deps.gitWriter ?? gitWriter(root, debug, identityFromEnv(deps.env)),
+			deps.gitWriter ??
+			gitWriter(root, debug, {
+				identity: identityFromEnv(deps.env),
+				env: deps.env,
+			}),
 		writeFile:
 			deps.writeFile ??
 			((path, content) => {
@@ -297,7 +304,7 @@ export const createSession = (deps: Deps, opts: GlobalOptions): Session => {
 		workspace: async () =>
 			await workspaceAt(null, (workspace) => Promise.resolve(workspace)),
 		readAt: (ref, path) =>
-			deps.fsAt ? deps.fsAt(ref).read(path) : gitBlob(root, ref, path),
+			deps.fsAt ? deps.fsAt(ref).read(path) : blobAt(ref, path),
 		workspaceAt,
 		planAt: async (ref, opts, fill) =>
 			await workspaceAt(ref, async (workspace, files) => {

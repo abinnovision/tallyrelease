@@ -5,6 +5,8 @@ import { join } from "node:path";
 
 import { gitOk, git as run } from "./exec.js";
 
+import type { Env } from "../ci/github-env.js";
+
 export interface Ident {
 	name: string;
 	email: string;
@@ -74,13 +76,13 @@ export interface GitWriter {
 export const gitWriter = (
 	cwd: string,
 	debug?: (message: string) => void,
-	identity: CommitIdentity = {
-		author: RELEASE_IDENTITY,
-		committer: RELEASE_IDENTITY,
-	},
+	{
+		identity = { author: RELEASE_IDENTITY, committer: RELEASE_IDENTITY },
+		env,
+	}: { identity?: CommitIdentity; env?: Env } = {},
 ): GitWriter => {
-	const ok = async (args: string[], env?: Record<string, string>) =>
-		(await gitOk(cwd, args, { debug, ...(env && { env }) })).trim();
+	const ok = async (args: string[], vars?: Record<string, string>) =>
+		(await gitOk(cwd, args, { debug, env, ...(vars && { vars }) })).trim();
 
 	// Config through the environment keeps the token out of argv and debug output.
 	const authEnv = async (token: string): Promise<Record<string, string>> => {
@@ -189,7 +191,7 @@ export const gitWriter = (
 			const existing = await run(
 				cwd,
 				["rev-parse", "--verify", "--quiet", `${ref}^{commit}`],
-				{ debug },
+				{ debug, env },
 			);
 			const current = existing.code === 0 ? existing.stdout.trim() : undefined;
 			if (current === sha) {
@@ -218,11 +220,11 @@ export const gitWriter = (
 				"origin",
 				...refspecs,
 			];
-			const env = {
+			const vars = {
 				GIT_TERMINAL_PROMPT: "0",
 				...(opts.token ? await authEnv(opts.token) : {}),
 			};
-			const result = await run(cwd, args, { debug, env });
+			const result = await run(cwd, args, { debug, env, vars });
 			if (result.code === 0) {
 				return;
 			}
