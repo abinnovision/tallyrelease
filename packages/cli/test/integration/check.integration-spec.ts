@@ -72,6 +72,34 @@ describe("check", () => {
 		}
 	});
 
+	it("names a malformed plugin manifest (C33-plugin-manifest-invalid)", async () => {
+		const cases: [Record<string, string>, string][] = [
+			[
+				{
+					"tallyrelease.yaml": "plugins: { node: {} }\n",
+					"package.json": '{ "workspaces": ["packages/*"] }',
+					"packages/a/package.json": '{ "name": ',
+				},
+				"packages/a/package.json",
+			],
+			[
+				{
+					"tallyrelease.yaml": "plugins: { php: {} }\n",
+					"composer.json": "{ name",
+				},
+				"composer.json",
+			],
+		];
+		for (const [files, path] of cases) {
+			// eslint-disable-next-line no-await-in-loop -- sequential cases
+			const result = await check(files);
+			expect(result.code).toBe(1);
+			expect(result.stderr).toMatch(
+				new RegExp(`^error\\[E_PLUGIN_HOOK\\]: .*invalid JSON in ${path}: `),
+			);
+		}
+	});
+
 	it("rejects version none with a hint (G17)", async () => {
 		const result = await check({
 			"tallyrelease.yaml": "units:\n  a: { version: none }\n",

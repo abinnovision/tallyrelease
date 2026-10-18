@@ -1,5 +1,7 @@
 import { defaultUnitId, definePlugin } from "@tallyrelease/core";
 
+import { parseJson } from "../json.js";
+
 import type { Ctx, EdgeDraft, Unit, UnitDraft } from "@tallyrelease/core";
 
 interface Composer {
@@ -14,9 +16,10 @@ const composerPath = (root: string): string =>
 	root === "." ? "composer.json" : `${root}/composer.json`;
 
 const readComposer = (ctx: Ctx, root: string): Composer | undefined => {
-	const raw = ctx.fs.read(composerPath(root));
+	const path = composerPath(root);
+	const raw = ctx.fs.read(path);
 
-	return raw === undefined ? undefined : (JSON.parse(raw) as Composer);
+	return raw === undefined ? undefined : (parseJson(path, raw) as Composer);
 };
 
 /** Local `repositories[type=path]` url globs, repo-relative. */
