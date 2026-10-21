@@ -21,6 +21,6 @@
 		"@tsconfig/node24": "^24.0.5",
 		"@tsconfig/strictest": "^2.0.8",
 		"prettier": "^3.9.10",
-		"typescript": "^6.0.3"
+		"typescript": "^7.0.2"
 	}
 }
