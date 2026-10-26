@@ -9,7 +9,7 @@ import { effectSkipped } from "./effects.js";
 import { planOptions, releasedForge, writePlan } from "./plan.js";
 import { releasePrs } from "./pr.js";
 import { planAtParent, reconcile, withTags } from "./release.js";
-import { releaseEntries } from "../ci/releases.js";
+import { releaseListEntries } from "../ci/releases.js";
 
 import type { Session } from "../session.js";
 import type { PlanFlags, PlanSetup } from "./plan.js";
@@ -143,7 +143,11 @@ export const run = async (session: Session, flags: RunFlags): Promise<void> => {
 
 	writePlan(
 		runSession,
-		{ doc, base, releases: releaseEntries(doc, planned.workspace, atParent) },
+		{
+			doc,
+			base,
+			releases: releaseListEntries(doc, planned.workspace, atParent),
+		},
 		flags,
 	);
 };
