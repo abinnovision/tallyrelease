@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.5.0](https://github.com/abinnovision/tallyrelease/compare/core-v0.4.1...core-v0.5.0) (2026-10-26)
+
+
+### Features
+
+* generate docs from the config schema and typed error code registries ([#82](https://github.com/abinnovision/tallyrelease/issues/82)) ([9ee6b60](https://github.com/abinnovision/tallyrelease/commit/9ee6b6048cefaf74c9bd63403ab2db3badbc8b11))
+
+
+### Bug Fixes
+
+* **core:** import the testing fakes without vitest ([#76](https://github.com/abinnovision/tallyrelease/issues/76)) ([91c69dc](https://github.com/abinnovision/tallyrelease/commit/91c69dc36c5cb4fbd47cec360559450893842d52))
+
 ## [0.4.1](https://github.com/abinnovision/tallyrelease/compare/core-v0.4.0...core-v0.4.1) (2026-10-17)
 
 

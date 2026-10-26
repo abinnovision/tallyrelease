@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.5.0](https://github.com/abinnovision/tallyrelease/compare/cli-v0.4.1...cli-v0.5.0) (2026-10-26)
+
+
+### Features
+
+* generate docs from the config schema and typed error code registries ([#82](https://github.com/abinnovision/tallyrelease/issues/82)) ([9ee6b60](https://github.com/abinnovision/tallyrelease/commit/9ee6b6048cefaf74c9bd63403ab2db3badbc8b11))
+
+
+### Bug Fixes
+
+* **cli:** name the file in malformed plugin manifest errors ([#78](https://github.com/abinnovision/tallyrelease/issues/78)) ([81f23f8](https://github.com/abinnovision/tallyrelease/commit/81f23f8542ee4897b46fbe244bbdbcfce38affe8))
+* **cli:** run git with the injected env and drop hook repository variables ([#79](https://github.com/abinnovision/tallyrelease/issues/79)) ([c008d0a](https://github.com/abinnovision/tallyrelease/commit/c008d0ac88fe4d66cf72409686e73c2ffd550274))
+* **cli:** search older workflow run pages for the last success ([#74](https://github.com/abinnovision/tallyrelease/issues/74)) ([7d1002c](https://github.com/abinnovision/tallyrelease/commit/7d1002c6dce6a8b0aeb702e87f8837c6768a057d))
+* **core:** import the testing fakes without vitest ([#76](https://github.com/abinnovision/tallyrelease/issues/76)) ([91c69dc](https://github.com/abinnovision/tallyrelease/commit/91c69dc36c5cb4fbd47cec360559450893842d52))
+* **deps:** bump zod from 4.6.6 to 4.6.7 in the production-dependencies group ([#84](https://github.com/abinnovision/tallyrelease/issues/84)) ([880286d](https://github.com/abinnovision/tallyrelease/commit/880286d582b8a70ee790056f72a1ac76829b0ca8))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @tallyrelease/core bumped to 0.5.0
+
 ## [0.4.1](https://github.com/abinnovision/tallyrelease/compare/cli-v0.4.0...cli-v0.4.1) (2026-10-17)
 
 
