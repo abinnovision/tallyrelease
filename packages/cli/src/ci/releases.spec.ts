@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { releaseEntries } from "./releases.js";
+import { releaseListEntries } from "./releases.js";
 
 import type { Plan, Workspace } from "@tallyrelease/core";
 
@@ -35,7 +35,7 @@ const workspace = (
 		groups,
 	}) as unknown as Workspace;
 
-describe("releaseEntries", () => {
+describe("releaseListEntries", () => {
 	it("lists tags, group and forge of a release, and the unit's tags and group with a null forge for a prerelease", () => {
 		const plan = {
 			head: "def",
@@ -53,7 +53,7 @@ describe("releaseEntries", () => {
 				},
 			],
 		} as unknown as Plan;
-		const entries = releaseEntries(
+		const entries = releaseListEntries(
 			plan,
 			workspace(
 				[
@@ -111,7 +111,7 @@ describe("releaseEntries", () => {
 		]) as unknown as Map<string, Plan["units"]>;
 
 		expect(
-			releaseEntries(plan, workspace([]), atParent).map((e) => e.changes),
+			releaseListEntries(plan, workspace([]), atParent).map((e) => e.changes),
 		).toEqual([[change("released")], [], [], [change("pending")]]);
 	});
 
@@ -150,7 +150,7 @@ describe("releaseEntries", () => {
 					],
 				],
 			]) as unknown as Map<string, Plan["units"]>;
-			const [entry] = releaseEntries(
+			const [entry] = releaseListEntries(
 				{ ...plan, units: [] } as unknown as Plan,
 				workspace([]),
 				atParent,
@@ -175,7 +175,7 @@ describe("releaseEntries", () => {
 					unit("b", [change(undefined), change("b1")], ["a"]),
 				],
 			} as unknown as Plan;
-			const [entry] = releaseEntries(plan, workspace([]), new Map());
+			const [entry] = releaseListEntries(plan, workspace([]), new Map());
 
 			expect(entry && subjects(entry)).toEqual([
 				["file", undefined],

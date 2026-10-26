@@ -38,7 +38,7 @@ const propagatedChanges = (units: Plan["units"], id: string): PlanChange[] => {
  * unit in `atParent`, the plan units at the first parent of each release sha;
  * a prerelease those in `plan.units`. Both include propagated changes.
  */
-export const releaseEntries = (
+export const releaseListEntries = (
 	plan: Plan,
 	{ units, groups }: Pick<Workspace, "units" | "groups">,
 	atParent: ReadonlyMap<string, Plan["units"]>,
