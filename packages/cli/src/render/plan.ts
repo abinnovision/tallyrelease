@@ -1,3 +1,4 @@
+import { short } from "./short.js";
 import { baseLabel, baseLine } from "../ci/base.js";
 import { alignColumns } from "../output/columns.js";
 import { count } from "../output/count.js";
@@ -73,7 +74,7 @@ export const planMarkdown = (doc: Plan, base: BuildBase): string => {
 		"",
 		`Branch ${lineLabel(doc.line, doc.branch)}.`,
 		"",
-		`Base ${base.base?.slice(0, 7) ?? "none"} (${baseLabel(base)}).`,
+		`Base ${short(base.base, "none")} (${baseLabel(base)}).`,
 		"",
 	];
 	if (doc.units.length === 0) {

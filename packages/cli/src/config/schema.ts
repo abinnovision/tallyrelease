@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import type { Equals } from "../types.js";
+import type { Equals, Keys } from "../types.js";
 import type { GroupConfig, TallyConfig } from "@tallyrelease/core";
 
 const globs = z.array(z.string()).exactOptional();
@@ -32,7 +32,7 @@ const groupTags = z
 	.array(z.string())
 	.meta({ description: "Selects released units with any of these tags." });
 
-const groupSchema: z.ZodType<GroupConfig> = z.union([
+const groupUnion = z.union([
 	z.strictObject({
 		units: groupUnits,
 		tags: groupTags.exactOptional(),
@@ -44,6 +44,8 @@ const groupSchema: z.ZodType<GroupConfig> = z.union([
 		releasePr: releasePr.exactOptional(),
 	}),
 ]);
+
+const groupSchema: z.ZodType<GroupConfig> = groupUnion;
 
 const globRejected = ["id", "include", "exclude", "versionFiles"] as const;
 
@@ -307,6 +309,12 @@ export const configSchema = configObject.transform(
 export const configSchemaExact: Equals<
 	z.output<typeof configSchema>,
 	TallyConfig
+> = true;
+
+// The schema requires `units` or `tags`; `GroupConfig` does not, so only field names are compared.
+export const groupSchemaFields: Equals<
+	Keys<z.output<typeof groupUnion>>,
+	keyof GroupConfig
 > = true;
 
 /** JSON schema (draft-07) of `tallyrelease.yaml` as published for editors. */

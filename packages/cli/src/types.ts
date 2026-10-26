@@ -5,3 +5,6 @@ export type Equals<A, B> =
 		? true
 		: false;
 /* eslint-enable @typescript-eslint/no-unnecessary-type-parameters */
+
+/** Keys of every member of a union. */
+export type Keys<T> = T extends unknown ? keyof T : never;

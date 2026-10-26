@@ -16,10 +16,6 @@ import type { ReleaseEntry } from "../plan-schema.js";
 import type { Session } from "../session.js";
 import type { AffectedDoc, Plan } from "@tallyrelease/core";
 
-/** `--out` resolved against the working directory. */
-const outPath = (session: Session, out: string | undefined) =>
-	out === undefined ? undefined : resolve(session.cwd, out);
-
 /** `$GITHUB_OUTPUT`; `E_GITHUB_OUTPUT` when it is not set. */
 const githubOutputPath = (session: Session): string => {
 	const path = session.env["GITHUB_OUTPUT"];
@@ -32,6 +28,10 @@ const githubOutputPath = (session: Session): string => {
 
 	return path;
 };
+
+/** `--out` resolved against the working directory. */
+export const outPath = (session: Session, out: string | undefined) =>
+	out === undefined ? undefined : resolve(session.cwd, out);
 
 /** Pretty-printed JSON document with a trailing newline. */
 export const toJson = (doc: unknown): string =>
