@@ -16,11 +16,11 @@ import { painter } from "./output/paint.js";
 import { createSession } from "./session.js";
 import { version } from "./version.js";
 
+import type { PlanFlags } from "./app/setup.js";
 import type { cliCodes } from "./codes.js";
 import type { AffectedFlags } from "./commands/affected.js";
 import type { ExplainFlags } from "./commands/explain.js";
 import type { GraphFlags } from "./commands/graph.js";
-import type { PlanFlags } from "./commands/plan.js";
 import type { PrFlags } from "./commands/pr.js";
 import type { ReleaseFlags } from "./commands/release.js";
 import type { RunFlags } from "./commands/run.js";

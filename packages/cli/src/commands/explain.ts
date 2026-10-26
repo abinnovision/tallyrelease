@@ -1,11 +1,11 @@
 import { explainUnit } from "@tallyrelease/core";
 
-import { planOptions } from "./plan.js";
+import { planOptions } from "../app/setup.js";
 import { baseLine } from "../ci/base.js";
 import { alignColumns } from "../output/columns.js";
 import { painter } from "../output/paint.js";
 
-import type { PlanFlags } from "./plan.js";
+import type { PlanFlags } from "../app/setup.js";
 import type { Session } from "../session.js";
 import type { UnitExplanation, UnitPlan } from "@tallyrelease/core";
 

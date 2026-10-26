@@ -7,9 +7,9 @@ import {
 	releaseItems,
 } from "@tallyrelease/core";
 
+import { effectSkipped, repoRef } from "../app/effects.js";
+import { planOptions } from "../app/setup.js";
 import { cliCodes } from "../codes.js";
-import { effectSkipped, repoRef } from "./effects.js";
-import { planOptions } from "./plan.js";
 import { LABELS } from "../forge/forge.js";
 import { identityFromEnv } from "../git/writer.js";
 

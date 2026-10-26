@@ -1,7 +1,7 @@
 import { computePlan, releaseFiles, releaseItems } from "@tallyrelease/core";
 
-import { effectSkipped } from "./effects.js";
-import { planOptions } from "./plan.js";
+import { effectSkipped } from "../app/effects.js";
+import { planOptions } from "../app/setup.js";
 
 import type { Session } from "../session.js";
 
