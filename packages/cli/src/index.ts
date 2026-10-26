@@ -1,7 +1,8 @@
 export { version } from "./version.js";
 export { cliCodes } from "./codes.js";
 export { main } from "./main.js";
-export type { Deps, Writer } from "./session.js";
+export type { Deps } from "./session.js";
+export type { Writer } from "./output/writer.js";
 export type {
 	Forge,
 	NewPr,

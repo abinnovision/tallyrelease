@@ -24,6 +24,7 @@ import type { Env, GithubContext } from "./ci/github-env.js";
 import type { Forge } from "./forge/forge.js";
 import type { RepoGit } from "./git/reader.js";
 import type { GitWriter } from "./git/writer.js";
+import type { Writer } from "./output/writer.js";
 import type {
 	Plan,
 	PlanOptions,
@@ -31,10 +32,6 @@ import type {
 	Warning,
 	Workspace,
 } from "@tallyrelease/core";
-
-export interface Writer {
-	write: (chunk: string) => unknown;
-}
 
 /** Injected environment of a cli run; `bin.ts` wires the real one. */
 export interface Deps {
