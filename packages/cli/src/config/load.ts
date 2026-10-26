@@ -39,7 +39,5 @@ export const loadConfig = (fs: ReadonlyFs, path: string): TallyConfig => {
 		});
 	}
 
-	const { $schema: _, ...config } = result.data;
-
-	return config;
+	return result.data;
 };

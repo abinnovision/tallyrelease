@@ -2,15 +2,8 @@ import { z } from "zod";
 
 import { affectedDocSchema } from "./affected-schema.js";
 
+import type { Equals } from "./types.js";
 import type { Plan } from "@tallyrelease/core";
-
-/** True only for identical types, including optional fields. */
-/* eslint-disable @typescript-eslint/no-unnecessary-type-parameters -- identity check */
-type Equals<A, B> =
-	(<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2
-		? true
-		: false;
-/* eslint-enable @typescript-eslint/no-unnecessary-type-parameters */
 
 const bump = z.enum(["major", "minor", "patch"]);
 
