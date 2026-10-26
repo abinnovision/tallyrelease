@@ -10,7 +10,7 @@ import { memoryCtx } from "./testing/index.js";
 import { history } from "../test/fixtures/release-please-history.js";
 
 import type { ChangelogInput } from "./changelog.js";
-import type { PlanChange } from "./plan.js";
+import type { PlanChange } from "./model/plan-types.js";
 import type { Change } from "./plugin.js";
 
 // Repository URL in the release-please written CHANGELOG sections.
