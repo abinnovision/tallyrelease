@@ -82,18 +82,185 @@ const dedupe = (changes: readonly Change[]): Change[] => {
 	return kept;
 };
 
+type LineFacts = Awaited<ReturnType<typeof lineFacts>>;
+
+interface UnitBase {
+	scheme: VersionScheme<any>;
+	baseTag: UnitTag | null;
+	lineBaseTag: UnitTag | null;
+	introduced: string | null;
+	sinceLineBase: number;
+}
+
 export interface FactsOptions {
 	head: string;
 	fs: ReadonlyFs;
 	debug?: (message: string) => void;
 }
 
-/** Runs every `GitReader` and intent source call a plan needs. */
-export const collectPlanFacts = async (
+/** First-parent commit counters of `head`, memoized per commit. */
+export const lineFacts = async (git: GitReader, head: string) => {
+	const total = await git.countFirstParent(null, head);
+	const counts = new Map<string, number>();
+	const countSince = async (sha: string): Promise<number> => {
+		const cached = counts.get(sha);
+		if (cached !== undefined) {
+			return cached;
+		}
+
+		const count = await git.countFirstParent(sha, head);
+		counts.set(sha, count);
+
+		return count;
+	};
+
+	/** Counter since the line base; without one, since the unit's introduction. */
+	const lineCount = async (root: string, lineBaseTag: UnitTag | null) => {
+		if (lineBaseTag) {
+			return {
+				introduced: null,
+				sinceLineBase: await countSince(lineBaseTag.sha),
+			};
+		}
+
+		const introduced = root === "." ? null : await git.introduced(root, head);
+
+		return {
+			introduced,
+			sinceLineBase:
+				introduced === null ? total : (await countSince(introduced)) + 1,
+		};
+	};
+
+	return { head, total, countSince, lineCount };
+};
+
+/** Tags of every unit and fixed group, relative to `head`. */
+export const tagFacts = async (
+	workspace: Workspace,
+	git: GitReader,
+	line: LineFacts,
+) => {
+	const { head } = line;
+	const schemes = schemeRegistry(workspace.schemes);
+	const allTags = await git.tags();
+	const tags = matchUnitTags(workspace.units, allTags, schemes);
+	const merged = new Set((await git.tagsMerged(head)).map((t) => t.name));
+
+	const ancestry = new Map<string, boolean>();
+	const isAncestor = async (a: string, b: string): Promise<boolean> => {
+		const key = `${a}\0${b}`;
+		const cached = ancestry.get(key);
+		if (cached !== undefined) {
+			return cached;
+		}
+
+		const result = await git.isAncestor(a, b);
+		ancestry.set(key, result);
+
+		return result;
+	};
+
+	/** The higher tag; equal versions prefer the tag descending from the other. */
+	const higher = async (
+		scheme: VersionScheme<any>,
+		a: UnitTag | null,
+		b: UnitTag | null,
+	): Promise<UnitTag | null> => {
+		if (a === null || b === null) {
+			return a ?? b;
+		}
+
+		const x: unknown = scheme.parse(a.version);
+		const y: unknown = scheme.parse(b.version);
+		// Members with another scheme fail validateRelease (E_GROUP_SCHEME).
+		if (x === undefined || y === undefined) {
+			return a;
+		}
+
+		const order = scheme.compare(y, x);
+		if (order !== 0) {
+			return order > 0 ? b : a;
+		}
+
+		return a.sha !== b.sha && (await isAncestor(a.sha, b.sha)) ? b : a;
+	};
+
+	const bases = new Map<string, UnitBase>();
+	for (const unit of workspace.units) {
+		const matched = tags.get(unit.id);
+		if (!matched) {
+			// Unreleased.
+			continue;
+		}
+
+		const { scheme } = matched;
+		const stable = matched.tags.filter(
+			(t) =>
+				merged.has(t.name) && !scheme.isPrerelease(scheme.parse(t.version)),
+		);
+		let lineBaseTag: UnitTag | null = null;
+		for (const tag of [...stable].reverse()) {
+			// eslint-disable-next-line no-await-in-loop -- stops at the first match
+			if (await git.isFirstParentAncestor(tag.sha, head)) {
+				lineBaseTag = tag;
+				break;
+			}
+		}
+
+		bases.set(unit.id, {
+			scheme,
+			baseTag: stable.at(-1) ?? null,
+			lineBaseTag,
+			// eslint-disable-next-line no-await-in-loop -- one git call per unit
+			...(await line.lineCount(unit.root, lineBaseTag)),
+		});
+	}
+
+	const groups: GroupFacts[] = [];
+	for (const { name, members } of workspace.groups) {
+		let baseTag: UnitTag | null = null;
+		let lineBaseTag: UnitTag | null = null;
+		for (const id of members) {
+			const own = bases.get(id);
+			if (own) {
+				// eslint-disable-next-line no-await-in-loop -- memoized ancestry
+				baseTag = await higher(own.scheme, baseTag, own.baseTag);
+				// eslint-disable-next-line no-await-in-loop -- memoized ancestry
+				lineBaseTag = await higher(own.scheme, lineBaseTag, own.lineBaseTag);
+			}
+		}
+
+		groups.push({
+			name,
+			members,
+			baseTag,
+			lineBaseTag,
+			sinceLineBase: lineBaseTag
+				? // eslint-disable-next-line no-await-in-loop -- memoized per line base
+					await line.countSince(lineBaseTag.sha)
+				: Math.max(
+						0,
+						...members.map((id) => bases.get(id)?.sinceLineBase ?? 0),
+					),
+		});
+	}
+
+	return {
+		tags,
+		bases,
+		groups,
+		isAncestor,
+		tagNames: uniqueSorted(allTags.map((t) => t.name)),
+	};
+};
+
+/** Attributed changes of `(from, head]`, memoized per `from`. */
+export const rangeFacts = (
 	workspace: Workspace,
 	git: GitReader,
 	opts: FactsOptions,
-): Promise<PlanFacts> => {
+) => {
 	const { head } = opts;
 	const warnings: Warning[] = [];
 	const ctx = pluginCtx({ ...opts, repo: { name: workspace.repo } }, warnings);
@@ -101,12 +268,6 @@ export const collectPlanFacts = async (
 		...entry,
 		ctx: ctx(entry.plugin, entry.options),
 	}));
-	const schemes = schemeRegistry(workspace.schemes);
-	const allTags = await git.tags();
-	const tags = matchUnitTags(workspace.units, allTags, schemes);
-	const merged = new Set((await git.tagsMerged(head)).map((t) => t.name));
-	const total = await git.countFirstParent(null, head);
-
 	const ignored = matcher(workspace.ignore);
 	const isGlobal = matcher(workspace.globalInputs);
 	const owners = attribution(workspace.units);
@@ -130,19 +291,6 @@ export const collectPlanFacts = async (
 				);
 			}
 		}
-	};
-
-	const counts = new Map<string, number>();
-	const countSince = async (sha: string): Promise<number> => {
-		const cached = counts.get(sha);
-		if (cached !== undefined) {
-			return cached;
-		}
-
-		const count = await git.countFirstParent(sha, head);
-		counts.set(sha, count);
-
-		return count;
 	};
 
 	const ranges = new Map<string | null, RangeFacts>();
@@ -198,131 +346,23 @@ export const collectPlanFacts = async (
 		return result;
 	};
 
-	const ancestry = new Map<string, boolean>();
-	const isAncestor = async (a: string, b: string): Promise<boolean> => {
-		const key = `${a}\0${b}`;
-		const cached = ancestry.get(key);
-		if (cached !== undefined) {
-			return cached;
-		}
+	return { range, all: () => [...ranges.values()], warnings };
+};
 
-		const result = await git.isAncestor(a, b);
-		ancestry.set(key, result);
-
-		return result;
-	};
-
-	/** The higher tag; equal versions prefer the tag descending from the other. */
-	const higher = async (
-		scheme: VersionScheme<any>,
-		a: UnitTag | null,
-		b: UnitTag | null,
-	): Promise<UnitTag | null> => {
-		if (a === null || b === null) {
-			return a ?? b;
-		}
-
-		const x: unknown = scheme.parse(a.version);
-		const y: unknown = scheme.parse(b.version);
-		// Members with another scheme fail validateRelease (E_GROUP_SCHEME).
-		if (x === undefined || y === undefined) {
-			return a;
-		}
-
-		const order = scheme.compare(y, x);
-		if (order !== 0) {
-			return order > 0 ? b : a;
-		}
-
-		return a.sha !== b.sha && (await isAncestor(a.sha, b.sha)) ? b : a;
-	};
-
-	/** Counter since the line base; without one, since the unit's introduction. */
-	const lineCount = async (root: string, lineBaseTag: UnitTag | null) => {
-		if (lineBaseTag) {
-			return {
-				introduced: null,
-				sinceLineBase: await countSince(lineBaseTag.sha),
-			};
-		}
-
-		const introduced = root === "." ? null : await git.introduced(root, head);
-
-		return {
-			introduced,
-			sinceLineBase:
-				introduced === null ? total : (await countSince(introduced)) + 1,
-		};
-	};
-
-	const bases = new Map<
-		string,
-		{
-			scheme: VersionScheme<any>;
-			baseTag: UnitTag | null;
-			lineBaseTag: UnitTag | null;
-			introduced: string | null;
-			sinceLineBase: number;
-		}
-	>();
-	for (const unit of workspace.units) {
-		const matched = tags.get(unit.id);
-		if (!matched) {
-			// Unreleased.
-			continue;
-		}
-
-		const { scheme } = matched;
-		const stable = matched.tags.filter(
-			(t) =>
-				merged.has(t.name) && !scheme.isPrerelease(scheme.parse(t.version)),
-		);
-		let lineBaseTag: UnitTag | null = null;
-		for (const tag of [...stable].reverse()) {
-			// eslint-disable-next-line no-await-in-loop -- stops at the first match
-			if (await git.isFirstParentAncestor(tag.sha, head)) {
-				lineBaseTag = tag;
-				break;
-			}
-		}
-
-		bases.set(unit.id, {
-			scheme,
-			baseTag: stable.at(-1) ?? null,
-			lineBaseTag,
-			// eslint-disable-next-line no-await-in-loop -- one git call per unit
-			...(await lineCount(unit.root, lineBaseTag)),
-		});
-	}
-
-	const groups: GroupFacts[] = [];
-	for (const { name, members } of workspace.groups) {
-		let baseTag: UnitTag | null = null;
-		let lineBaseTag: UnitTag | null = null;
-		for (const id of members) {
-			const own = bases.get(id);
-			if (own) {
-				// eslint-disable-next-line no-await-in-loop -- memoized ancestry
-				baseTag = await higher(own.scheme, baseTag, own.baseTag);
-				// eslint-disable-next-line no-await-in-loop -- memoized ancestry
-				lineBaseTag = await higher(own.scheme, lineBaseTag, own.lineBaseTag);
-			}
-		}
-
-		groups.push({
-			name,
-			members,
-			baseTag,
-			lineBaseTag,
-			sinceLineBase: lineBaseTag
-				? // eslint-disable-next-line no-await-in-loop -- memoized per line base
-					await countSince(lineBaseTag.sha)
-				: Math.max(
-						0,
-						...members.map((id) => bases.get(id)?.sinceLineBase ?? 0),
-					),
-		});
-	}
+/** Runs every `GitReader` and intent source call a plan needs. */
+export const collectPlanFacts = async (
+	workspace: Workspace,
+	git: GitReader,
+	opts: FactsOptions,
+): Promise<PlanFacts> => {
+	const { head } = opts;
+	const line = await lineFacts(git, head);
+	const { tags, bases, groups, isAncestor, tagNames } = await tagFacts(
+		workspace,
+		git,
+		line,
+	);
+	const { range, all, warnings } = rangeFacts(workspace, git, opts);
 
 	const groupOf = new Map(
 		groups.flatMap((g) => g.members.map((id) => [id, g])),
@@ -360,7 +400,7 @@ export const collectPlanFacts = async (
 			lineBaseTag,
 			introduced,
 			sinceLineBase,
-			total,
+			total: line.total,
 			changes: changes.filter((c) => c.units.includes(unit.id)),
 			releaseAs: changes.flatMap(({ change }) =>
 				(change.releaseAs ?? [])
@@ -373,12 +413,5 @@ export const collectPlanFacts = async (
 		});
 	}
 
-	return {
-		head,
-		units,
-		ranges: [...ranges.values()],
-		groups,
-		tagNames: uniqueSorted(allTags.map((t) => t.name)),
-		warnings,
-	};
+	return { head, units, ranges: all(), groups, tagNames, warnings };
 };
