@@ -7,11 +7,11 @@ import type {
 	Core,
 	LimitCommit,
 	LimitItem,
+	LimitSubject,
 	Line,
-	ReleaseItem,
 } from "./model/branch-types.js";
 import type { Plan } from "./model/plan-types.js";
-import type { ReleaseItem as PrItem } from "./release-items.js";
+import type { ReleaseItem } from "./release-items.js";
 import type { Workspace } from "./workspace.js";
 
 const SPECIAL = /[\\^$.*+?()[\]{}|/]/gu;
@@ -64,10 +64,10 @@ const compileRule = (rule: BranchRule): RegExp => {
 const within = (limit: "minor" | "patch", from: Core, next: Core) =>
 	next.major === from.major && (limit === "minor" || next.minor === from.minor);
 
-const itemLabel = ({ unit, group }: ReleaseItem) =>
+const itemLabel = ({ unit, group }: LimitSubject) =>
 	unit === null ? `group "${group ?? ""}"` : `unit "${unit}"`;
 
-const itemDetails = ({ unit, group }: ReleaseItem) =>
+const itemDetails = ({ unit, group }: LimitSubject) =>
 	unit === null ? { group } : { unit };
 
 /** `c3 web v2 (major)`, with `via` and Release-As when set. */
@@ -154,7 +154,7 @@ export const validateBranches = (rules: readonly BranchRule[]): void => {
 export const matchBranch = (
 	rules: readonly BranchRule[],
 	branch: string,
-	single: ReleaseItem | null = null,
+	single: LimitSubject | null = null,
 ): Line | null => {
 	for (const rule of rules) {
 		const match = compileRule(rule).exec(branch);
@@ -281,7 +281,7 @@ export interface MaintenanceCut {
 export const maintenanceCut = (
 	workspace: Workspace,
 	plan: Plan,
-	item: PrItem,
+	item: ReleaseItem,
 ): MaintenanceCut | undefined => {
 	const base =
 		item.kind === "group"
