@@ -1,17 +1,11 @@
 import { computeAffected } from "./affected.js";
 import { checkLimits, matchBranch } from "./branches.js";
+import { changeLevel, reach } from "./bump.js";
 import { coreCodes } from "./codes.js";
 import { collectPlanFacts } from "./facts.js";
 import { propagate } from "./propagate.js";
-import {
-	changeLevel,
-	footerOf,
-	reach,
-	releaseAsWarnings,
-	releaseGroup,
-	releaseUnit,
-	unitIntent,
-} from "./release.js";
+import { releaseAsWarnings } from "./release-as.js";
+import { footerOf, releaseGroup, releaseUnit, unitIntent } from "./release.js";
 import { noMatchingTag } from "./tags.js";
 import { maxLevel } from "./util.js";
 import { validateRelease } from "./validate.js";
