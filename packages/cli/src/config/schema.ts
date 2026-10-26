@@ -1,6 +1,7 @@
 import { z } from "zod";
 
-import type { TallyConfig } from "@tallyrelease/core";
+import type { Equals } from "../types.js";
+import type { GroupConfig, TallyConfig } from "@tallyrelease/core";
 
 const globs = z.array(z.string()).exactOptional();
 const propagate = z.enum(["auto", "patch", "rebuild"]).meta({
@@ -30,6 +31,19 @@ const groupUnits = z.array(unitId).meta({ description: "Member unit ids." });
 const groupTags = z
 	.array(z.string())
 	.meta({ description: "Selects released units with any of these tags." });
+
+const groupSchema: z.ZodType<GroupConfig> = z.union([
+	z.strictObject({
+		units: groupUnits,
+		tags: groupTags.exactOptional(),
+		releasePr: releasePr.exactOptional(),
+	}),
+	z.strictObject({
+		units: groupUnits.exactOptional(),
+		tags: groupTags,
+		releasePr: releasePr.exactOptional(),
+	}),
+]);
 
 const globRejected = ["id", "include", "exclude", "versionFiles"] as const;
 
@@ -107,8 +121,7 @@ const unitOverlay = z.strictObject({
 		.exactOptional(),
 });
 
-/** Schema of `tallyrelease.yaml`. */
-export const configSchema = z.strictObject({
+const configObject = z.strictObject({
 	$schema: z
 		.string()
 		.meta({ description: "Schema reference for editors, ignored." })
@@ -261,21 +274,7 @@ export const configSchema = z.strictObject({
 		.meta({ description: "How commits map to bump levels." })
 		.exactOptional(),
 	groups: z
-		.record(
-			unitId,
-			z.union([
-				z.strictObject({
-					units: groupUnits,
-					tags: groupTags.exactOptional(),
-					releasePr: releasePr.exactOptional(),
-				}),
-				z.strictObject({
-					units: groupUnits.exactOptional(),
-					tags: groupTags,
-					releasePr: releasePr.exactOptional(),
-				}),
-			]),
-		)
+		.record(unitId, groupSchema)
 		.refine((groups) => Object.keys(groups).length > 0, {
 			message: "groups needs at least one group",
 		})
@@ -297,7 +296,18 @@ export const configSchema = z.strictObject({
 		})
 		.meta({ description: "Tags beyond the version tag of each release." })
 		.exactOptional(),
-}) satisfies z.ZodType<TallyConfig>;
+});
+
+/** Schema of `tallyrelease.yaml`; the parsed output drops `$schema`. */
+export const configSchema = configObject.transform(
+	({ $schema: _, ...config }) => config,
+);
+
+// Fails to compile when the schema misses or adds a field of `TallyConfig`.
+export const configSchemaExact: Equals<
+	z.output<typeof configSchema>,
+	TallyConfig
+> = true;
 
 /** JSON schema (draft-07) of `tallyrelease.yaml` as published for editors. */
 export const configJsonSchema = () => ({
