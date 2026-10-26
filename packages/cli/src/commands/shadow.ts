@@ -1,6 +1,6 @@
 import { computePlan, TallyError } from "@tallyrelease/core";
-import { resolve } from "node:path";
 
+import { outPath, toJson } from "../app/outputs.js";
 import { appendStepSummary } from "../ci/summary.js";
 import { cliCodes } from "../codes.js";
 import { count } from "../output/count.js";
@@ -156,11 +156,9 @@ const writeReport = (
 	report: ShadowReport,
 ): void => {
 	const { env } = session;
-	if (flags.out !== undefined) {
-		session.writeOutFile(
-			resolve(session.cwd, flags.out),
-			`${JSON.stringify(report, null, 2)}\n`,
-		);
+	const out = outPath(session, flags.out);
+	if (out !== undefined) {
+		session.writeOutFile(out, toJson(report));
 	}
 
 	const appended =

@@ -1,3 +1,4 @@
+import { short } from "./short.js";
 import { baseLabel } from "../ci/base.js";
 import { alignColumns } from "../output/columns.js";
 import { count } from "../output/count.js";
@@ -47,7 +48,7 @@ export const affectedText = (
 		{ indent: 2, styles: [undefined, "dim", "dim", "cyan"] },
 		paint,
 	);
-	const sha = doc.build.base?.slice(0, 7) ?? "none";
+	const sha = short(doc.build.base, "none");
 	const lines = [
 		`${paint("bold", "base")}  ${paint("yellow", sha)} ${paint("dim", `(${baseLabel(base)})`)}`,
 		"",
