@@ -1,6 +1,5 @@
 import { join, resolve } from "node:path";
 
-import { baseLabel, baseLine } from "../ci/base.js";
 import {
 	affectedGithubOutput,
 	planGithubOutput,
@@ -8,110 +7,14 @@ import {
 } from "../ci/outputs.js";
 import { appendStepSummary } from "../ci/summary.js";
 import { cliCodes } from "../codes.js";
-import { alignColumns } from "../output/columns.js";
-import { count } from "../output/count.js";
 import { painter } from "../output/paint.js";
+import { planMarkdown, planText } from "../render/plan.js";
 
 import type { PlanFlags } from "./setup.js";
 import type { BuildBase } from "../ci/base.js";
 import type { ReleaseEntry } from "../plan-schema.js";
 import type { Session } from "../session.js";
-import type { AffectedDoc, Plan, PlanLine } from "@tallyrelease/core";
-
-const lineLabel = (line: PlanLine | null, branch: string): string =>
-	line === null
-		? `${branch} (no branch rule)`
-		: `${branch} (rule ${line.rule}, ${line.kind} line${line.channel === null ? "" : `, channel ${line.channel}`}${line.maxBump === null ? "" : `, max bump ${line.maxBump}`}${line.absolute === null ? "" : `, base ${String(line.absolute.major)}.${line.absolute.minor === undefined ? "x" : String(line.absolute.minor)} of ${line.absolute.unit ?? line.absolute.group ?? ""}`})`;
-
-const text = (session: Session, doc: Plan, base: BuildBase): string => {
-	const paint = painter(session.stdout);
-	const lines = [
-		`${paint("bold", "branch")}  ${lineLabel(doc.line, doc.branch)}`,
-		baseLine(paint, base),
-		"",
-	];
-	if (doc.units.length === 0) {
-		lines.push("no units planned");
-
-		return `${lines.join("\n")}\n`;
-	}
-
-	const grouped = doc.units.some((u) => u.group !== null);
-	const table = [
-		[
-			"UNIT",
-			...(grouped ? ["GROUP"] : []),
-			"KIND",
-			"FROM",
-			"BUMP",
-			"NEXT",
-			"VERSION",
-		],
-		...doc.units.map((u) => [
-			u.id,
-			...(grouped ? [u.group ?? "-"] : []),
-			u.kind,
-			u.from ?? "-",
-			u.bump ?? "-",
-			u.next ?? "-",
-			u.version ?? "-",
-		]),
-	];
-	// Header is aligned unstyled so column styles do not apply to it.
-	const [header = ""] = alignColumns(table);
-	const [, ...rows] = alignColumns(
-		table,
-		{ styles: grouped ? [undefined, "dim", "cyan"] : [undefined, "cyan"] },
-		paint,
-	);
-	const kinds = (["prerelease", "rebuild", "none"] as const)
-		.map((kind) => [kind, doc.units.filter((u) => u.kind === kind).length])
-		.filter(([, n]) => n !== 0)
-		.map(([kind, n]) => `${String(n)} ${String(kind)}`);
-	lines.push(
-		paint("bold", header),
-		...rows,
-		"",
-		`${count(doc.units.length, "unit")} planned: ${kinds.join(", ")}`,
-	);
-
-	return `${lines.join("\n")}\n`;
-};
-
-const markdown = (doc: Plan, base: BuildBase): string => {
-	const lines = [
-		"### tallyrelease plan",
-		"",
-		`Branch ${lineLabel(doc.line, doc.branch)}.`,
-		"",
-		`Base ${base.base?.slice(0, 7) ?? "none"} (${baseLabel(base)}).`,
-		"",
-	];
-	if (doc.units.length === 0) {
-		lines.push("No units planned.");
-	} else {
-		const grouped = doc.units.some((u) => u.group !== null);
-		lines.push(
-			`| Unit |${grouped ? " Group |" : ""} Kind | From | Bump | Next | Version |`,
-			`| :-- |${grouped ? " :-- |" : ""} :-- | :-- | :-- | :-- | :-- |`,
-			...doc.units.map(
-				(u) =>
-					`| ${u.id} |${grouped ? ` ${u.group ?? "-"} |` : ""} ${u.kind} | ${u.from ?? "-"} | ${u.bump ?? "-"} | ${u.next ?? "-"} | ${u.version ?? "-"} |`,
-			),
-		);
-	}
-
-	if (doc.warnings.length > 0) {
-		lines.push(
-			"",
-			"Warnings:",
-			"",
-			...doc.warnings.map((w) => `- ${w.code}: ${w.message}`),
-		);
-	}
-
-	return `${lines.join("\n")}\n`;
-};
+import type { AffectedDoc, Plan } from "@tallyrelease/core";
 
 /** `--out` resolved against the working directory. */
 const outPath = (session: Session, out: string | undefined) =>
@@ -193,14 +96,14 @@ export const writePlan = (
 	}
 
 	const appended =
-		flags.summary && appendStepSummary(session, markdown(doc, base));
+		flags.summary && appendStepSummary(session, planMarkdown(doc, base));
 
 	const format = flags.format ?? (flags.json ? "json" : "text");
 	session.stdout.write(
 		format === "json"
 			? json
 			: flags.summary && !appended
-				? markdown(doc, base)
-				: text(session, doc, base),
+				? planMarkdown(doc, base)
+				: planText(doc, base, painter(session.stdout)),
 	);
 };

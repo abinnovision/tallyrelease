@@ -3,15 +3,20 @@ import { resolve } from "node:path";
 
 import { appendStepSummary } from "../ci/summary.js";
 import { cliCodes } from "../codes.js";
-import { alignColumns } from "../output/columns.js";
 import { count } from "../output/count.js";
+import {
+	shadowAnnotation,
+	shadowMarkdown,
+	shadowText,
+} from "../render/shadow.js";
+import { short } from "../render/short.js";
 import { branchName } from "../session.js";
-import { compareShadow } from "../shadow/compare.js";
+import { compareShadow, unlabelled } from "../shadow/compare.js";
 import { version } from "../version.js";
 
 import type { RepoGit } from "../git/reader.js";
 import type { Session } from "../session.js";
-import type { ShadowRow } from "../shadow/compare.js";
+import type { ShadowReport } from "../shadow/compare.js";
 import type {
 	CodeOf,
 	coreCodes,
@@ -23,8 +28,6 @@ import type {
 const CAP_ERRORS: ReadonlySet<string> = new Set<
 	ErrorCode<CodeOf<typeof coreCodes>>
 >(["E_CAP", "E_CAP_BASE"]);
-
-const short = (sha: string | null) => sha?.slice(0, 7) ?? "-";
 
 const MANIFEST = ".release-please-manifest.json";
 const RP_CONFIG = "release-please-config.json";
@@ -70,10 +73,6 @@ const readJson = (
 const readManifest = (content: string | undefined, path: string) =>
 	readJson(content, path, true) as Record<string, string>;
 
-// Workflow command data escaping.
-const escapeData = (value: string) =>
-	value.replace(/%/g, "%25").replace(/\r/g, "%0D").replace(/\n/g, "%0A");
-
 /** Full messages of the commits since each changed unit's base tag. */
 const commitMessages = async (
 	git: RepoGit,
@@ -94,62 +93,6 @@ const commitMessages = async (
 	}
 
 	return messages;
-};
-
-const unlabelled = (rows: readonly ShadowRow[]) =>
-	rows.filter((r) => r.status !== "match" && r.labels.length === 0);
-
-const text = (report: ShadowReport): string => {
-	const header = `shadow  ${short(report.head)} (planned ${short(report.planned)}, branch ${report.branch})`;
-	if (report.skipped) {
-		return `${header}\nskipped (${report.skipped.reason}): ${report.skipped.message}\n`;
-	}
-
-	const table = alignColumns([
-		["PATH", "UNIT", "STATUS", "BEFORE", "AFTER", "NEXT", "LABELS"],
-		...report.rows.map((r) => [
-			r.path,
-			r.unit ?? "-",
-			r.status,
-			r.before ?? "-",
-			r.after ?? "-",
-			r.next ?? "-",
-			r.labels.join(",") || "-",
-		]),
-	]);
-	const matched = report.rows.filter((r) => r.status === "match").length;
-
-	return `${[
-		header,
-		"",
-		...table,
-		"",
-		`${count(report.rows.length, "row")}: ${String(matched)} match, ${String(unlabelled(report.rows).length)} unlabelled`,
-	].join("\n")}\n`;
-};
-
-const markdown = (report: ShadowReport): string => {
-	const pin = report.pin === null ? "" : `, pin \`${report.pin}\``;
-	const lines = [
-		"### tallyrelease shadow",
-		"",
-		`Head \`${short(report.head)}\`, planned \`${short(report.planned)}\` on \`${report.branch}\`${pin}.`,
-		"",
-	];
-	if (report.skipped) {
-		lines.push(`Skipped (${report.skipped.reason}): ${report.skipped.message}`);
-	} else {
-		lines.push(
-			"| Path | Unit | Status | Before | release-please | tallyrelease | Labels |",
-			"| :-- | :-- | :-- | :-- | :-- | :-- | :-- |",
-			...report.rows.map(
-				(r) =>
-					`| \`${r.path}\` | ${r.unit ?? "-"} | ${r.status} | ${r.before ?? "-"} | ${r.after ?? "-"} | ${r.next ?? "-"} | ${r.labels.join(", ") || "-"} |`,
-			),
-		);
-	}
-
-	return `${lines.join("\n")}\n`;
 };
 
 /** Plans `report.planned` and fills the rows; a cap error becomes a skip. */
@@ -221,16 +164,14 @@ const writeReport = (
 	}
 
 	const appended =
-		flags.summary && appendStepSummary(session, markdown(report));
+		flags.summary && appendStepSummary(session, shadowMarkdown(report));
 	session.stdout.write(
-		flags.summary && !appended ? markdown(report) : text(report),
+		flags.summary && !appended ? shadowMarkdown(report) : shadowText(report),
 	);
 
 	if (env["GITHUB_ACTIONS"] === "true") {
 		for (const r of unlabelled(report.rows)) {
-			session.stdout.write(
-				`::warning title=tallyrelease shadow::${escapeData(`${r.path}: ${r.status} (release-please ${r.after ?? "-"}, tallyrelease ${r.next ?? "-"})`)}\n`,
-			);
+			session.stdout.write(shadowAnnotation(r));
 		}
 	}
 };
@@ -251,6 +192,8 @@ const missingInputs = (
 			),
 		);
 
+export type { ShadowReport } from "../shadow/compare.js";
+
 export interface ShadowFlags {
 	manifest?: string;
 	rpConfig?: string;
@@ -260,26 +203,6 @@ export interface ShadowFlags {
 	out?: string;
 	summary?: boolean;
 	strict?: boolean;
-}
-
-/** `tallyrelease shadow --out`, schema 1. */
-export interface ShadowReport {
-	schema: 1;
-	tool: string;
-	/** `--pin`. */
-	pin: string | null;
-	/** `GITHUB_SHA`. */
-	sha: string | null;
-	/** True with `--head`, or when `head` is not `GITHUB_SHA`. */
-	replay: boolean;
-	branch: string;
-	head: string;
-	/** `HEAD^1`, the planned commit; null for a root commit. */
-	planned: string | null;
-	manifest: string;
-	skipped: { reason: "manifest" | "cap"; message: string } | null;
-	rows: ShadowRow[];
-	warnings: Warning[];
 }
 
 /** Compares the plan before a release-please merge with its manifest change. */

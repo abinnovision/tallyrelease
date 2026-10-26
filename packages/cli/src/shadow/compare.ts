@@ -1,6 +1,6 @@
 import { semver } from "@tallyrelease/core";
 
-import type { Plan, UnitPlan } from "@tallyrelease/core";
+import type { Plan, UnitPlan, Warning } from "@tallyrelease/core";
 
 /*
  * release-please (`splitMessages` in src/commit.ts) splits a message into
@@ -209,3 +209,27 @@ export const compareShadow = (input: CompareInput): ShadowRow[] => {
 
 	return rows.sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
 };
+
+/** `tallyrelease shadow --out`, schema 1. */
+export interface ShadowReport {
+	schema: 1;
+	tool: string;
+	/** `--pin`. */
+	pin: string | null;
+	/** `GITHUB_SHA`. */
+	sha: string | null;
+	/** True with `--head`, or when `head` is not `GITHUB_SHA`. */
+	replay: boolean;
+	branch: string;
+	head: string;
+	/** `HEAD^1`, the planned commit; null for a root commit. */
+	planned: string | null;
+	manifest: string;
+	skipped: { reason: "manifest" | "cap"; message: string } | null;
+	rows: ShadowRow[];
+	warnings: Warning[];
+}
+
+/** Rows that differ without a label explaining it. */
+export const unlabelled = (rows: readonly ShadowRow[]) =>
+	rows.filter((r) => r.status !== "match" && r.labels.length === 0);

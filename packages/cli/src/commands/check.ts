@@ -4,7 +4,7 @@ import {
 	versionFileClaims,
 } from "@tallyrelease/core";
 
-import { count } from "../output/count.js";
+import { checkText } from "../render/check.js";
 
 import type { Session } from "../session.js";
 
@@ -24,8 +24,11 @@ export const check = async (session: Session): Promise<void> => {
 		session.warn(validateTags(workspace, await session.git.tags()));
 	}
 
-	const list = released.length > 0 ? `: ${released.join(", ")}` : "";
 	session.stdout.write(
-		`ok: ${count(workspace.units.length, "unit")} (${String(released.length)} released${list}), ${count(workspace.graph.edges.length, "edge")}\n`,
+		checkText({
+			units: workspace.units.length,
+			released,
+			edges: workspace.graph.edges.length,
+		}),
 	);
 };

@@ -10,6 +10,13 @@ import { effectSkipped, repoRef } from "../app/effects.js";
 import { planOptions } from "../app/setup.js";
 import { cliCodes } from "../codes.js";
 import { LABELS } from "../forge/forge.js";
+import {
+	reconcileLines,
+	reconcileText,
+	releaseName,
+	staleComment,
+	staleReason,
+} from "../render/release.js";
 
 import type { PlanSetup } from "../app/setup.js";
 import type { Forge, ReleasePr, RepoRef } from "../forge/forge.js";
@@ -22,14 +29,6 @@ import type {
 	TagRef,
 	Workspace,
 } from "@tallyrelease/core";
-
-const short = (sha: string) => sha.slice(0, 7);
-
-/** release-please release name: `cli-v0.2.0` is `cli: v0.2.0`, `v1.0.0` stays. */
-const releaseName = ({ tag, version }: ReleasedUnit): string =>
-	tag.endsWith(`-v${version}`)
-		? `${tag.slice(0, -(version.length + 2))}: v${version}`
-		: tag;
 
 /**
  * GitHub release per entry unless one exists (a 422 on create means it does);
@@ -253,22 +252,21 @@ export const reconcile = async (
 	});
 	const lines: string[] = [];
 	const reconciled: Reconciled[] = [];
-	const labelled = flags.dryRun ? "would label" : "labelled";
+	const line = reconcileLines(flags.dryRun);
 
 	const stale = async (pr: ReleasePr, reason: string) => {
 		if (!flags.dryRun) {
 			await forge.setLabel(repo, pr.number, {
 				label: LABELS.stale,
-				comment: `tallyrelease did not tag this release PR: ${reason}. Its releases are proposed again in the next release PR.`,
+				comment: staleComment(reason),
 			});
 		}
 
-		lines.push(`PR #${String(pr.number)}: ${labelled} stale: ${reason}`);
+		lines.push(line.stale(pr.number, reason));
 	};
 
 	/* eslint-disable no-await-in-loop -- each PR is planned after the tags of the earlier ones */
 	for (const pr of merged) {
-		const label = `PR #${String(pr.number)}`;
 		const mergeSha =
 			pr.mergeCommitSha === null
 				? undefined
@@ -277,23 +275,18 @@ export const reconcile = async (
 			mergeSha === undefined ||
 			!(await git.isAncestor(mergeSha, opts.head))
 		) {
-			lines.push(
-				`${label}: merge ${short(pr.mergeCommitSha ?? "-")} is not in HEAD; left pending`,
-			);
+			lines.push(line.pending(pr.number, pr.mergeCommitSha));
 			continue;
 		}
 
 		const marker = decodeMarker(pr.body);
 		if (!marker) {
-			await stale(pr, "its body has no valid tallyrelease marker");
+			await stale(pr, staleReason.noMarker);
 			continue;
 		}
 
 		if (pr.headSha !== marker.releaseCommit) {
-			await stale(
-				pr,
-				`its head ${short(pr.headSha)} is not the release commit ${short(marker.releaseCommit)}`,
-			);
+			await stale(pr, staleReason.headMoved(pr.headSha, marker.releaseCommit));
 			continue;
 		}
 
@@ -310,15 +303,11 @@ export const reconcile = async (
 			releases: tagged ? undefined : marker.releases,
 		});
 		if (!planned.plan) {
-			await stale(
-				pr,
-				`its releases differ from the plan at ${short(planned.parent)}, the commit it was merged onto`,
-			);
+			await stale(pr, staleReason.planDiffers(planned.parent));
 			continue;
 		}
 
 		const { workspace, plan } = planned.plan;
-		const verb = (done: string, dry: string) => (flags.dryRun ? dry : done);
 		for (const t of tags) {
 			await tag(t, mergeSha);
 		}
@@ -336,9 +325,7 @@ export const reconcile = async (
 		}
 
 		if (!tagged || floatingCurrent.some((sha) => sha !== mergeSha)) {
-			lines.push(
-				`${label}: ${verb("tagged", "would tag")} ${tags.join(", ")} at ${short(mergeSha)}`,
-			);
+			lines.push(line.tagged(pr.number, tags, mergeSha));
 			if (!flags.dryRun) {
 				await gitWriter.push(
 					[
@@ -350,9 +337,7 @@ export const reconcile = async (
 			}
 
 			if (floating.length > 0) {
-				lines.push(
-					`${label}: ${verb("moved", "would move")} ${floating.join(", ")}`,
-				);
+				lines.push(line.moved(pr.number, floating));
 			}
 		}
 
@@ -368,16 +353,14 @@ export const reconcile = async (
 			{ released },
 		);
 		if (created.length > 0) {
-			lines.push(
-				`${label}: ${verb("created", "would create")} releases ${created.join(", ")}`,
-			);
+			lines.push(line.created(pr.number, created));
 		}
 
 		if (!flags.dryRun) {
 			await forge.setLabel(repo, pr.number, { label: LABELS.released });
 		}
 
-		lines.push(`${label}: ${labelled} released`);
+		lines.push(line.released(pr.number));
 		reconciled.push({
 			number: pr.number,
 			url: pr.url,
@@ -390,9 +373,7 @@ export const reconcile = async (
 	/* eslint-enable no-await-in-loop */
 
 	session.warn(setup.warnings);
-	session.stdout.write(
-		lines.length > 0 ? `${lines.join("\n")}\n` : "no merged release PRs\n",
-	);
+	session.stdout.write(reconcileText(lines));
 
 	return reconciled;
 };
