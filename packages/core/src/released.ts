@@ -5,7 +5,7 @@ import { matchUnitTags } from "./tags.js";
 import { compare } from "./util.js";
 
 import type { Warning } from "./errors.js";
-import type { Plan, ReleasedUnit } from "./plan.js";
+import type { Plan, ReleasedUnit } from "./model/plan-types.js";
 import type { GitReader, MaybePromise, VersionScheme } from "./plugin.js";
 import type { UnitTag } from "./tags.js";
 import type { Workspace } from "./workspace.js";

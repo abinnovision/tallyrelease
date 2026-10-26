@@ -4,7 +4,12 @@ import { coreCodes } from "./codes.js";
 import { planWithFacts } from "./plan.js";
 
 import type { Warning } from "./errors.js";
-import type { Plan, PlanChange, PlanOptions, UnitPlan } from "./plan.js";
+import type {
+	Plan,
+	PlanChange,
+	PlanOptions,
+	UnitPlan,
+} from "./model/plan-types.js";
 import type { GitReader } from "./plugin.js";
 import type { Workspace } from "./workspace.js";
 

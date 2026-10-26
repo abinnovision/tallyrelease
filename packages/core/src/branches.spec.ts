@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { matchBranch, validateBranches } from "./branches.js";
 
-import type { BranchRule } from "./release.js";
+import type { BranchRule } from "./model/branch-types.js";
 
 const rule = (
 	name: string,

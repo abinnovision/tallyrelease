@@ -4,7 +4,7 @@ import { renderTag } from "./tags.js";
 
 import type { ReleasePrMode } from "./config.js";
 import type { MarkerRelease } from "./marker.js";
-import type { Plan } from "./plan.js";
+import type { Plan } from "./model/plan-types.js";
 import type { Workspace } from "./workspace.js";
 
 type ItemShape = Pick<ReleaseItem, "name" | "kind" | "mode" | "units">;

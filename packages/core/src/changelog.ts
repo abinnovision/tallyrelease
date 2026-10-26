@@ -2,7 +2,7 @@ import { schemeRegistry } from "./schemes.js";
 import { renderTag } from "./tags.js";
 import { compare } from "./util.js";
 
-import type { PlanChange, Plan } from "./plan.js";
+import type { PlanChange, Plan } from "./model/plan-types.js";
 import type { Unit, VersionScheme } from "./plugin.js";
 import type { Workspace } from "./workspace.js";
 

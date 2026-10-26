@@ -7,7 +7,7 @@ export type {
 	AffectedReason,
 	AffectedUnit,
 	BaseSource,
-} from "./affected.js";
+} from "./model/affected-types.js";
 export type { ChangelogDependency, ChangelogInput } from "./changelog.js";
 export type {
 	CodeDoc,
@@ -23,15 +23,15 @@ export type {
 	ReleaseAsFooter,
 	UnitExplanation,
 } from "./explain.js";
+export type { BranchRule, Line as PlanLine } from "./model/branch-types.js";
 export type {
 	GroupPlan,
 	Plan,
 	PlanChange,
-	PlanLine,
 	PlanOptions,
 	ReleasedUnit,
 	UnitPlan,
-} from "./plan.js";
+} from "./model/plan-types.js";
 export type {
 	DepConfig,
 	GroupConfig,
@@ -70,7 +70,7 @@ export type {
 export type { Marker, MarkerRelease } from "./marker.js";
 export type { ActivePlugin, PluginEnv } from "./plugins.js";
 export type { ReleaseItem } from "./release-items.js";
-export type { BranchRule, ReleaseSettings } from "./release.js";
+export type { ReleaseSettings } from "./release.js";
 export type { SchemeEntry } from "./schemes.js";
 export type { SemVer } from "./semver.js";
 export type { IntentEntry, Workspace, WorkspaceInput } from "./workspace.js";

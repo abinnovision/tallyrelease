@@ -5,12 +5,13 @@ import { compare, maxLevel, uniqueSorted } from "./util.js";
 import type { CodeOf, WarningCode } from "./codes.js";
 import type { ReleasePrMode, TallyConfig, VersionTemplate } from "./config.js";
 import type { Warning } from "./errors.js";
+import type { BranchRule } from "./model/branch-types.js";
 import type {
 	AttributedChange,
 	GroupFacts,
 	RangeFacts,
 	UnitFacts,
-} from "./facts.js";
+} from "./model/facts-types.js";
 import type {
 	BumpLevel,
 	Change,
@@ -311,16 +312,6 @@ export interface ReleaseAsWinner<V> {
 	/** As written in the footer. */
 	readonly raw: string;
 	readonly version: V;
-}
-
-/** A normalized branch rule. */
-export interface BranchRule {
-	readonly name: string;
-	readonly line: "default" | "maintenance";
-	readonly channel: string | null;
-	/** Release item of the absolute maintenance check. */
-	readonly unit: string | null;
-	readonly group: string | null;
 }
 
 /** Release config with defaults applied. */

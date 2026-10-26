@@ -16,28 +16,25 @@ import { noMatchingTag } from "./tags.js";
 import { maxLevel } from "./util.js";
 import { validateRelease } from "./validate.js";
 
-import type {
-	AffectedDoc,
-	AffectedOptions,
-	AffectedReason,
-	AffectedUnit,
-} from "./affected.js";
+import type { Warning } from "./errors.js";
+import type { AffectedUnit } from "./model/affected-types.js";
 import type {
 	CoreVersion,
-	Line,
 	LimitCommit,
 	LimitItem,
+	Line,
 	ReleaseItem,
-} from "./branches.js";
-import type { Warning } from "./errors.js";
-import type { PlanFacts, UnitFacts } from "./facts.js";
+} from "./model/branch-types.js";
+import type { PlanFacts, UnitFacts } from "./model/facts-types.js";
 import type {
-	BumpLevel,
-	GitReader,
-	ReadonlyFs,
-	Unit,
-	VersionScheme,
-} from "./plugin.js";
+	GroupPlan,
+	Plan,
+	PlanChange,
+	PlanOptions,
+	ResolveInput,
+	UnitPlan,
+} from "./model/plan-types.js";
+import type { GitReader, Unit } from "./plugin.js";
 import type { Propagated } from "./propagate.js";
 import type {
 	GroupMember,
@@ -495,108 +492,6 @@ const resolveReleases = (
 	};
 };
 
-export interface PlanChange {
-	/** Absent for file-based changes. */
-	sha?: string;
-	type: string;
-	breaking: boolean;
-	scope?: string;
-	subject: string;
-	/** `BREAKING CHANGE` footer text. */
-	notes?: string;
-	pr?: number;
-	/** Absorbed unit the change came through. */
-	via?: string;
-	/** Release-As value of this commit for the unit. */
-	releaseAs?: string;
-}
-
-export interface UnitPlan {
-	id: string;
-	/** Unit root, `.` for the repo root. */
-	path: string;
-	plugin: string;
-	scheme: string;
-	tags: string[];
-	group: string | null;
-	affected: { reason: AffectedReason; via: string[] } | null;
-	kind: "prerelease" | "rebuild" | "none";
-	baseTag: string | null;
-	lineBaseTag: string | null;
-	/** Null on a first release. */
-	from: string | null;
-	bump: BumpLevel | null;
-	releaseAs: string | null;
-	propagatedFrom: string[];
-	absorbedFrom: string[];
-	next: string | null;
-	version: string | null;
-	/** The planned commit. */
-	sha: string;
-	/** Core commit order. */
-	changes: PlanChange[];
-}
-
-export interface GroupPlan {
-	name: string;
-	members: string[];
-	baseTag: string | null;
-	from: string | null;
-	bump: BumpLevel | null;
-	next: string | null;
-	version: string | null;
-}
-
-export interface ReleasedUnit {
-	id: string;
-	path: string;
-	version: string;
-	tag: string;
-	floatingTags: string[];
-	releaseSha: string;
-	/** Not built from HEAD by this run (release sha differs from HEAD, or the unit is outside the build set). */
-	catchUp: boolean;
-	/** Null when not looked up (no forge, or a forge error in `plan`). */
-	forge: ReleasedForge | null;
-	line: "default" | "maintenance";
-	/** Highest stable version tagged for the unit, never on a maintenance line. */
-	latest: boolean;
-}
-
-export interface ReleasedForge {
-	/** PR that merged the release sha. */
-	pr: { number: number; url: string } | null;
-	/** Forge release of the tag. */
-	release: { url: string } | null;
-}
-
-/** `tallyrelease plan --json`, schema 1. */
-export interface Plan extends Omit<AffectedDoc, "units"> {
-	line: Line | null;
-	/** Topological order, cycles by id. */
-	units: UnitPlan[];
-	/** Sorted by name. */
-	groups: GroupPlan[];
-	/** Stable releases in `(build.base, head]`; empty until filled. */
-	released: ReleasedUnit[];
-}
-
-export interface PlanOptions extends AffectedOptions {
-	/** Files at `head`, for intent source contexts. */
-	fs: ReadonlyFs;
-	/** Also list released units outside the build set with a pending release. */
-	all?: boolean;
-	debug?: (message: string) => void;
-}
-
-/** Inputs of `resolvePlan`, all collected before release math. */
-export interface ResolveInput {
-	affected: AffectedDoc;
-	facts: PlanFacts;
-	schemes: ReadonlyMap<string, VersionScheme<any>>;
-	all: boolean;
-}
-
 /** Release math over collected facts; no I/O. */
 export const resolvePlan = (workspace: Workspace, input: ResolveInput): Plan =>
 	resolveReleases(workspace, input).plan;
@@ -641,5 +536,3 @@ export const computePlan = async (
 	git: GitReader,
 	opts: PlanOptions,
 ): Promise<Plan> => (await planWithFacts(workspace, git, opts)).plan;
-
-export type { Line as PlanLine } from "./branches.js";

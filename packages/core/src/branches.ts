@@ -2,10 +2,16 @@ import { coreCodes } from "./codes.js";
 import { schemeRegistry } from "./schemes.js";
 import { maxLevel } from "./util.js";
 
-import type { Plan } from "./plan.js";
-import type { BumpLevel } from "./plugin.js";
+import type {
+	BranchRule,
+	Core,
+	LimitCommit,
+	LimitItem,
+	Line,
+	ReleaseItem,
+} from "./model/branch-types.js";
+import type { Plan } from "./model/plan-types.js";
 import type { ReleaseItem as PrItem } from "./release-items.js";
-import type { BranchRule } from "./release.js";
 import type { Workspace } from "./workspace.js";
 
 const SPECIAL = /[\\^$.*+?()[\]{}|/]/gu;
@@ -77,22 +83,6 @@ const commitLabel = ({ sha, subject, level, via, releaseAs }: LimitCommit) => {
 
 	return `${sha === undefined ? subject : `${sha} ${subject}`} (${notes.join(", ")})`;
 };
-
-/** The branch rule matching the planned branch. */
-export interface Line {
-	rule: string;
-	kind: "default" | "maintenance";
-	/** Rendered with the rule's captures. */
-	channel: string | null;
-	/** Maintenance rules: `minor` for `{major}`, `patch` with `{minor}`. */
-	maxBump: "minor" | "patch" | null;
-	absolute: {
-		unit: string | null;
-		group: string | null;
-		major: number;
-		minor?: number;
-	} | null;
-}
 
 /**
  * Validates rule names, `unit`/`group` and channels: `E_BRANCH_RULE`, `E_CHANNEL_WILDCARD`,
@@ -202,43 +192,6 @@ export const matchBranch = (
 
 	return null;
 };
-
-/** An ungrouped released unit or a fixed group. */
-export interface ReleaseItem {
-	unit: string | null;
-	group: string | null;
-}
-
-/** Major and minor of a version. */
-export interface Core {
-	major: number;
-	minor: number;
-}
-
-/** A formatted version with its core. */
-export interface CoreVersion extends Core {
-	version: string;
-}
-
-/** A commit that contributes to a release item's `next`. */
-export interface LimitCommit {
-	sha?: string;
-	subject: string;
-	/** Null for a Release-As only commit. */
-	level: BumpLevel | null;
-	/** Absorbed unit the change came through. */
-	via?: string;
-	/** The Release-As value it sets. */
-	releaseAs?: CoreVersion;
-}
-
-export interface LimitItem extends ReleaseItem {
-	/** Null on a first release. */
-	from: CoreVersion | null;
-	/** Null without a pending release. */
-	next: CoreVersion | null;
-	commits: readonly LimitCommit[];
-}
 
 /**
  * Maintenance limits: `E_CAP_BASE` when the absolute item's `from` is off the

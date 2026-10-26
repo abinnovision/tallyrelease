@@ -9,7 +9,7 @@ import { runHook } from "./plugins.js";
 import { schemeRegistry } from "./schemes.js";
 
 import type { Warning } from "./errors.js";
-import type { Plan } from "./plan.js";
+import type { Plan } from "./model/plan-types.js";
 import type { ReadonlyFs, VersionFile, VersionScheme } from "./plugin.js";
 import type { ReleaseItem } from "./release-items.js";
 import type { Workspace } from "./workspace.js";
