@@ -1,4 +1,4 @@
-import { execFile } from "node:child_process";
+import { execFile, execFileSync } from "node:child_process";
 
 import type { Env } from "../ci/github-env.js";
 
@@ -60,6 +60,20 @@ export const git = (
 		);
 	});
 };
+
+/** Runs `git` synchronously and returns stdout; throws on a non-zero exit code. */
+export const gitSync = (
+	cwd: string,
+	args: readonly string[],
+	{ env, vars }: GitOptions = {},
+): string =>
+	execFileSync("git", ["-c", "core.quotePath=false", ...args], {
+		cwd,
+		encoding: "utf8",
+		maxBuffer: 256 * 1024 * 1024,
+		env: gitEnv(env ?? process.env, vars),
+		stdio: ["ignore", "pipe", "pipe"],
+	});
 
 /** Runs `git` and returns stdout; throws on a non-zero exit code. */
 export const gitOk = async (

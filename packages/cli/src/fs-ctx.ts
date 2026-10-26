@@ -1,11 +1,10 @@
-import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import picomatch from "picomatch/posix.js";
 import { globSync } from "tinyglobby";
 
 import { cliCodes } from "./codes.js";
-import { gitEnv } from "./git/exec.js";
+import { gitSync } from "./git/exec.js";
 
 import type { Env } from "./ci/github-env.js";
 import type { ReadonlyFs } from "@tallyrelease/core";
@@ -13,7 +12,7 @@ import type { ReadonlyFs } from "@tallyrelease/core";
 const IGNORED = ["**/.git/**", "**/node_modules/**", "vendor/**"];
 
 const readError = (error: unknown, ref: string, path: string) => {
-	const stderr = (error as { stderr?: Buffer }).stderr?.toString("utf8");
+	const stderr = (error as { stderr?: string }).stderr;
 	const reason = stderr?.match(/^.+$/m)?.[0] ?? String(error);
 
 	return cliCodes.error(
@@ -28,12 +27,7 @@ const catBlob =
 	(root: string, env: Env) =>
 	(ref: string, path: string): string => {
 		try {
-			return execFileSync("git", ["cat-file", "blob", `${ref}:${path}`], {
-				cwd: root,
-				env: gitEnv(env),
-				maxBuffer: 256 * 1024 * 1024,
-				stdio: ["ignore", "pipe", "pipe"],
-			}).toString("utf8");
+			return gitSync(root, ["cat-file", "blob", `${ref}:${path}`], { env });
 		} catch (error) {
 			throw readError(error, ref, path);
 		}
@@ -70,17 +64,11 @@ export const gitTreeFs = (
 	sha: string,
 	env: Env = process.env,
 ): ReadonlyFs => {
-	const git = (args: string[]) =>
-		execFileSync("git", ["-c", "core.quotePath=false", ...args], {
-			cwd: root,
-			env: gitEnv(env),
-			maxBuffer: 256 * 1024 * 1024,
-			stdio: ["ignore", "pipe", "ignore"],
-		});
 	const blob = catBlob(root, env);
 	const ignored = picomatch(IGNORED, { dot: true });
-	const paths = git(["ls-tree", "-r", "-z", "--name-only", sha])
-		.toString("utf8")
+	const paths = gitSync(root, ["ls-tree", "-r", "-z", "--name-only", sha], {
+		env,
+	})
 		.split("\0")
 		.filter((p) => p !== "" && !ignored(p))
 		.sort();
@@ -131,11 +119,7 @@ export const gitBlob = (root: string, env: Env = process.env) => {
 		let listing: string;
 
 		try {
-			listing = execFileSync("git", ["ls-tree", "-z", ref, "--", path], {
-				cwd: root,
-				env: gitEnv(env),
-				stdio: ["ignore", "pipe", "pipe"],
-			}).toString("utf8");
+			listing = gitSync(root, ["ls-tree", "-z", ref, "--", path], { env });
 		} catch (error) {
 			throw readError(error, ref, path);
 		}
