@@ -4,7 +4,7 @@ import { discoverUnits } from "./discover.js";
 import { buildGraph } from "./graph.js";
 import { resolveGroups } from "./groups.js";
 import { activatePlugins, runHook } from "./plugins.js";
-import { releaseSettings } from "./release.js";
+import { releaseSettings } from "./release-settings.js";
 import { collectSchemes } from "./schemes.js";
 import { uniqueSorted } from "./util.js";
 
@@ -14,7 +14,7 @@ import type { Graph, SourcedEdge } from "./graph.js";
 import type { Group } from "./groups.js";
 import type { IntentSource, Unit, VersionFile } from "./plugin.js";
 import type { ActivePlugin, PluginEnv } from "./plugins.js";
-import type { ReleaseSettings } from "./release.js";
+import type { ReleaseSettings } from "./release-settings.js";
 import type { SchemeEntry } from "./schemes.js";
 
 const collectEdges = async (
