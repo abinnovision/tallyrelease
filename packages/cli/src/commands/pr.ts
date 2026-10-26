@@ -12,60 +12,19 @@ import { planOptions } from "../app/setup.js";
 import { cliCodes } from "../codes.js";
 import { LABELS } from "../forge/forge.js";
 import { identityFromEnv } from "../git/writer.js";
+import {
+	closeComment,
+	maintenanceNote,
+	prBody,
+	prLines,
+	prText,
+	prTitle,
+} from "../render/pr.js";
+import { short } from "../render/short.js";
 
 import type { Forge, ReleasePr, RepoRef } from "../forge/forge.js";
 import type { Session } from "../session.js";
 import type { ReleaseItem } from "@tallyrelease/core";
-
-/** Body limit with headroom below GitHub's 65,536 characters. */
-const BODY_LIMIT = 60_000;
-
-const TRUNCATED =
-	"_The changelog is truncated; the CHANGELOG.md files of this pull request hold all of it._";
-
-const short = (sha: string) => sha.slice(0, 7);
-
-/**
- * Per-unit changelog sections and per-item maintenance notes, cut to whole
- * blocks under the limit, then the marker.
- */
-const prBody = (
-	{
-		items,
-		sections,
-		notes,
-	}: {
-		items: readonly ReleaseItem[];
-		sections: ReadonlyMap<string, string>;
-		notes: ReadonlyMap<string, string>;
-	},
-	marker: string,
-): string => {
-	const blocks = items.flatMap((item) => [
-		...item.units.flatMap((id) => {
-			const section = sections.get(id);
-
-			return section === undefined
-				? []
-				: [
-						`<details><summary>${id}: ${item.version}</summary>\n\n${section}\n</details>\n\n`,
-					];
-		}),
-		notes.get(item.name) ?? "",
-	]);
-	const budget = BODY_LIMIT - marker.length - TRUNCATED.length - 4;
-	let text = "";
-	for (const block of blocks) {
-		if (text.length + block.length > budget) {
-			text += `${TRUNCATED}\n\n`;
-			break;
-		}
-
-		text += block;
-	}
-
-	return `${text}${marker}\n`;
-};
 
 interface PrTarget {
 	forge: Forge;
@@ -83,10 +42,11 @@ const upsertPr = async (
 	{ forge, repo, base, dryRun }: PrTarget,
 	p: { branch: string; title: string; body: string; pr: ReleasePr | undefined },
 ): Promise<string> => {
+	const line = prLines(dryRun);
 	let { pr } = p;
 	if (pr === undefined) {
 		if (dryRun) {
-			return `would create PR ${p.branch}: ${p.title}`;
+			return line.wouldCreate(p.branch, p.title);
 		}
 
 		try {
@@ -98,7 +58,7 @@ const upsertPr = async (
 			});
 			await forge.setLabel(repo, number, { label: LABELS.pending });
 
-			return `created PR #${String(number)} ${p.branch}: ${p.title}`;
+			return line.created(number, p.branch, p.title);
 		} catch (error) {
 			pr =
 				(error as { status?: unknown } | null)?.status === 422
@@ -112,7 +72,7 @@ const upsertPr = async (
 
 	const edit = pr.body !== p.body;
 	if (!edit && pr.labels.includes(LABELS.pending)) {
-		return `PR #${String(pr.number)} ${p.branch} is up to date`;
+		return line.upToDate(pr.number, p.branch);
 	}
 
 	if (!dryRun) {
@@ -123,7 +83,7 @@ const upsertPr = async (
 		await forge.setLabel(repo, pr.number, { label: LABELS.pending });
 	}
 
-	return `${dryRun ? "would update" : "updated"} PR #${String(pr.number)} ${p.branch}: ${p.title}`;
+	return line.updated(pr.number, p.branch, p.title);
 };
 
 export interface PrFlags {
@@ -182,16 +142,13 @@ export const releasePrs = async (
 								? [
 										[
 											item.name,
-											`**Maintenance line for ${item.name} ${cut.line}.** This PR releases a new major. To keep shipping fixes for ${cut.line}, cut the maintenance branch from the last ${cut.line} release (also possible later):\n\n\`\`\`\ngit push ${session.remote} ${cut.tag}:refs/heads/${cut.branch}\n\`\`\`\n\n`,
+											maintenanceNote(item.name, cut, session.remote),
 										] as const,
 									]
 								: [];
 						}),
 					),
-					title:
-						leaf === "shared"
-							? `chore(release): ${plan.branch}`
-							: `chore(release): ${items.map((i) => `${i.name}@${i.version}`).join(", ")}`,
+					title: prTitle(leaf, plan.branch, items),
 					...(await releaseFiles(workspace, plan, {
 						fs,
 						items,
@@ -281,15 +238,14 @@ export const releasePrs = async (
 	);
 
 	const lines: string[] = [];
+	const line = prLines(flags.dryRun);
 	const pushes = prs.filter((p) => p.lease !== p.sha);
 	if (flags.dryRun) {
 		if (prs.length > 0) {
-			const { name, email } = identityFromEnv(session.env).author;
-			lines.push(`commit as ${name} <${email}>`);
+			lines.push(line.commitAs(identityFromEnv(session.env).author));
 		}
 
-		const to = session.remote === "origin" ? "" : ` to ${session.remote}`;
-		lines.push(...pushes.map((p) => `would push ${p.branch}${to}`));
+		lines.push(...pushes.map((p) => line.wouldPush(p.branch, session.remote)));
 	} else if (pushes.length > 0) {
 		await gitWriter.push(
 			pushes.map((p) => `${p.sha}:refs/heads/${p.branch}`),
@@ -340,20 +296,12 @@ export const releasePrs = async (
 
 	for (const p of unwanted) {
 		if (!flags.dryRun) {
-			await forge.closePr(
-				repo,
-				p.number,
-				`tallyrelease closed this release PR: nothing in it is pending on \`${base}\` any more, or its releases moved to another release PR.`,
-			);
+			await forge.closePr(repo, p.number, closeComment(base));
 		}
 
-		lines.push(
-			`${flags.dryRun ? "would close" : "closed"} PR #${String(p.number)} ${p.head}`,
-		);
+		lines.push(line.closed(p.number, p.head));
 	}
 	/* eslint-enable no-await-in-loop */
 
-	session.stdout.write(
-		lines.length > 0 ? `${lines.join("\n")}\n` : "no release PRs\n",
-	);
+	session.stdout.write(prText(lines));
 };

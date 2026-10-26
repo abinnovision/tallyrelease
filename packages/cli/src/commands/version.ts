@@ -2,6 +2,7 @@ import { computePlan, releaseFiles, releaseItems } from "@tallyrelease/core";
 
 import { effectSkipped } from "../app/effects.js";
 import { planOptions } from "../app/setup.js";
+import { versionText } from "../render/version.js";
 
 import type { Session } from "../session.js";
 
@@ -54,14 +55,11 @@ export const applyVersions = async (
 	const { files, warnings } = result;
 	session.warn(warnings);
 
-	const lines = [...files].map(([path, content]) => {
-		if (!flags.dryRun) {
+	if (!flags.dryRun) {
+		for (const [path, content] of files) {
 			session.writeFile(path, content);
 		}
+	}
 
-		return `${flags.dryRun ? "would update" : "updated"} ${path}\n`;
-	});
-	session.stdout.write(
-		lines.length > 0 ? lines.join("") : "no version files to update\n",
-	);
+	session.stdout.write(versionText([...files.keys()], flags.dryRun));
 };

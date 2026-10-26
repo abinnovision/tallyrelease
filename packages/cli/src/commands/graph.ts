@@ -1,7 +1,5 @@
-import { alignColumns } from "../output/columns.js";
-import { count } from "../output/count.js";
 import { painter } from "../output/paint.js";
-import { renderTree } from "../output/tree.js";
+import { graphText } from "../render/graph.js";
 import { renderMermaid } from "../render/mermaid.js";
 
 import type { Session } from "../session.js";
@@ -49,52 +47,14 @@ export const graph = async (
 		return;
 	}
 
-	if (units.length === 0) {
-		session.stdout.write("no units\n");
-
-		return;
-	}
-
-	const paint = painter(session.stdout);
-	const tagged = units.some((u) => u.tags.length > 0);
-	const table = [
-		["UNIT", "PATH", "PLUGIN", "RELEASE", ...(tagged ? ["TAGS"] : [])],
-		...units.map((u) => [
-			u.id,
-			u.path,
-			u.plugin,
-			u.version === "none" ? "-" : u.version,
-			...(tagged ? [u.tags.join(",")] : []),
-		]),
-	];
-	// Header is aligned unstyled so column styles do not apply to it.
-	const [header = ""] = alignColumns(table);
-	const [, ...rows] = alignColumns(
-		table,
-		{ styles: [undefined, "dim"] },
-		paint,
+	session.stdout.write(
+		graphText(
+			{
+				units,
+				edges: edges.length,
+				dependents: (id) => workspace.graph.dependents.get(id) ?? [],
+			},
+			painter(session.stdout),
+		),
 	);
-	const lines = [paint("bold", header), ...rows];
-
-	const tree = renderTree(
-		units.map((u) => u.id),
-		(id) => workspace.graph.dependents.get(id) ?? [],
-	);
-	if (edges.length > 0) {
-		lines.push("", paint("bold", "dependents"), ...tree.lines);
-	}
-
-	const released = units.filter((u) => u.version !== "none").length;
-	const legend = [
-		...(tree.shared ? ["(*) expanded above"] : []),
-		...(tree.cycle ? ["(cycle) edge back into the current path"] : []),
-	];
-	lines.push(
-		"",
-		[
-			`${count(units.length, "unit")} (${String(released)} released), ${count(edges.length, "edge")}`,
-			...legend,
-		].join("; "),
-	);
-	session.stdout.write(`${lines.join("\n")}\n`);
 };
