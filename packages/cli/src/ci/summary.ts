@@ -1,16 +1,16 @@
-import { appendFileSync } from "node:fs";
+import type { Session } from "../session.js";
 
 /** Appends markdown to `$GITHUB_STEP_SUMMARY`; false when it is not set. */
 export const appendStepSummary = (
-	env: Readonly<Record<string, string | undefined>>,
+	session: Pick<Session, "env" | "appendFile">,
 	markdown: string,
 ): boolean => {
-	const path = env["GITHUB_STEP_SUMMARY"];
+	const path = session.env["GITHUB_STEP_SUMMARY"];
 	if (!path) {
 		return false;
 	}
 
-	appendFileSync(path, markdown);
+	session.appendFile(path, markdown);
 
 	return true;
 };

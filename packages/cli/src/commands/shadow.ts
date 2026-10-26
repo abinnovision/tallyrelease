@@ -1,5 +1,4 @@
 import { computePlan, TallyError } from "@tallyrelease/core";
-import { writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 import { appendStepSummary } from "../ci/summary.js";
@@ -215,13 +214,14 @@ const writeReport = (
 ): void => {
 	const { env } = session;
 	if (flags.out !== undefined) {
-		writeFileSync(
+		session.writeOutFile(
 			resolve(session.cwd, flags.out),
 			`${JSON.stringify(report, null, 2)}\n`,
 		);
 	}
 
-	const appended = flags.summary && appendStepSummary(env, markdown(report));
+	const appended =
+		flags.summary && appendStepSummary(session, markdown(report));
 	session.stdout.write(
 		flags.summary && !appended ? markdown(report) : text(report),
 	);
