@@ -1,5 +1,4 @@
 import { computeAffected } from "@tallyrelease/core";
-import { appendFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 import { baseLabel, resolveBuildBase } from "../ci/base.js";
@@ -96,7 +95,7 @@ export const affected = async (
 
 	const json = `${JSON.stringify(doc, null, 2)}\n`;
 	if (flags.out !== undefined) {
-		writeFileSync(resolve(session.cwd, flags.out), json);
+		session.writeOutFile(resolve(session.cwd, flags.out), json);
 	}
 
 	if (flags.githubOutput) {
@@ -108,7 +107,7 @@ export const affected = async (
 			);
 		}
 
-		appendFileSync(path, affectedGithubOutput(doc));
+		session.appendFile(path, affectedGithubOutput(doc));
 	}
 
 	const format = flags.format ?? (flags.json ? "json" : "text");

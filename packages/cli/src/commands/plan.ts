@@ -1,5 +1,4 @@
 import { TallyError } from "@tallyrelease/core";
-import { appendFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 
 import { repoRef } from "./effects.js";
@@ -281,7 +280,7 @@ export const writePlan = (
 	const out =
 		flags.out === undefined ? undefined : resolve(session.cwd, flags.out);
 	if (out !== undefined) {
-		writeFileSync(out, json);
+		session.writeOutFile(out, json);
 	}
 
 	if (flags.githubOutput) {
@@ -303,10 +302,10 @@ export const writePlan = (
 
 		const path = out ?? join(temp ?? "", "tallyrelease-plan.json");
 		if (out === undefined) {
-			writeFileSync(path, json);
+			session.writeOutFile(path, json);
 		}
 
-		appendFileSync(
+		session.appendFile(
 			outputPath,
 			planGithubOutput(path) +
 				(releases === undefined ? "" : releasesGithubOutput(releases)),
@@ -314,7 +313,7 @@ export const writePlan = (
 	}
 
 	const appended =
-		flags.summary && appendStepSummary(session.env, markdown(doc, base));
+		flags.summary && appendStepSummary(session, markdown(doc, base));
 
 	const format = flags.format ?? (flags.json ? "json" : "text");
 	session.stdout.write(
