@@ -1,7 +1,7 @@
 import { Stream } from "node:stream";
 import { styleText } from "node:util";
 
-import type { Writer } from "../session.js";
+import type { Writer } from "./writer.js";
 
 export type Format = Parameters<typeof styleText>[0];
 
