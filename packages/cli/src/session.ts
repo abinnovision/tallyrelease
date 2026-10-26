@@ -96,7 +96,7 @@ export interface Session {
 	/**
 	 * Runs `use` with the workspace and files at commit `ref`, or of the
 	 * working tree when `ref` is null; the config is always read from the
-	 * working tree.
+	 * working tree. The working tree's workspace loads once per session.
 	 */
 	readonly workspaceAt: <T>(
 		ref: string | null,
@@ -241,10 +241,9 @@ export const createSession = (deps: Deps, opts: GlobalOptions): Session => {
 	const repoGit = deps.git ?? gitReader(root, debug, { env: deps.env, remote });
 	const blobAt = gitBlob(root, deps.env);
 
-	const workspaceAt = async <T>(
+	const loadAt = async (
 		ref: string | null,
-		use: (workspace: Workspace, files: ReadonlyFs) => Promise<T>,
-	): Promise<T> => {
+	): Promise<{ workspace: Workspace; files: ReadonlyFs }> => {
 		if (onDisk) {
 			await assertRepoRoot();
 		}
@@ -260,6 +259,19 @@ export const createSession = (deps: Deps, opts: GlobalOptions): Session => {
 			repo: { name: await repoName() },
 			...(debug && { debug }),
 		});
+
+		return { workspace, files };
+	};
+
+	// The working tree loads once per session; workspaces at a ref load fresh.
+	let atHead: Promise<{ workspace: Workspace; files: ReadonlyFs }> | undefined;
+	const workspaceAt = async <T>(
+		ref: string | null,
+		use: (workspace: Workspace, files: ReadonlyFs) => Promise<T>,
+	): Promise<T> => {
+		const { workspace, files } = await (ref === null
+			? (atHead ??= loadAt(null))
+			: loadAt(ref));
 
 		return await use(workspace, files);
 	};
