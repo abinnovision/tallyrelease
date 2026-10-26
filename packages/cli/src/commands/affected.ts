@@ -1,8 +1,7 @@
 import { computeAffected } from "@tallyrelease/core";
-import { resolve } from "node:path";
 
+import { toJson, writeAffected } from "../app/outputs.js";
 import { baseLabel, resolveBuildBase } from "../ci/base.js";
-import { affectedGithubOutput } from "../ci/outputs.js";
 import { cliCodes } from "../codes.js";
 import { alignColumns } from "../output/columns.js";
 import { count } from "../output/count.js";
@@ -93,26 +92,11 @@ export const affected = async (
 	};
 	session.warn(doc.warnings);
 
-	const json = `${JSON.stringify(doc, null, 2)}\n`;
-	if (flags.out !== undefined) {
-		session.writeOutFile(resolve(session.cwd, flags.out), json);
-	}
-
-	if (flags.githubOutput) {
-		const path = session.env["GITHUB_OUTPUT"];
-		if (!path) {
-			throw cliCodes.error(
-				"E_GITHUB_OUTPUT",
-				"--github-output requires GITHUB_OUTPUT to be set",
-			);
-		}
-
-		session.appendFile(path, affectedGithubOutput(doc));
-	}
+	writeAffected(session, doc, flags);
 
 	const format = flags.format ?? (flags.json ? "json" : "text");
 	if (format === "json") {
-		session.stdout.write(json);
+		session.stdout.write(toJson(doc));
 
 		return;
 	}

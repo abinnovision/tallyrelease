@@ -6,15 +6,15 @@ import {
 	releaseNotes,
 } from "@tallyrelease/core";
 
+import { effectSkipped, repoRef } from "../app/effects.js";
+import { planOptions } from "../app/setup.js";
 import { cliCodes } from "../codes.js";
-import { effectSkipped, repoRef } from "./effects.js";
-import { planOptions } from "./plan.js";
 import { LABELS } from "../forge/forge.js";
 
+import type { PlanSetup } from "../app/setup.js";
 import type { Forge, ReleasePr, RepoRef } from "../forge/forge.js";
 import type { RepoGit } from "../git/reader.js";
 import type { Session } from "../session.js";
-import type { PlanSetup } from "./plan.js";
 import type {
 	MarkerRelease,
 	Plan,
