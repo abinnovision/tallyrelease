@@ -27,7 +27,7 @@ export interface Line {
 }
 
 /** An ungrouped released unit or a fixed group. */
-export interface ReleaseItem {
+export interface LimitSubject {
 	unit: string | null;
 	group: string | null;
 }
@@ -55,7 +55,7 @@ export interface LimitCommit {
 	releaseAs?: CoreVersion;
 }
 
-export interface LimitItem extends ReleaseItem {
+export interface LimitItem extends LimitSubject {
 	/** Null on a first release. */
 	from: CoreVersion | null;
 	/** Null without a pending release. */

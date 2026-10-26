@@ -22,8 +22,8 @@ import type {
 	CoreVersion,
 	LimitCommit,
 	LimitItem,
+	LimitSubject,
 	Line,
-	ReleaseItem,
 } from "./model/branch-types.js";
 import type { PlanFacts, UnitFacts } from "./model/facts-types.js";
 import type {
@@ -180,9 +180,9 @@ const unitPlan = (entry: Entry, all: boolean): UnitPlan | undefined => {
 };
 
 /** The only release item (ungrouped released unit or group), else null. */
-const singleItem = (workspace: Workspace): ReleaseItem | null => {
+const singleItem = (workspace: Workspace): LimitSubject | null => {
 	const grouped = new Set(workspace.groups.flatMap((g) => g.members));
-	const items: ReleaseItem[] = [
+	const items: LimitSubject[] = [
 		...workspace.groups.map((g) => ({ unit: null, group: g.name })),
 		...workspace.units
 			.filter((u) => u.version !== "none" && !grouped.has(u.id))
@@ -197,7 +197,7 @@ const singleItem = (workspace: Workspace): ReleaseItem | null => {
  * Release-As values that produce `next`.
  */
 const limitItem = (
-	item: ReleaseItem & {
+	item: LimitSubject & {
 		ids: readonly string[];
 		from: string | null;
 		next: string | null;
