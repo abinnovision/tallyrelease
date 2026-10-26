@@ -10,7 +10,7 @@ import { schemeRegistry } from "./schemes.js";
 
 import type { Warning } from "./errors.js";
 import type { Plan } from "./model/plan-types.js";
-import type { ReadonlyFs, VersionFile, VersionScheme } from "./plugin.js";
+import type { ReadonlyFs, Unit, VersionFile, VersionScheme } from "./plugin.js";
 import type { ReleaseItem } from "./release-items.js";
 import type { Workspace } from "./workspace.js";
 
@@ -196,6 +196,114 @@ const templateFile = (file: string, unit: string): string => {
 	return path;
 };
 
+/** Files written so far; reads see them before `fs`. */
+interface Staged {
+	readonly files: Map<string, string>;
+	readonly read: (path: string) => string | undefined;
+}
+
+/** One unit of one release item. */
+interface UnitStep {
+	workspace: Workspace;
+	plan: Plan;
+	item: ReleaseItem;
+	unit: Unit;
+	scheme: VersionScheme<any>;
+	/** Base version of the unit's range; null for a first release. */
+	from: string | null;
+	/** Next version of every released unit. */
+	versions: ReadonlyMap<string, string>;
+	/** Units released in the same release PR. */
+	prUnits: readonly string[];
+	repoUrl: string | null;
+	date: string;
+}
+
+const required = (staged: Staged, path: string, unit: string): string => {
+	const content = staged.read(path);
+	if (content === undefined) {
+		throw coreCodes.error(
+			"E_VERSION_FILE_MISSING",
+			`version file "${path}" of unit "${unit}" does not exist`,
+			{ path, unit },
+		);
+	}
+
+	return content;
+};
+
+/** Writes the plugin version files of the unit. */
+const versionFileStep = async (
+	staged: Staged,
+	step: UnitStep,
+	pluginFiles: readonly VersionFile[],
+): Promise<void> => {
+	const { workspace, item, unit, versions } = step;
+	const ctx = { unit, units: workspace.units, versions };
+	for (const file of pluginFiles) {
+		const content = required(staged, file.path, unit.id);
+		// eslint-disable-next-line no-await-in-loop -- files are written in order
+		const written = await runHook(unit.plugin, "write", () =>
+			file.write(content, item.version, ctx),
+		);
+		staged.files.set(file.path, written);
+	}
+};
+
+/** Rewrites the version templates of the unit; skips first releases. */
+const templateStep = (staged: Staged, step: UnitStep): Warning[] => {
+	const { workspace, item, unit, scheme, from } = step;
+	const warnings: Warning[] = [];
+	const templates =
+		from === null ? [] : (workspace.release.templates.get(unit.id) ?? []);
+	for (const template of templates) {
+		const { pattern } = template;
+		const file = templateFile(template.file, unit.id);
+		const result = applyTemplate(required(staged, file, unit.id), {
+			pattern,
+			unit: unit.id,
+			from: from ?? "",
+			next: item.version,
+			scheme,
+		});
+		staged.files.set(file, result.content);
+		if (!result.hit) {
+			warnings.push(
+				coreCodes.warning(
+					"W_VERSION_FILE_NO_MATCH",
+					`version file pattern "${pattern}" of unit "${unit.id}" matches nothing in "${file}"`,
+					{ unit: unit.id },
+				),
+			);
+		}
+	}
+
+	return warnings;
+};
+
+/** Updates the unit's changelog; returns the new section, if any. */
+const changelogStep = (staged: Staged, step: UnitStep): string | undefined => {
+	const { workspace, plan, unit, scheme, from, repoUrl, date, prUnits } = step;
+	const section = changelogSection(workspace, plan, {
+		id: unit.id,
+		repoUrl,
+		date,
+		prUnits,
+	});
+	if (section !== undefined) {
+		const path = changelogPath(unit);
+		staged.files.set(
+			path,
+			updateChangelog(staged.read(path), section, {
+				baseVersion: from,
+				scheme,
+			}),
+		);
+	}
+
+	return section;
+};
+
 /** Checks template files and patterns (`E_CONFIG`); runs no plugin hook. */
 export const validateTemplates = (workspace: Workspace): void => {
 	for (const [id, templates] of workspace.release.templates) {
@@ -284,21 +392,12 @@ export const releaseFiles = async (
 	const pr = (item: ReleaseItem) =>
 		item.mode === "shared" ? "shared" : item.name;
 	const files = new Map<string, string>();
+	const staged: Staged = {
+		files,
+		read: (path) => files.get(path) ?? fs.read(path),
+	};
 	const sections = new Map<string, string>();
 	const warnings: Warning[] = [];
-	const read = (path: string) => files.get(path) ?? fs.read(path);
-	const required = (path: string, unit: string) => {
-		const content = read(path);
-		if (content === undefined) {
-			throw coreCodes.error(
-				"E_VERSION_FILE_MISSING",
-				`version file "${path}" of unit "${unit}" does not exist`,
-				{ path, unit },
-			);
-		}
-
-		return content;
-	};
 
 	for (const item of items) {
 		const prUnits = items
@@ -312,54 +411,24 @@ export const releaseFiles = async (
 				continue;
 			}
 
-			const ctx = { unit, units: workspace.units, versions };
-			for (const file of pluginFiles.get(id) ?? []) {
-				const content = required(file.path, id);
-				// eslint-disable-next-line no-await-in-loop -- files are written in order
-				const written = await runHook(unit.plugin, "write", () =>
-					file.write(content, item.version, ctx),
-				);
-				files.set(file.path, written);
-			}
-
-			const { from } = entry;
-			const templates =
-				from === null ? [] : (workspace.release.templates.get(id) ?? []);
-			for (const template of templates) {
-				const { pattern } = template;
-				const file = templateFile(template.file, id);
-				const result = applyTemplate(required(file, id), {
-					pattern,
-					unit: id,
-					from: from ?? "",
-					next: item.version,
-					scheme,
-				});
-				files.set(file, result.content);
-				if (!result.hit) {
-					warnings.push(
-						coreCodes.warning(
-							"W_VERSION_FILE_NO_MATCH",
-							`version file pattern "${pattern}" of unit "${id}" matches nothing in "${file}"`,
-							{ unit: id },
-						),
-					);
-				}
-			}
-
-			const section = changelogSection(workspace, plan, {
-				id,
+			const step: UnitStep = {
+				workspace,
+				plan,
+				item,
+				unit,
+				scheme,
+				from: entry.from,
+				versions,
+				prUnits,
 				repoUrl,
 				date,
-				prUnits,
-			});
+			};
+			// eslint-disable-next-line no-await-in-loop -- files are written in order
+			await versionFileStep(staged, step, pluginFiles.get(id) ?? []);
+			warnings.push(...templateStep(staged, step));
+			const section = changelogStep(staged, step);
 			if (section !== undefined) {
 				sections.set(id, section);
-				const path = changelogPath(unit);
-				files.set(
-					path,
-					updateChangelog(read(path), section, { baseVersion: from, scheme }),
-				);
 			}
 		}
 	}
