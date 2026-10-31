@@ -123,13 +123,25 @@ const unitOverlay = z.strictObject({
 		.exactOptional(),
 });
 
+// `path` is owned by the cli, which strips it before core sees the entry.
+const pluginEntry = z.looseObject({
+	path: z
+		.string()
+		.min(1)
+		.meta({
+			description:
+				"Local plugin: a .ts or .js file relative to the repository root that exports a plugin of this name.",
+		})
+		.exactOptional(),
+});
+
 const configObject = z.strictObject({
 	$schema: z
 		.string()
 		.meta({ description: "Schema reference for editors, ignored." })
 		.exactOptional(),
 	plugins: z
-		.record(z.string(), z.record(z.string(), z.unknown()).nullable())
+		.record(z.string(), pluginEntry.nullable())
 		.meta({
 			description:
 				"Enabled plugins and their options, run in the listed order. Only listed plugins run.",
@@ -305,10 +317,22 @@ export const configSchema = configObject.transform(
 	({ $schema: _, ...config }) => config,
 );
 
+/** `tallyrelease.yaml` as read by the cli: `TallyConfig` plus the cli-owned plugin keys. */
+export type CliConfig = z.output<typeof configSchema>;
+
+/** A `plugins.<name>` entry with the cli-owned keys. */
+export type PluginEntry = z.output<typeof pluginEntry>;
+
 // Fails to compile when the schema misses or adds a field of `TallyConfig`.
 export const configSchemaExact: Equals<
-	z.output<typeof configSchema>,
-	TallyConfig
+	Omit<CliConfig, "plugins">,
+	Omit<TallyConfig, "plugins">
+> = true;
+
+// Plugin entries without the cli-owned keys are `TallyConfig` plugin entries.
+export const pluginEntryExact: Equals<
+	Omit<PluginEntry, "path">,
+	NonNullable<TallyConfig["plugins"][string]>
 > = true;
 
 // The schema requires `units` or `tags`; `GroupConfig` does not, so only field names are compared.

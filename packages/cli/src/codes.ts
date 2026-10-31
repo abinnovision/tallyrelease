@@ -77,6 +77,11 @@ export const cliCodes = defineCodes({
 			"`pr` found merged release PRs that have not been tagged yet, so opening a new release PR would use stale state.",
 		fix: "Run `tallyrelease release` first to tag and publish the merged release PRs, then run `pr` again.",
 	},
+	E_PLUGIN_LOAD: {
+		cause:
+			"A plugin set with `plugins.<name>.path` could not be loaded: the file is missing, outside the repository, fails to import, does not export a plugin, or exports a plugin with another name. A built-in plugin (`node`, `php`, `kustomize`) that sets `path` is also rejected, since built-ins cannot be replaced.",
+		fix: "Check the path (relative to the repository root) and that the file's default export is a plugin whose `name` is the config key. Remove `path` from built-in plugins, or use another name.",
+	},
 	E_PUSH_LEASE: {
 		cause:
 			"A push was rejected because a remote ref moved since tallyrelease read it, usually a concurrent run or a commit pushed to the release branch.",

@@ -4,10 +4,11 @@ import { parse } from "yaml";
 import { cliCodes } from "../codes.js";
 import { configSchema } from "./schema.js";
 
-import type { ReadonlyFs, TallyConfig } from "@tallyrelease/core";
+import type { CliConfig } from "./schema.js";
+import type { ReadonlyFs } from "@tallyrelease/core";
 
 /** Reads and validates the config file at the repo-relative `path`. */
-export const loadConfig = (fs: ReadonlyFs, path: string): TallyConfig => {
+export const loadConfig = (fs: ReadonlyFs, path: string): CliConfig => {
 	const text = fs.read(path);
 	if (text === undefined) {
 		throw cliCodes.error(

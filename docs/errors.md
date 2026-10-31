@@ -212,6 +212,12 @@ Cause: A plugin hook (such as `discover`, `edges`, `intent` or `write`) threw an
 
 Fix: Fix the cause given in the message, usually a malformed manifest or version file in the repository, or the plugin options in `plugins.<name>`.
 
+### E_PLUGIN_LOAD
+
+Cause: A plugin set with `plugins.<name>.path` could not be loaded: the file is missing, outside the repository, fails to import, does not export a plugin, or exports a plugin with another name. A built-in plugin (`node`, `php`, `kustomize`) that sets `path` is also rejected, since built-ins cannot be replaced.
+
+Fix: Check the path (relative to the repository root) and that the file's default export is a plugin whose `name` is the config key. Remove `path` from built-in plugins, or use another name.
+
 ### E_PLUGIN_NAME
 
 Cause: A plugin name does not match `^[a-z][a-z0-9-]*$`, or uses the name `core`, which is reserved.

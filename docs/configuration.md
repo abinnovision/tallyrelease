@@ -10,6 +10,10 @@ Enabled plugins and their options, run in the listed order. Only listed plugins 
 
 Type: map of object or null.
 
+| Key                   | Type   | Required | Description                                                                                         |
+| --------------------- | ------ | -------- | --------------------------------------------------------------------------------------------------- |
+| `plugins.<name>.path` | string | no       | Local plugin: a .ts or .js file relative to the repository root that exports a plugin of this name. |
+
 ## `defaults`
 
 Defaults applied to every unit.
