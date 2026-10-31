@@ -70,6 +70,7 @@ export type { Marker, MarkerRelease } from "./marker.js";
 export type { ReleaseItem } from "./release-items.js";
 export type { ReleaseSettings } from "./release-settings.js";
 export type { SemVer } from "./semver.js";
+export type { TagFormat } from "./tags.js";
 export type { IntentEntry, Workspace, WorkspaceInput } from "./workspace.js";
 
 export { computeAffected } from "./affected.js";
@@ -86,6 +87,7 @@ export { decodeMarker, encodeMarker } from "./marker.js";
 export { planEquals, releaseEntries, releaseItems } from "./release-items.js";
 export { releasedFromTags, withReleased } from "./released.js";
 export { semver } from "./semver.js";
+export { compileTagFormat, renderTag } from "./tags.js";
 export { validateRelease, validateTags } from "./validate.js";
 export { releaseFiles, versionFileClaims } from "./version-files.js";
 export { loadWorkspace } from "./workspace.js";

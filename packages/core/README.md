@@ -26,6 +26,18 @@ See `Plugin` in [`src/plugin.ts`](https://github.com/abinnovision/tallyrelease/b
 
 Core always registers the `semver` scheme and the Conventional Commits intent source. A plugin that reads commit messages can use `parseCommit` for the same parsing.
 
+### Tag formats
+
+A plugin that sets `tagFormat` on its units can check the format with the same rules core applies. `compileTagFormat(format, unitId)` throws `E_TAG_FORMAT` unless `{version}` occurs exactly once, and returns a `TagFormat` whose `match(tag)` gives the `{version}` part of a matching tag. `renderTag(unit, version)` renders the tag of a version.
+
+```ts
+import { compileTagFormat, renderTag } from "@tallyrelease/core";
+
+const format = compileTagFormat("{id}-v{version}", "web");
+format.match("web-v1.2.0"); // "1.2.0"
+renderTag({ id: "web", tagFormat: "{id}-v{version}" }, "1.2.0"); // "web-v1.2.0"
+```
+
 ## Testing
 
 The `@tallyrelease/core/testing` export provides in-memory fakes: `memoryFs`, `memoryCtx` and `memoryGit`. The `@tallyrelease/core/testing/conformance` export provides `gitReaderConformance`, a shared `GitReader` spec that requires vitest.
