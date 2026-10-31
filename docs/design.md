@@ -72,6 +72,8 @@ Purity enforcement: lint rule (see Purity rules) on `packages/core/src/**` and `
 
 ### A.5 Plugin contract (`@tallyrelease/core`)
 
+For writing a plugin, see the [plugin authoring guide](plugins.md).
+
 ```ts
 export type MaybePromise<T> = T | Promise<T>;
 export const PLUGIN_API_VERSION = 1;
