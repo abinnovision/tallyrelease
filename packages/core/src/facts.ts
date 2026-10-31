@@ -1,7 +1,6 @@
 import { attribution, matcher } from "./attribution.js";
 import { coreCodes } from "./codes.js";
 import { pluginCtx, runHook } from "./plugins.js";
-import { schemeRegistry } from "./schemes.js";
 import { matchUnitTags } from "./tags.js";
 import { compare, uniqueSorted } from "./util.js";
 
@@ -142,7 +141,7 @@ export const tagFacts = async (
 	line: LineFacts,
 ) => {
 	const { head } = line;
-	const schemes = schemeRegistry(workspace.schemes);
+	const { schemes } = workspace;
 	const allTags = await git.tags();
 	const tags = matchUnitTags(workspace.units, allTags, schemes);
 	const merged = new Set((await git.tagsMerged(head)).map((t) => t.name));

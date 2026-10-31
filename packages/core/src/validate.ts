@@ -2,7 +2,7 @@ import { validateBranches } from "./branches.js";
 import { coreCodes } from "./codes.js";
 import { validateFloating } from "./floating.js";
 import { validateReleaseItems } from "./release-items.js";
-import { schemeRegistry } from "./schemes.js";
+import { assertSchemes } from "./schemes.js";
 import { compileTagFormat, matchUnitTags, noMatchingTag } from "./tags.js";
 import { uniqueSorted } from "./util.js";
 import { validateTemplates } from "./version-files.js";
@@ -20,7 +20,8 @@ import type { Workspace } from "./workspace.js";
 export const validateRelease = (
 	workspace: Workspace,
 ): ReadonlyMap<string, VersionScheme<any>> => {
-	const schemes = schemeRegistry(workspace.schemes);
+	const { schemes } = workspace;
+	assertSchemes(schemes);
 	for (const unit of workspace.units) {
 		if (unit.version === "none") {
 			continue;
@@ -114,11 +115,7 @@ export const validateTags = (
 	workspace: Workspace,
 	tags: readonly TagRef[],
 ): Warning[] => {
-	const matched = matchUnitTags(
-		workspace.units,
-		tags,
-		schemeRegistry(workspace.schemes),
-	);
+	const matched = matchUnitTags(workspace.units, tags, workspace.schemes);
 
 	return noMatchingTag(
 		workspace.units,

@@ -1,4 +1,4 @@
-import { CORE_PLUGIN } from "./builtin.js";
+import { CORE_PLUGIN, corePlugin } from "./builtin.js";
 import { coreCodes } from "./codes.js";
 import { assertPlugin } from "./plugin.js";
 
@@ -41,12 +41,21 @@ export const pluginCtx =
 			}),
 		});
 
-/** Resolves enabled plugins in config order and validates their options. */
+/**
+ * Resolves core, then enabled plugins in config order, and validates their
+ * options.
+ */
 export const activatePlugins = async (
 	env: PluginEnv,
 	warnings: Warning[],
 ): Promise<ActivePlugin[]> => {
-	const active: ActivePlugin[] = [];
+	const active: ActivePlugin[] = [
+		{
+			plugin: corePlugin,
+			ctx: pluginCtx(env, warnings)(CORE_PLUGIN, {}),
+			globalInputs: true,
+		},
+	];
 	for (const [name, raw] of Object.entries(env.config.plugins)) {
 		const plugin = env.plugins.find((p) => p.name === name);
 		if (!plugin) {

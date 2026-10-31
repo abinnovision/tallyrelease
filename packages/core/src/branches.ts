@@ -1,5 +1,4 @@
 import { coreCodes } from "./codes.js";
-import { schemeRegistry } from "./schemes.js";
 import { maxLevel } from "./util.js";
 
 import type {
@@ -288,7 +287,7 @@ export const maintenanceCut = (
 			? plan.groups.find((g) => g.name === item.name)
 			: plan.units.find((u) => u.id === item.name);
 	const unit = workspace.units.find((u) => u.id === item.units[0]);
-	const scheme = unit && schemeRegistry(workspace.schemes).get(unit.scheme);
+	const scheme = unit && workspace.schemes.get(unit.scheme);
 	if (
 		plan.line?.kind !== "default" ||
 		!scheme ||

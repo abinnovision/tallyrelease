@@ -6,7 +6,6 @@ import {
 import { coreCodes } from "./codes.js";
 import { normalizeRoot } from "./discover.js";
 import { runHook } from "./plugins.js";
-import { schemeRegistry } from "./schemes.js";
 
 import type { Warning } from "./errors.js";
 import type { Plan } from "./model/plan-types.js";
@@ -383,7 +382,7 @@ export const releaseFiles = async (
 }> => {
 	const { fs, items, repoUrl, date } = opts;
 	const pluginFiles = await versionFileClaims(workspace);
-	const schemes = schemeRegistry(workspace.schemes);
+	const { schemes } = workspace;
 	const units = new Map(workspace.units.map((u) => [u.id, u]));
 	const planned = new Map(plan.units.map((u) => [u.id, u]));
 	const versions = new Map(

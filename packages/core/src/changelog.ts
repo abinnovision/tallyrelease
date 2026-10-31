@@ -1,4 +1,3 @@
-import { schemeRegistry } from "./schemes.js";
 import { renderTag } from "./tags.js";
 import { compare } from "./util.js";
 
@@ -350,7 +349,7 @@ export const releaseNotes = (
 	read: (path: string) => string | undefined,
 ): string | undefined => {
 	const unit = workspace.units.find((u) => u.id === id);
-	const scheme = unit && schemeRegistry(workspace.schemes).get(unit.scheme);
+	const scheme = unit && workspace.schemes.get(unit.scheme);
 	const content = unit && read(changelogPath(unit));
 	if (!scheme || content === undefined) {
 		return undefined;
