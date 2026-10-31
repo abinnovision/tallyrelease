@@ -82,6 +82,11 @@ export const cliCodes = defineCodes({
 			"A plugin set with `plugins.<name>.path` or `plugins.<name>.package` could not be loaded: the file is missing or outside the repository, the package is not installed in the repository's `node_modules`, the module fails to import, or it does not export a plugin with that name. A built-in plugin (`node`, `php`, `kustomize`) that sets `path` or `package` is also rejected, since built-ins cannot be replaced.",
 		fix: "Check the path (relative to the repository root) or install the package at the repository root, and check that the module's default export is a plugin whose `name` is the config key. Remove `path` and `package` from built-in plugins.",
 	},
+	E_PLUGIN_LOCAL: {
+		cause:
+			"A privileged command (`pr`, `release`, `run` or `version`) found a local plugin (`plugins.<name>.path`). These commands hold write tokens, so they load local plugins only when allowed with `--allow-local-plugins` or `TALLYRELEASE_ALLOW_LOCAL_PLUGINS`, and never on a pull request head: on `pull_request`, `pull_request_target` and `merge_group` events or with a `GITHUB_REF` under `refs/pull/`.",
+		fix: "Allow local plugins in jobs that run only on trusted branches (`--allow-local-plugins` or `TALLYRELEASE_ALLOW_LOCAL_PLUGINS=true`), or publish the plugin as a package (`plugins.<name>.package`).",
+	},
 	E_PUSH_LEASE: {
 		cause:
 			"A push was rejected because a remote ref moved since tallyrelease read it, usually a concurrent run or a commit pushed to the release branch.",

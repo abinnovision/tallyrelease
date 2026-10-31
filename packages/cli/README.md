@@ -48,7 +48,7 @@ units:
 
 ## Commands
 
-Global flags: `--cwd <dir>` (repository root), `--config <file>` (default `tallyrelease.yaml`), `--token <token>` (forge token, default `GITHUB_TOKEN`), `--remote <name>` (git remote to push to and read the repository from, default `origin`), `--verbose`.
+Global flags: `--cwd <dir>` (repository root), `--config <file>` (default `tallyrelease.yaml`), `--token <token>` (forge token, default `GITHUB_TOKEN`), `--remote <name>` (git remote to push to and read the repository from, default `origin`), `--verbose`, `--allow-local-plugins` (let `pr`, `release`, `run` and `version` load `plugins.<name>.path` plugins, also `TALLYRELEASE_ALLOW_LOCAL_PLUGINS=true`; never on a pull request head).
 
 Errors print as `error[E_*]` and warnings as `warning[W_*]`. The [error and warning reference](../../docs/errors.md) lists the cause and fix of each code.
 

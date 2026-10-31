@@ -218,6 +218,12 @@ Cause: A plugin set with `plugins.<name>.path` or `plugins.<name>.package` could
 
 Fix: Check the path (relative to the repository root) or install the package at the repository root, and check that the module's default export is a plugin whose `name` is the config key. Remove `path` and `package` from built-in plugins.
 
+### E_PLUGIN_LOCAL
+
+Cause: A privileged command (`pr`, `release`, `run` or `version`) found a local plugin (`plugins.<name>.path`). These commands hold write tokens, so they load local plugins only when allowed with `--allow-local-plugins` or `TALLYRELEASE_ALLOW_LOCAL_PLUGINS`, and never on a pull request head: on `pull_request`, `pull_request_target` and `merge_group` events or with a `GITHUB_REF` under `refs/pull/`.
+
+Fix: Allow local plugins in jobs that run only on trusted branches (`--allow-local-plugins` or `TALLYRELEASE_ALLOW_LOCAL_PLUGINS=true`), or publish the plugin as a package (`plugins.<name>.package`).
+
 ### E_PLUGIN_NAME
 
 Cause: A plugin name does not match `^[a-z][a-z0-9-]*$`, or uses the name `core`, which is reserved.

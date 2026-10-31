@@ -5,16 +5,20 @@ import { configSchema } from "./schema.js";
 
 const local = { apiVersion: 1, name: "local" };
 
-const resolve = async (plugins: unknown, exports: unknown = local) => {
+const resolve = async (
+	plugins: unknown,
+	exports: unknown = local,
+	localDenied?: string,
+) => {
 	const imported: string[] = [];
-	const result = await resolvePlugins(
-		configSchema.parse({ plugins }),
-		(path) => {
-			imported.push(path);
+	const result = await resolvePlugins(configSchema.parse({ plugins }), {
+		importPlugin: (specifier) => {
+			imported.push(specifier);
 
 			return Promise.resolve(exports);
 		},
-	);
+		localDenied,
+	});
 
 	return { ...result, imported };
 };
@@ -57,11 +61,27 @@ describe("resolvePlugins", () => {
 		});
 	});
 
+	it("denies path plugins with E_PLUGIN_LOCAL when local plugins are denied", async () => {
+		await expect(
+			resolve({ local: { path: "p.ts" } }, local, "not allowed"),
+		).rejects.toMatchObject({
+			code: "E_PLUGIN_LOCAL",
+			message: 'plugin "local": not allowed',
+		});
+
+		const { imported } = await resolve(
+			{ local: { package: "p" } },
+			local,
+			"not allowed",
+		);
+		expect(imported).toEqual(["p"]);
+	});
+
 	it("wraps import failures as E_PLUGIN_LOAD", async () => {
 		await expect(
 			resolvePlugins(
 				configSchema.parse({ plugins: { local: { path: "p.ts" } } }),
-				() => Promise.reject(new Error("boom")),
+				{ importPlugin: () => Promise.reject(new Error("boom")) },
 			),
 		).rejects.toMatchObject({
 			code: "E_PLUGIN_LOAD",
