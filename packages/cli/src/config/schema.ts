@@ -123,17 +123,31 @@ const unitOverlay = z.strictObject({
 		.exactOptional(),
 });
 
-// `path` is owned by the cli, which strips it before core sees the entry.
-const pluginEntry = z.looseObject({
-	path: z
-		.string()
-		.min(1)
-		.meta({
-			description:
-				"Local plugin: a .ts or .js file relative to the repository root that exports a plugin of this name.",
-		})
-		.exactOptional(),
-});
+// `path` and `package` are owned by the cli, which strips them before core sees the entry.
+const pluginEntry = z
+	.looseObject({
+		path: z
+			.string()
+			.min(1)
+			.meta({
+				description:
+					"Local plugin: a .ts or .js file relative to the repository root that exports a plugin of this name.",
+			})
+			.exactOptional(),
+		package: z
+			.string()
+			.regex(/^(?:@[a-z0-9~-][a-z0-9._~-]*\/)?[a-z0-9~-][a-z0-9._~-]*$/, {
+				error: "package must be an npm package name",
+			})
+			.meta({
+				description:
+					"Plugin package resolved from the repository root's node_modules that exports a plugin of this name. Excludes path.",
+			})
+			.exactOptional(),
+	})
+	.refine((entry) => entry.path === undefined || entry.package === undefined, {
+		error: "set path or package, not both",
+	});
 
 const configObject = z.strictObject({
 	$schema: z
@@ -331,7 +345,7 @@ export const configSchemaExact: Equals<
 
 // Plugin entries without the cli-owned keys are `TallyConfig` plugin entries.
 export const pluginEntryExact: Equals<
-	Omit<PluginEntry, "path">,
+	Omit<PluginEntry, "path" | "package">,
 	NonNullable<TallyConfig["plugins"][string]>
 > = true;
 
