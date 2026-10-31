@@ -48,12 +48,17 @@ export const main = async (
 			"origin",
 		)
 		.option("--verbose", "print debug output")
+		.option(
+			"--allow-local-plugins",
+			"let pr, release, run and version load plugins.<name>.path",
+		)
 		.exitOverride()
 		.configureOutput({
 			writeOut: (s) => deps.stdout.write(s),
 			writeErr: (s) => deps.stderr.write(s),
 		});
-	const session = () => createSession(deps, program.opts<GlobalOptions>());
+	const session = (privileged = false) =>
+		createSession(deps, { ...program.opts<GlobalOptions>(), privileged });
 
 	program
 		.command("check")
@@ -187,7 +192,7 @@ export const main = async (
 		.option("--branch <name>", "plan for this branch (default: current)")
 		.option("--dry-run", "print the files without writing them")
 		.action(async (flags: VersionFlags) => {
-			await applyVersions(session(), flags);
+			await applyVersions(session(true), flags);
 		});
 	program
 		.command("pr")
@@ -195,7 +200,7 @@ export const main = async (
 		.option("--branch <name>", "plan for this branch (default: current)")
 		.option("--dry-run", "print the actions without pushing or editing PRs")
 		.action(async (flags: PrFlags) => {
-			await releasePrs(session(), flags);
+			await releasePrs(session(true), flags);
 		});
 	program
 		.command("release")
@@ -203,7 +208,7 @@ export const main = async (
 		.option("--branch <name>", "plan for this branch (default: current)")
 		.option("--dry-run", "print the actions without tagging or editing PRs")
 		.action(async (flags: ReleaseFlags) => {
-			await reconcile(session(), flags, {
+			await reconcile(session(true), flags, {
 				command: "release",
 				ready: async () => {
 					await Promise.resolve();
@@ -228,7 +233,7 @@ export const main = async (
 			"write markdown to $GITHUB_STEP_SUMMARY, else print it instead of the table",
 		)
 		.action(async (flags: RunFlags) => {
-			await run(session(), flags);
+			await run(session(true), flags);
 		});
 
 	try {

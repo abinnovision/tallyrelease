@@ -55,4 +55,36 @@ describe("createSession", () => {
 		expect(await atRef()).not.toBe(await atRef());
 		expect(reads).toBe(3);
 	});
+
+	it("never loads local plugins of privileged commands on pull request events", async () => {
+		const imported: string[] = [];
+		const session = createSession(
+			{
+				env: { GITHUB_EVENT_NAME: "pull_request_target" },
+				cwd: "/repo",
+				stdout: { write: () => true },
+				stderr: { write: () => true },
+				fs: memoryFs({
+					"tallyrelease.yaml": "plugins:\n  local: { path: plugin.ts }\n",
+				}),
+				importPlugin: (specifier) => {
+					imported.push(specifier);
+
+					return Promise.resolve({ apiVersion: 1, name: "local" });
+				},
+			},
+			{
+				config: "tallyrelease.yaml",
+				privileged: true,
+				allowLocalPlugins: true,
+			},
+		);
+
+		await expect(session.workspace()).rejects.toMatchObject({
+			code: "E_PLUGIN_LOCAL",
+			message:
+				'plugin "local": privileged commands never load local plugins on a pull request head',
+		});
+		expect(imported).toEqual([]);
+	});
 });

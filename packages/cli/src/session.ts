@@ -12,7 +12,11 @@ import {
 import { githubContext } from "./ci/github-env.js";
 import { cliCodes } from "./codes.js";
 import { loadConfig } from "./config/load.js";
-import { jitiImport, resolvePlugins } from "./config/plugins.js";
+import {
+	jitiImport,
+	localPluginsDenied,
+	resolvePlugins,
+} from "./config/plugins.js";
 import { githubForge } from "./forge/github.js";
 import { gitBlob, gitTreeFs, nodeFs } from "./fs-ctx.js";
 import { git as runGit } from "./git/exec.js";
@@ -69,6 +73,10 @@ export interface GlobalOptions {
 	verbose?: boolean;
 	/** Git remote to push to and read the repository from; defaults to `origin`. */
 	remote?: string;
+	/** `--allow-local-plugins`: privileged commands may load local plugins. */
+	allowLocalPlugins?: boolean;
+	/** Set by commands that hold write tokens (`pr`, `release`, `run`, `version`). */
+	privileged?: boolean;
 }
 
 /** Resolved dependencies shared by all commands. */
@@ -243,6 +251,9 @@ export const createSession = (deps: Deps, opts: GlobalOptions): Session => {
 
 	const repoGit = deps.git ?? gitReader(root, debug, { env: deps.env, remote });
 	const importPlugin = deps.importPlugin ?? jitiImport(root);
+	const localDenied = opts.privileged
+		? localPluginsDenied(deps.env, opts.allowLocalPlugins === true)
+		: undefined;
 	const blobAt = gitBlob(root, deps.env);
 
 	const loadAt = async (
@@ -254,7 +265,7 @@ export const createSession = (deps: Deps, opts: GlobalOptions): Session => {
 
 		const { config, plugins } = await resolvePlugins(
 			loadConfig(fs, configPath),
-			importPlugin,
+			{ importPlugin, localDenied },
 		);
 		const files =
 			ref === null ? fs : (deps.fsAt?.(ref) ?? gitTreeFs(root, ref, deps.env));

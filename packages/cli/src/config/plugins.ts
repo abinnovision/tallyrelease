@@ -1,10 +1,12 @@
 import { createJiti } from "jiti";
 import { join, posix } from "node:path";
 
+import { PR_EVENTS } from "../ci/github-env.js";
 import { cliCodes } from "../codes.js";
 import { builtinPlugins } from "../plugins/index.js";
 
 import type { CliConfig, PluginEntry } from "./schema.js";
+import type { Env } from "../ci/github-env.js";
 import type { Plugin, TallyConfig } from "@tallyrelease/core";
 import type { Jiti } from "jiti";
 
@@ -12,7 +14,7 @@ import type { Jiti } from "jiti";
 const loadPlugin = async (
 	name: string,
 	{ path, package: pkg }: PluginEntry,
-	importPlugin: ImportPlugin,
+	{ importPlugin, localDenied }: ResolveOptions,
 ): Promise<Plugin> => {
 	const source = path ?? pkg ?? "";
 	const fail = (reason: string, error?: unknown) =>
@@ -30,6 +32,14 @@ const loadPlugin = async (
 
 	let specifier = source;
 	if (path !== undefined) {
+		if (localDenied !== undefined) {
+			throw cliCodes.error(
+				"E_PLUGIN_LOCAL",
+				`plugin "${name}": ${localDenied}`,
+				{ plugin: name, source },
+			);
+		}
+
 		const file = posix.normalize(path);
 		if (posix.isAbsolute(file) || file === ".." || file.startsWith("../")) {
 			throw fail(`"${path}" is outside the repository root`);
@@ -74,6 +84,35 @@ export const jitiImport = (root: string): ImportPlugin => {
 	};
 };
 
+/**
+ * Why a privileged command may not load local plugins, undefined when it may:
+ * never on a pull request head, else only when allowed by flag or env.
+ */
+export const localPluginsDenied = (
+	env: Env,
+	allowFlag: boolean,
+): string | undefined => {
+	const event = env["GITHUB_EVENT_NAME"];
+	if (
+		(event !== undefined && PR_EVENTS.has(event)) ||
+		env["GITHUB_REF"]?.startsWith("refs/pull/")
+	) {
+		return "privileged commands never load local plugins on a pull request head";
+	}
+
+	const allowEnv = env["TALLYRELEASE_ALLOW_LOCAL_PLUGINS"] ?? "";
+
+	return allowFlag || /^(?:1|true)$/i.test(allowEnv)
+		? undefined
+		: "privileged commands load local plugins only with --allow-local-plugins or TALLYRELEASE_ALLOW_LOCAL_PLUGINS=true";
+};
+
+export interface ResolveOptions {
+	importPlugin: ImportPlugin;
+	/** Why local plugins (`path`) may not load; undefined when they may. */
+	localDenied?: string | undefined;
+}
+
 export interface ResolvedPlugins {
 	/** The config without cli-owned plugin keys, as core reads it. */
 	config: TallyConfig;
@@ -88,7 +127,7 @@ export interface ResolvedPlugins {
  */
 export const resolvePlugins = async (
 	config: CliConfig,
-	importPlugin: ImportPlugin,
+	opts: ResolveOptions,
 ): Promise<ResolvedPlugins> => {
 	const plugins: Plugin[] = Object.values(builtinPlugins);
 	const entries: TallyConfig["plugins"] = {};
@@ -97,7 +136,7 @@ export const resolvePlugins = async (
 		entries[name] = entry && options;
 		if (entry && (path !== undefined || pkg !== undefined)) {
 			// eslint-disable-next-line no-await-in-loop -- plugins load in config order
-			plugins.push(await loadPlugin(name, entry, importPlugin));
+			plugins.push(await loadPlugin(name, entry, opts));
 		}
 	}
 

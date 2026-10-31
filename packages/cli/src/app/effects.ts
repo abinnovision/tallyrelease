@@ -1,14 +1,9 @@
+import { PR_EVENTS } from "../ci/github-env.js";
 import { cliCodes } from "../codes.js";
 
 import type { RepoRef } from "../forge/forge.js";
 import type { Session } from "../session.js";
 import type { PlanLine } from "@tallyrelease/core";
-
-const PR_EVENTS = new Set([
-	"pull_request",
-	"pull_request_target",
-	"merge_group",
-]);
 
 /**
  * True, with `W_EFFECT_SKIPPED`, when an effect command must do nothing: on

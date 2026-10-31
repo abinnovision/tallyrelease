@@ -19,6 +19,13 @@ const parseEvent = (path: string): Record<string, unknown> => {
 
 export type Env = Readonly<Record<string, string | undefined>>;
 
+/** Events that run on a pull request head or a merge queue commit. */
+export const PR_EVENTS: ReadonlySet<string> = new Set([
+	"pull_request",
+	"pull_request_target",
+	"merge_group",
+]);
+
 /** GitHub Actions run context from `GITHUB_*` variables. */
 export interface GithubContext {
 	eventName: string;
