@@ -1,8 +1,11 @@
 import { defaultUnitId, definePlugin } from "@tallyrelease/core";
 
-import { parseJson } from "../json.js";
+import { dependencyEdges, unitsByPackage } from "../_kit/edges.js";
+import { readManifest } from "../_kit/manifest.js";
+import { globIn, rootOf } from "../_kit/paths.js";
+import { NUMBERS, PRERELEASE } from "../_kit/semver.js";
 
-import type { Ctx, EdgeDraft, Unit, UnitDraft } from "@tallyrelease/core";
+import type { Ctx, EdgeDraft, UnitDraft } from "@tallyrelease/core";
 
 interface Composer {
 	name?: string;
@@ -10,17 +13,14 @@ interface Composer {
 	[field: string]: unknown;
 }
 
-const EXACT = /^(self\.version|=?v?\d+\.\d+\.\d+(\.\d+)?(-[0-9A-Za-z.-]+)?)$/;
+const EXACT = new RegExp(
+	`^(self\\.version|=?v?${NUMBERS}(\\.\\d+)?${PRERELEASE})$`,
+);
 
-const composerPath = (root: string): string =>
-	root === "." ? "composer.json" : `${root}/composer.json`;
+const COMPOSER = "composer.json";
 
-const readComposer = (ctx: Ctx, root: string): Composer | undefined => {
-	const path = composerPath(root);
-	const raw = ctx.fs.read(path);
-
-	return raw === undefined ? undefined : (parseJson(path, raw) as Composer);
-};
+const readComposer = (ctx: Ctx, root: string): Composer | undefined =>
+	readManifest(ctx, root, COMPOSER);
 
 /** Local `repositories[type=path]` url globs, repo-relative. */
 const pathRepoGlobs = (composer: Composer): string[] => {
@@ -46,8 +46,8 @@ export const phpPlugin = definePlugin({
 		const roots = [
 			".",
 			...ctx.fs
-				.glob(pathRepoGlobs(rootComposer).map((u) => `${u}/composer.json`))
-				.map((p) => p.slice(0, -"/composer.json".length))
+				.glob(pathRepoGlobs(rootComposer).map((u) => globIn(u, COMPOSER)))
+				.map((p) => rootOf(p, COMPOSER))
 				.filter((root) => root !== ""),
 		];
 
@@ -63,30 +63,20 @@ export const phpPlugin = definePlugin({
 		});
 	},
 	edges: (ctx, units) => {
-		const byName = new Map<string, Unit>();
-		for (const unit of units) {
-			const name = unit.meta["php"]?.["packageName"];
-			if (unit.plugin === "php" && typeof name === "string") {
-				byName.set(name, unit);
-			}
-		}
+		const byName = unitsByPackage(units, "php");
 
 		const edges: EdgeDraft[] = [];
 		for (const to of byName.values()) {
 			const composer = readComposer(ctx, to.root) ?? {};
 			for (const field of ["require", "require-dev"] as const) {
 				const deps = (composer[field] ?? {}) as Record<string, string>;
-				for (const [name, constraint] of Object.entries(deps)) {
-					const from = byName.get(name);
-					if (from && from.id !== to.id) {
-						edges.push({
-							from: from.id,
-							to: to.id,
-							reason: `${field}: ${name}`,
-							pinned: field === "require" && EXACT.test(constraint),
-						});
-					}
-				}
+				edges.push(
+					...dependencyEdges(byName, to, {
+						field,
+						deps,
+						exact: field === "require" ? EXACT : undefined,
+					}),
+				);
 			}
 		}
 

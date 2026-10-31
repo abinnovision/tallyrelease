@@ -1,9 +1,12 @@
 import { defaultUnitId, definePlugin } from "@tallyrelease/core";
 import { parse as parseYaml } from "yaml";
 
-import { parseJson } from "../json.js";
+import { dependencyEdges, unitsByPackage } from "../_kit/edges.js";
+import { parseJson, readManifest } from "../_kit/manifest.js";
+import { globIn, joinRoot, rootOf } from "../_kit/paths.js";
+import { BUILD, NUMBERS, PRERELEASE } from "../_kit/semver.js";
 
-import type { Ctx, EdgeDraft, Unit, UnitDraft } from "@tallyrelease/core";
+import type { Ctx, EdgeDraft, UnitDraft } from "@tallyrelease/core";
 
 interface Manifest {
 	name?: string;
@@ -13,21 +16,20 @@ interface Manifest {
 
 const PINNED_FIELDS = ["dependencies", "optionalDependencies"] as const;
 const UNPINNED_FIELDS = ["peerDependencies", "devDependencies"] as const;
-const EXACT =
-	/^(workspace:)?(\*|=?v?\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?)$/;
+const EXACT = new RegExp(
+	`^(workspace:)?(\\*|=?v?${NUMBERS}${PRERELEASE}${BUILD})$`,
+);
 /** Pinned version ranges rewritten on release; the prefix is kept. */
-const PINNED_VERSION =
-	/^((?:workspace:)?=?v?)\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$/;
+const PINNED_VERSION = new RegExp(
+	`^((?:workspace:)?=?v?)${NUMBERS}${PRERELEASE}${BUILD}$`,
+);
 
-const manifestPath = (root: string): string =>
-	root === "." ? "package.json" : `${root}/package.json`;
+const MANIFEST = "package.json";
 
-const readManifest = (ctx: Ctx, root: string): Manifest | undefined => {
-	const path = manifestPath(root);
-	const raw = ctx.fs.read(path);
+const manifestPath = (root: string): string => joinRoot(root, MANIFEST);
 
-	return raw === undefined ? undefined : (parseJson(path, raw) as Manifest);
-};
+const readPackage = (ctx: Ctx, root: string): Manifest | undefined =>
+	readManifest(ctx, root, MANIFEST);
 
 /** Workspace globs from `pnpm-workspace.yaml` or `package.json`, if any. */
 const workspacePatterns = (ctx: Ctx): string[] | undefined => {
@@ -38,7 +40,7 @@ const workspacePatterns = (ctx: Ctx): string[] | undefined => {
 		return doc?.packages ?? [];
 	}
 
-	const { workspaces } = readManifest(ctx, ".") ?? {};
+	const { workspaces } = readPackage(ctx, ".") ?? {};
 
 	if (workspaces === undefined) {
 		return undefined;
@@ -49,14 +51,14 @@ const workspacePatterns = (ctx: Ctx): string[] | undefined => {
 
 const packageRoots = (ctx: Ctx, patterns: string[]): string[] => {
 	const manifests = (list: string[]) =>
-		ctx.fs.glob(list.map((p) => `${p.replace(/\/+$/, "")}/package.json`));
+		ctx.fs.glob(list.map((p) => globIn(p, MANIFEST)));
 	const excluded = new Set(
 		manifests(patterns.filter((p) => p.startsWith("!")).map((p) => p.slice(1))),
 	);
 
 	return manifests(patterns.filter((p) => !p.startsWith("!")))
 		.filter((p) => !excluded.has(p))
-		.map((p) => p.slice(0, -"/package.json".length));
+		.map((p) => rootOf(p, MANIFEST));
 };
 
 export const nodePlugin = definePlugin({
@@ -72,7 +74,7 @@ export const nodePlugin = definePlugin({
 				: packageRoots(ctx, patterns);
 
 		return roots.map((root): UnitDraft => {
-			const packageName = readManifest(ctx, root)?.name;
+			const packageName = readPackage(ctx, root)?.name;
 
 			return {
 				id: defaultUnitId(root, ctx.repo.name),
@@ -83,41 +85,22 @@ export const nodePlugin = definePlugin({
 		});
 	},
 	edges: (ctx, units) => {
-		const byName = new Map<string, Unit>();
-		for (const unit of units) {
-			const name = unit.meta["node"]?.["packageName"];
-			if (unit.plugin === "node" && typeof name === "string") {
-				const prior = byName.get(name);
-				if (prior) {
-					ctx.log.warn(
-						`package "${name}" is declared by "${prior.root}" and "${unit.root}"; using "${unit.root}"`,
-					);
-				}
-
-				byName.set(name, unit);
-			}
-		}
+		const byName = unitsByPackage(units, "node", (name, prior, unit) => {
+			ctx.log.warn(
+				`package "${name}" is declared by "${prior.root}" and "${unit.root}"; using "${unit.root}"`,
+			);
+		});
 
 		const edges: EdgeDraft[] = [];
 		for (const to of byName.values()) {
-			const manifest = readManifest(ctx, to.root) ?? {};
+			const manifest = readPackage(ctx, to.root) ?? {};
 			const fields = [
-				...PINNED_FIELDS.map((field) => [field, true] as const),
-				...UNPINNED_FIELDS.map((field) => [field, false] as const),
+				...PINNED_FIELDS.map((field) => [field, EXACT] as const),
+				...UNPINNED_FIELDS.map((field) => [field, undefined] as const),
 			];
-			for (const [field, pinnable] of fields) {
+			for (const [field, exact] of fields) {
 				const deps = (manifest[field] ?? {}) as Record<string, string>;
-				for (const [name, range] of Object.entries(deps)) {
-					const from = byName.get(name);
-					if (from && from.id !== to.id) {
-						edges.push({
-							from: from.id,
-							to: to.id,
-							reason: `${field}: ${name}`,
-							pinned: pinnable && EXACT.test(range),
-						});
-					}
-				}
+				edges.push(...dependencyEdges(byName, to, { field, deps, exact }));
 			}
 		}
 
