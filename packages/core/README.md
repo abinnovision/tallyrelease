@@ -40,7 +40,7 @@ renderTag({ id: "web", tagFormat: "{id}-v{version}" }, "1.2.0"); // "web-v1.2.0"
 
 ## Testing
 
-The `@tallyrelease/core/testing` export provides in-memory fakes: `memoryFs`, `memoryCtx` and `memoryGit`. The `@tallyrelease/core/testing/conformance` export provides `gitReaderConformance`, a shared `GitReader` spec that requires vitest.
+The `@tallyrelease/core/testing` export provides in-memory fakes: `memoryFs`, `memoryCtx` and `memoryGit`. The `@tallyrelease/core/testing/conformance` export provides `gitReaderConformance` and `schemeConformance`, shared `GitReader` and `VersionScheme` specs that require vitest.
 
 ## Licence
 

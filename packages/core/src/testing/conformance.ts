@@ -3,7 +3,13 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { compare } from "../util.js";
 
 import type { Dag } from "./index.js";
-import type { GitReader, MaybePromise } from "../plugin.js";
+import type {
+	BumpLevel,
+	GitReader,
+	MaybePromise,
+	PreCtx,
+	VersionScheme,
+} from "../plugin.js";
 
 /** Path git would C-quote without `-z`. */
 const ODD_PATH = 'odd/a "q"\tü.txt';
@@ -244,6 +250,107 @@ export const gitReaderConformance = (makeReader: ReaderFactory): void => {
 			it("returns null for a path no commit touches", async () => {
 				expect(await introduced("missing")).toBeNull();
 			});
+		});
+	});
+};
+
+const LEVELS: BumpLevel[] = ["major", "minor", "patch"];
+
+const PRE_CTX: PreCtx & { channel: string } = {
+	unit: {
+		id: "u",
+		root: ".",
+		plugin: "conformance",
+		include: [],
+		exclude: [],
+		version: "tag",
+		scheme: "conformance",
+		tagFormat: "v{version}",
+		propagate: "auto",
+		tags: [],
+		initialVersion: null,
+		meta: {},
+	},
+	head: "0".repeat(40),
+	baseTag: null,
+	tags: [],
+	firstParent: { sinceLineBase: 3, total: 7 },
+	channel: "rc",
+};
+
+/**
+ * Shared `VersionScheme` spec. Versions are derived from `initial()`:
+ * `parse`/`format` round-trip, `compare` order, `bump` monotonicity per level,
+ * and `release`/`prerelease` keeping the core triple.
+ */
+export const schemeConformance = <V>(scheme: VersionScheme<V>): void => {
+	describe("VersionScheme conformance", () => {
+		const initial = scheme.initial();
+		const bumped = (level: BumpLevel) => scheme.bump(initial, level);
+
+		it("round-trips parse and format", () => {
+			for (const v of [initial, ...LEVELS.map(bumped)]) {
+				const raw = scheme.format(v);
+				const parsed = scheme.parse(raw);
+				expect(parsed).toBeDefined();
+				expect(scheme.format(parsed as V)).toBe(raw);
+				expect(scheme.compare(parsed as V, v)).toBe(0);
+			}
+		});
+
+		it("rejects input that is not a version", () => {
+			expect(scheme.parse("")).toBeUndefined();
+			expect(scheme.parse("not a version")).toBeUndefined();
+		});
+
+		it("compares consistently", () => {
+			const low = initial;
+			const high = bumped("patch");
+			expect(scheme.compare(low, low)).toBe(0);
+			expect(scheme.compare(low, high)).toBeLessThan(0);
+			expect(scheme.compare(high, low)).toBeGreaterThan(0);
+		});
+
+		it.each(LEVELS)("bumps %s above the previous version", (level) => {
+			const next = bumped(level);
+			expect(scheme.compare(next, initial)).toBeGreaterThan(0);
+			expect(scheme.isPrerelease(next)).toBe(false);
+		});
+
+		it("orders bump levels major > minor > patch", () => {
+			const [major, minor, patch] = LEVELS.map(bumped) as [V, V, V];
+			expect(scheme.compare(major, minor)).toBeGreaterThan(0);
+			expect(scheme.compare(minor, patch)).toBeGreaterThan(0);
+		});
+
+		it("resets lower core parts on a bump", () => {
+			const { major, minor, patch } = scheme.core(initial);
+			expect(scheme.core(bumped("major"))).toEqual({
+				major: major + 1,
+				minor: 0,
+				patch: 0,
+			});
+			expect(scheme.core(bumped("minor"))).toEqual({
+				major,
+				minor: minor + 1,
+				patch: 0,
+			});
+			expect(scheme.core(bumped("patch"))).toEqual({
+				major,
+				minor,
+				patch: patch + 1,
+			});
+		});
+
+		it("keeps the core when releasing or prereleasing", () => {
+			const next = bumped("minor");
+			const release = scheme.release(next, PRE_CTX);
+			const pre = scheme.prerelease(next, PRE_CTX);
+			expect(scheme.core(release)).toEqual(scheme.core(next));
+			expect(scheme.core(pre)).toEqual(scheme.core(next));
+			expect(scheme.isPrerelease(release)).toBe(false);
+			expect(scheme.compare(pre, release)).toBeLessThanOrEqual(0);
+			expect(scheme.parse(scheme.format(pre))).toBeDefined();
 		});
 	});
 };
