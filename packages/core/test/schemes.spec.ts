@@ -6,6 +6,7 @@ import { loadWorkspace } from "../src/index.js";
 import { PLUGIN_API_VERSION } from "../src/plugin.js";
 import { assertSchemes, schemeRegistry } from "../src/schemes.js";
 import { semver } from "../src/semver.js";
+import { schemeConformance } from "../src/testing/conformance.js";
 import { memoryFs } from "../src/testing/index.js";
 
 import type { Plugin } from "../src/plugin.js";
@@ -14,6 +15,14 @@ const plugin = (
 	name: string,
 	schemes: NonNullable<Plugin["schemes"]>,
 ): Plugin => ({ apiVersion: PLUGIN_API_VERSION, name, schemes });
+
+describe("semver", () => {
+	schemeConformance(semver);
+});
+
+describe("flutter", () => {
+	schemeConformance(flutter);
+});
 
 describe("schemes", () => {
 	it("maps names to schemes in plugin order", () => {
