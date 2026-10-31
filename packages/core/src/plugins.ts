@@ -2,9 +2,9 @@ import { CORE_PLUGIN, corePlugin } from "./builtin.js";
 import { coreCodes } from "./codes.js";
 import { assertPlugin } from "./plugin.js";
 
-import type { TallyConfig } from "./config.js";
 import type { Warning } from "./errors.js";
-import type { Ctx, MaybePromise, Plugin, ReadonlyFs } from "./plugin.js";
+import type { Ctx, MaybePromise, Plugin } from "./plugin.js";
+import type { WorkspaceInput } from "./workspace.js";
 
 /** An enabled plugin with its validated options. */
 export interface ActivePlugin {
@@ -14,18 +14,9 @@ export interface ActivePlugin {
 	readonly globalInputs: boolean;
 }
 
-export interface PluginEnv {
-	config: TallyConfig;
-	/** Available plugins; `config.plugins` selects and orders them. */
-	plugins: readonly Plugin[];
-	fs: ReadonlyFs;
-	repo: { name: string };
-	debug?: (message: string) => void;
-}
-
 /** Frozen `Ctx` factory; warnings are tagged with the plugin name. */
 export const pluginCtx =
-	(env: Pick<PluginEnv, "fs" | "repo" | "debug">, warnings: Warning[]) =>
+	(env: Pick<WorkspaceInput, "fs" | "repo" | "debug">, warnings: Warning[]) =>
 	(name: string, options: unknown): Ctx =>
 		Object.freeze({
 			options,
@@ -46,7 +37,7 @@ export const pluginCtx =
  * options.
  */
 export const activatePlugins = async (
-	env: PluginEnv,
+	env: WorkspaceInput,
 	warnings: Warning[],
 ): Promise<ActivePlugin[]> => {
 	const active: ActivePlugin[] = [
