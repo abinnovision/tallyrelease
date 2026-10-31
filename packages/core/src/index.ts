@@ -8,7 +8,6 @@ export type {
 	AffectedUnit,
 	BaseSource,
 } from "./model/affected-types.js";
-export type { ChangelogDependency, ChangelogInput } from "./changelog.js";
 export type {
 	CodeDoc,
 	CodeOf,
@@ -75,18 +74,12 @@ export type { IntentEntry, Workspace, WorkspaceInput } from "./workspace.js";
 
 export { computeAffected } from "./affected.js";
 export { maintenanceCut } from "./branches.js";
-export {
-	changelogSection,
-	releaseNotes,
-	renderChangelogSection,
-	updateChangelog,
-} from "./changelog.js";
+export { releaseNotes } from "./changelog.js";
 export { coreCodes, defineCodes } from "./codes.js";
 export { CONFIG_FILE } from "./config.js";
-export { conventionalCommits, parseCommit } from "./conventional.js";
+export { parseCommit } from "./conventional.js";
 export { TallyError } from "./errors.js";
 export { explainUnit } from "./explain.js";
-export { renderFloatingTags } from "./floating.js";
 export { definePlugin, defaultUnitId, PLUGIN_API_VERSION } from "./plugin.js";
 export { computePlan } from "./plan.js";
 export { decodeMarker, encodeMarker } from "./marker.js";

@@ -16,9 +16,11 @@ describe("validateRelease", () => {
 	it("rejects an unknown scheme of a released unit only", async () => {
 		const unreleased = await workspace("nope", false);
 		const released = await workspace("nope", true);
-		expect(() => validateRelease(unreleased)).not.toThrow();
-		expect(() => validateRelease(released)).toThrow(
-			expect.objectContaining({ code: "E_SCHEME_UNKNOWN" }),
-		);
+		expect(() => {
+			validateRelease(unreleased);
+		}).not.toThrow();
+		expect(() => {
+			validateRelease(released);
+		}).toThrow(expect.objectContaining({ code: "E_SCHEME_UNKNOWN" }));
 	});
 });

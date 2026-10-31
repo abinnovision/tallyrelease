@@ -24,6 +24,8 @@ export const example = definePlugin({
 
 See `Plugin` in [`src/plugin.ts`](https://github.com/abinnovision/tallyrelease/blob/main/packages/core/src/plugin.ts) for the available hooks (`discover`, `edges`, `inputs`, `versionFiles`, `schemes`, `intent`).
 
+Core always registers the `semver` scheme and the Conventional Commits intent source. A plugin that reads commit messages can use `parseCommit` for the same parsing.
+
 ## Testing
 
 The `@tallyrelease/core/testing` export provides in-memory fakes: `memoryFs`, `memoryCtx` and `memoryGit`. The `@tallyrelease/core/testing/conformance` export provides `gitReaderConformance`, a shared `GitReader` spec that requires vitest.

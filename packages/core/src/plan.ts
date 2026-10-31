@@ -504,7 +504,7 @@ export const planWithFacts = async (
 	git: GitReader,
 	opts: PlanOptions,
 ): Promise<PlanResult> => {
-	const schemes = validateRelease(workspace);
+	validateRelease(workspace);
 	const affected = await computeAffected(workspace, git, opts);
 	const facts = await collectPlanFacts(workspace, git, {
 		head: opts.head,
@@ -514,7 +514,7 @@ export const planWithFacts = async (
 	const { plan, releases } = resolveReleases(workspace, {
 		affected,
 		facts,
-		schemes,
+		schemes: workspace.schemes,
 		all: opts.all ?? false,
 	});
 
