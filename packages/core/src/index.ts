@@ -41,7 +41,7 @@ export type {
 	VersionTemplate,
 } from "./config.js";
 export type { Warning } from "./errors.js";
-export type { Graph, SourcedEdge } from "./graph.js";
+export type { Graph } from "./graph.js";
 export type { Group } from "./groups.js";
 export type {
 	BumpLevel,
@@ -68,7 +68,6 @@ export type {
 	WriteCtx,
 } from "./plugin.js";
 export type { Marker, MarkerRelease } from "./marker.js";
-export type { ActivePlugin, PluginEnv } from "./plugins.js";
 export type { ReleaseItem } from "./release-items.js";
 export type { ReleaseSettings } from "./release-settings.js";
 export type { SemVer } from "./semver.js";
@@ -85,15 +84,12 @@ export {
 export { coreCodes, defineCodes } from "./codes.js";
 export { CONFIG_FILE } from "./config.js";
 export { conventionalCommits, parseCommit } from "./conventional.js";
-export { discoverUnits } from "./discover.js";
 export { TallyError } from "./errors.js";
 export { explainUnit } from "./explain.js";
 export { renderFloatingTags } from "./floating.js";
-export { buildGraph } from "./graph.js";
 export { definePlugin, defaultUnitId, PLUGIN_API_VERSION } from "./plugin.js";
 export { computePlan } from "./plan.js";
 export { decodeMarker, encodeMarker } from "./marker.js";
-export { activatePlugins } from "./plugins.js";
 export { planEquals, releaseEntries, releaseItems } from "./release-items.js";
 export { releasedFromTags, withReleased } from "./released.js";
 export { semver } from "./semver.js";

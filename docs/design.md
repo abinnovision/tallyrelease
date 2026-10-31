@@ -2,7 +2,7 @@
 
 Status: v0.3 (effects: version files, release PRs, tags, forge releases); v0.4 is in progress (release list for publishers). This repo releases itself with tallyrelease since 0.3.1 (v0.3 task 6 done). Packages: `@tallyrelease/core` (pure planning core) and `@tallyrelease/cli` (binary `tallyrelease`). Config file: `tallyrelease.yaml`. Labels: `tallyrelease: pending` / `tallyrelease: released` / `tallyrelease: stale`. Release PR branches: `tallyrelease/release/<branch>/shared` and `tallyrelease/release/<branch>/<item>`. PR marker: `<!-- tallyrelease-plan:v1 ... -->`. Error codes `E_*`, warning codes `W_*`.
 
-Core function names: `discoverUnits()` in `discover.ts`, `buildGraph()` in `graph.ts`, `computeAffected()` in `affected.ts`, `computePlan()` in `plan.ts`. Plugin hooks keep the short names `discover` and `edges`.
+Core function names: `loadWorkspace()` in `workspace.ts` (plugin hooks, units and graph), `computeAffected()` in `affected.ts`, `computePlan()` in `plan.ts`. Plugin hooks keep the short names `discover` and `edges`.
 
 ## A. Design
 
@@ -50,7 +50,7 @@ Non-goals: building, packaging, publishing; forward-porting hotfixes; AI or heur
                 cli (imperative shell)                               core (pure)
  tallyrelease.yaml ──> config/load (zod) ────────── TallyConfig ─────┐
  fs ──────────> fs-ctx (node:fs, tinyglobby) ─ Ctx/ReadonlyFs ─┤
- git ─────────> git/reader (execFile git) ──── GitReader ──────┼──> discoverUnits() ─> buildGraph()
+ git ─────────> git/reader (execFile git) ──── GitReader ──────┼──> loadWorkspace() (units, graph)
  plugins/node, plugins/php (public API only) ─ Plugin[] ───────┤    computeAffected()   (v0.1)
  GITHUB_* env + Forge ─> ci/base (build base) ─ BuildBase ─────┘    computePlan()       (v0.2)
  Forge (Octokit) <── effects (v0.3: reconcile, release-pr, tags, forge-release) <── Plan
@@ -59,7 +59,7 @@ Non-goals: building, packaging, publishing; forward-porting hotfixes; AI or heur
 
 Sequence per run (v0.3 shape; earlier milestones stop early):
 
-1. cli loads config and plugins, builds `Ctx` and `GitReader`, runs `discoverUnits()` (reconcile needs units, tag formats and schemes), resolves the build base (A.7.5).
+1. cli loads config and plugins, builds `Ctx` and `GitReader`, runs `loadWorkspace()` (reconcile needs units, tag formats and schemes), resolves the build base (A.7.5).
 2. cli reconciles merged release PRs (A.12): tags are created locally and pushed, then the reader's tag cache is invalidated.
 3. core `computePlan()` runs graph, build set, release set, versions and `released` in one call. (`computeAffected()` is the v0.1 subset.)
 4. cli runs the `release-pr` effect and writes outputs.
@@ -702,7 +702,7 @@ Every `catchUp: false` entry belongs to a unit in the build set of the same run,
 
 ### A.12 Release flow (v0.3)
 
-Every run on a line branch, after step 1 of A.4 (config, plugins, `discoverUnits()`, build base):
+Every run on a line branch, after step 1 of A.4 (config, plugins, `loadWorkspace()`, build base):
 
 1. **Reconcile (tagging).** List closed PRs with head `tallyrelease/release/<branch>/shared` or `tallyrelease/release/<branch>/<item>`, base `<branch>`, `merged_at` set and label `tallyrelease: pending`, oldest first. The label is only a work queue for tagging; publishing never depends on it. For each PR, parse the marker `<!-- tallyrelease-plan:v1 base64({ head, releaseCommit, releases: [{ id, version, tag }] }) -->` and require:
    - `pr.head.sha == releaseCommit` (body and branch belong together; a racing rewrite fails this),

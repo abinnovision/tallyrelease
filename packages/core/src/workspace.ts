@@ -13,11 +13,13 @@ import type { Graph, SourcedEdge } from "./graph.js";
 import type { Group } from "./groups.js";
 import type {
 	IntentSource,
+	Plugin,
+	ReadonlyFs,
 	Unit,
 	VersionFile,
 	VersionScheme,
 } from "./plugin.js";
-import type { ActivePlugin, PluginEnv } from "./plugins.js";
+import type { ActivePlugin } from "./plugins.js";
 import type { ReleaseSettings } from "./release-settings.js";
 
 const collectEdges = async (
@@ -110,7 +112,13 @@ export interface IntentEntry {
 	readonly source: IntentSource;
 }
 
-export interface WorkspaceInput extends PluginEnv {
+export interface WorkspaceInput {
+	config: TallyConfig;
+	/** Available plugins; `config.plugins` selects and orders them. */
+	plugins: readonly Plugin[];
+	fs: ReadonlyFs;
+	repo: { name: string };
+	debug?: (message: string) => void;
 	/** Repo-relative config file path, a global input; defaults to `CONFIG_FILE`. */
 	configFile?: string;
 }

@@ -6,7 +6,8 @@ import { compare, uniqueSorted } from "./util.js";
 import type { UnitOverlay } from "./config.js";
 import type { Warning } from "./errors.js";
 import type { Unit, UnitDraft } from "./plugin.js";
-import type { ActivePlugin, PluginEnv } from "./plugins.js";
+import type { ActivePlugin } from "./plugins.js";
+import type { WorkspaceInput } from "./workspace.js";
 
 const UNIT_ID = /^(?!\.\.?$)[A-Za-z0-9._-]+$/;
 const UNIT_TAG = /^[A-Za-z0-9._-]+$/;
@@ -113,7 +114,7 @@ export const normalizeRoot = (root: string): string => {
  */
 export const discoverUnits = async (
 	active: readonly ActivePlugin[],
-	env: Pick<PluginEnv, "config" | "fs" | "repo">,
+	env: Pick<WorkspaceInput, "config" | "fs" | "repo">,
 	warnings: Warning[] = [],
 ): Promise<Unit[]> => {
 	const byRoot = new Map<string, Entry>();
