@@ -2,6 +2,9 @@ import { defaultUnitId, definePlugin } from "@tallyrelease/core";
 import { parse as parseYaml } from "yaml";
 import { z } from "zod";
 
+import { edgeBetween } from "../_kit/edges.js";
+import { globIn } from "../_kit/paths.js";
+
 import type { Ctx, EdgeDraft, Unit, UnitDraft } from "@tallyrelease/core";
 
 const optionsSchema = z.strictObject({
@@ -154,11 +157,7 @@ export const kustomizePlugin = definePlugin<Options>({
 		const paths = ctx.options.paths ?? ["**"];
 		const files = new Map<string, string>();
 		for (const file of ctx.fs.glob(
-			paths.flatMap((p) => {
-				const dir = p.replace(/\/+$/, "");
-
-				return FILE_NAMES.map((name) => `${dir}/${name}`);
-			}),
+			paths.flatMap((p) => FILE_NAMES.map((name) => globIn(p, name))),
 		)) {
 			const root = file.includes("/")
 				? file.slice(0, file.lastIndexOf("/"))
@@ -221,14 +220,12 @@ export const kustomizePlugin = definePlugin<Options>({
 			for (const { path, field } of refs) {
 				const target = resolve(to.root, path);
 				const from = target === undefined ? undefined : byRoot.get(target);
-				if (from && from.id !== to.id) {
-					edges.push({
-						from: from.id,
-						to: to.id,
+				edges.push(
+					...edgeBetween(from, to, {
 						reason: `${field}: ${path}`,
 						pinned: false,
-					});
-				}
+					}),
+				);
 			}
 		}
 
