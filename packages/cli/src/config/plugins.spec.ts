@@ -34,8 +34,18 @@ describe("resolvePlugins", () => {
 		expect(imported).toEqual(["./tools/plugin.ts"]);
 	});
 
+	it("imports package plugins by name", async () => {
+		const { config, imported } = await resolve({
+			local: { package: "@acme/tallyrelease-plugin-local" },
+		});
+
+		expect(config.plugins).toEqual({ local: {} });
+		expect(imported).toEqual(["@acme/tallyrelease-plugin-local"]);
+	});
+
 	it.each([
 		[{ node: { path: "p.ts" } }, local, "a built-in plugin cannot set path"],
+		[{ php: { package: "x" } }, local, "a built-in plugin cannot set package"],
 		[{ local: { path: "../p.ts" } }, local, "outside the repository root"],
 		[{ local: { path: "/p.ts" } }, local, "outside the repository root"],
 		[{ local: { path: "p.ts" } }, { name: "other" }, 'named "local"'],

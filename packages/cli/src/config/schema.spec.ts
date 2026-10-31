@@ -81,6 +81,19 @@ describe("configJsonSchema", () => {
 		]);
 	});
 
+	it("accepts path or package on plugins, not both", () => {
+		expect(validate({ plugins: { a: { path: "a.ts", x: 1 } } })).toBe(true);
+		expect(validate({ plugins: { a: { package: "@acme/a" } } })).toBe(true);
+		expect(validate({ plugins: { a: { package: "./a.js" } } })).toBe(false);
+		expect(
+			configSchema.safeParse({
+				plugins: { a: { path: "a.ts", package: "a" } },
+			}).error?.issues,
+		).toMatchObject([
+			{ path: ["plugins", "a"], message: "set path or package, not both" },
+		]);
+	});
+
 	it("rejects version none and unknown keys", () => {
 		expect(validate({ units: { a: { version: "none" } } })).toBe(false);
 		expect(validate({ nope: 1 })).toBe(false);
