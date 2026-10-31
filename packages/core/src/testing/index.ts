@@ -9,17 +9,6 @@ import type {
 	ReadonlyFs,
 	TagRef,
 } from "../plugin.js";
-import type { ReaderFactory } from "./conformance.js";
-
-// Loaded optionally so the fakes work without vitest installed.
-// eslint-disable-next-line no-restricted-syntax
-const conformance = await import("./conformance.js").catch((error: unknown) => {
-	if ((error as { code?: unknown }).code === "ERR_MODULE_NOT_FOUND") {
-		return null;
-	}
-
-	throw error;
-});
 
 const SKIPPED = new Set([".git", "node_modules"]);
 
@@ -254,15 +243,4 @@ export const memoryGit = (dag: Dag): MemoryGit => {
 		tree: (ref) => Object.fromEntries(node(ref).tree),
 		parents: (ref) => [...node(ref).parents],
 	};
-};
-
-export type { ReaderFactory } from "./conformance.js";
-
-/** Re-export of `@tallyrelease/core/testing/conformance`; requires vitest. */
-export const gitReaderConformance = (makeReader: ReaderFactory): void => {
-	if (conformance === null) {
-		throw new Error("gitReaderConformance requires vitest");
-	}
-
-	conformance.gitReaderConformance(makeReader);
 };
