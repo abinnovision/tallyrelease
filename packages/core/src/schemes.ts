@@ -1,45 +1,53 @@
-import { corePlugin } from "./builtin.js";
 import { coreCodes } from "./codes.js";
 
 import type { Plugin, VersionScheme } from "./plugin.js";
 
-export interface SchemeEntry {
-	readonly plugin: string;
-	readonly name: string;
-	readonly scheme: VersionScheme<any>;
+interface Clash {
+	readonly scheme: string;
+	readonly plugins: readonly [string, string];
 }
 
-/** Schemes of core and the given plugins, in that order. */
-export const collectSchemes = (
-	active: readonly { readonly plugin: Plugin }[],
-): SchemeEntry[] =>
-	[corePlugin, ...active.map((a) => a.plugin)].flatMap((plugin) =>
-		Object.entries(plugin.schemes ?? {}).map(([name, scheme]) => ({
-			plugin: plugin.name,
-			name,
-			scheme,
-		})),
-	);
+const clashes = new WeakMap<ReadonlyMap<string, unknown>, Clash>();
 
-/** Name to scheme; throws `E_SCHEME_CLASH` on a duplicate name. */
+/**
+ * Name to scheme of `plugins`; the first registration of a name wins and a
+ * duplicate is recorded for `assertSchemes`.
+ */
 export const schemeRegistry = (
-	list: readonly SchemeEntry[],
+	plugins: readonly Plugin[],
 ): ReadonlyMap<string, VersionScheme<any>> => {
 	const owners = new Map<string, string>();
 	const registry = new Map<string, VersionScheme<any>>();
-	for (const { plugin, name, scheme } of list) {
-		const owner = owners.get(name);
-		if (owner !== undefined) {
-			throw coreCodes.error(
-				"E_SCHEME_CLASH",
-				`scheme "${name}" is registered by "${owner}" and "${plugin}"`,
-				{ scheme: name, plugins: [owner, plugin] },
-			);
-		}
+	let clash: Clash | undefined;
+	for (const plugin of plugins) {
+		for (const [name, scheme] of Object.entries(plugin.schemes ?? {})) {
+			const owner = owners.get(name);
+			if (owner !== undefined) {
+				clash ??= { scheme: name, plugins: [owner, plugin.name] };
+				continue;
+			}
 
-		owners.set(name, plugin);
-		registry.set(name, scheme);
+			owners.set(name, plugin.name);
+			registry.set(name, scheme);
+		}
+	}
+
+	if (clash) {
+		clashes.set(registry, clash);
 	}
 
 	return registry;
+};
+
+/** Throws the `E_SCHEME_CLASH` recorded by `schemeRegistry`. */
+export const assertSchemes = (registry: ReadonlyMap<string, unknown>): void => {
+	const clash = clashes.get(registry);
+	if (clash) {
+		const [first, second] = clash.plugins;
+		throw coreCodes.error(
+			"E_SCHEME_CLASH",
+			`scheme "${clash.scheme}" is registered by "${first}" and "${second}"`,
+			{ scheme: clash.scheme, plugins: [first, second] },
+		);
+	}
 };

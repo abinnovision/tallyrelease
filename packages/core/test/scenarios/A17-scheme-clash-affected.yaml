@@ -1,0 +1,23 @@
+description: Clashing schemes do not fail affected; the plan raises E_SCHEME_CLASH.
+plugins:
+  - name: one
+    schemes: [flutter]
+    units:
+      - { id: a, root: packages/a }
+  - name: two
+    schemes: [flutter]
+git:
+  commits:
+    - id: c0
+      files: { packages/a/index.ts: "0" }
+    - id: c1
+      files: { packages/a/index.ts: "1" }
+base: c0
+plan: { fails: true }
+expect:
+  affected:
+    units:
+      - { id: a, path: packages/a, plugin: one, reason: direct, via: [] }
+  planError:
+    code: E_SCHEME_CLASH
+    details: { scheme: flutter, plugins: [one, two] }

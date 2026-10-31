@@ -1,21 +1,24 @@
-import { corePlugin } from "./builtin.js";
 import { CONFIG_FILE } from "./config.js";
 import { discoverUnits } from "./discover.js";
 import { buildGraph } from "./graph.js";
 import { resolveGroups } from "./groups.js";
 import { activatePlugins, runHook } from "./plugins.js";
 import { releaseSettings } from "./release-settings.js";
-import { collectSchemes } from "./schemes.js";
+import { schemeRegistry } from "./schemes.js";
 import { uniqueSorted } from "./util.js";
 
 import type { TallyConfig } from "./config.js";
 import type { Warning } from "./errors.js";
 import type { Graph, SourcedEdge } from "./graph.js";
 import type { Group } from "./groups.js";
-import type { IntentSource, Unit, VersionFile } from "./plugin.js";
+import type {
+	IntentSource,
+	Unit,
+	VersionFile,
+	VersionScheme,
+} from "./plugin.js";
 import type { ActivePlugin, PluginEnv } from "./plugins.js";
 import type { ReleaseSettings } from "./release-settings.js";
-import type { SchemeEntry } from "./schemes.js";
 
 const collectEdges = async (
 	active: readonly ActivePlugin[],
@@ -122,8 +125,8 @@ export interface Workspace {
 	readonly globalInputs: readonly string[];
 	readonly ignore: readonly string[];
 	readonly warnings: readonly Warning[];
-	/** Registered schemes, core first; clashes are checked on release. */
-	readonly schemes: readonly SchemeEntry[];
+	/** Registered schemes by name; `validateRelease` throws on a clash. */
+	readonly schemes: ReadonlyMap<string, VersionScheme<any>>;
 	/** Core sources first, then enabled plugins in config order. */
 	readonly intents: readonly IntentEntry[];
 	/** Bumps and branch rules with defaults applied. */
@@ -155,13 +158,10 @@ export const loadWorkspace = async (
 
 	const groups = resolveGroups(units, input.config.groups, warnings);
 
-	const intents = [
-		{ plugin: corePlugin, options: {} },
-		...active.map(({ plugin, ctx }) => ({ plugin, options: ctx.options })),
-	].flatMap(({ plugin, options }) =>
+	const intents = active.flatMap(({ plugin, ctx }) =>
 		(plugin.intent ?? []).map((source) => ({
 			plugin: plugin.name,
-			options,
+			options: ctx.options,
 			source,
 		})),
 	);
@@ -173,7 +173,7 @@ export const loadWorkspace = async (
 		globalInputs,
 		ignore: input.config.ignore ?? [],
 		warnings: [...warnings, ...graph.warnings],
-		schemes: collectSchemes(active),
+		schemes: schemeRegistry(active.map((a) => a.plugin)),
 		intents,
 		release: releaseSettings(input.config, units),
 		groups,

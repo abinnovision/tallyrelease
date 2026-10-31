@@ -1,6 +1,5 @@
 import { coreCodes } from "./codes.js";
 import { renderFloatingTags } from "./floating.js";
-import { schemeRegistry } from "./schemes.js";
 import { matchUnitTags } from "./tags.js";
 import { compare } from "./util.js";
 
@@ -32,7 +31,7 @@ const releasedEntries = async (
 	const matched = matchUnitTags(
 		workspace.units,
 		await git.tags(),
-		schemeRegistry(workspace.schemes),
+		workspace.schemes,
 	);
 	const line = plan.line?.kind ?? "default";
 	const built = new Set(

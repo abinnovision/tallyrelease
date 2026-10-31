@@ -71,7 +71,6 @@ export type { Marker, MarkerRelease } from "./marker.js";
 export type { ActivePlugin, PluginEnv } from "./plugins.js";
 export type { ReleaseItem } from "./release-items.js";
 export type { ReleaseSettings } from "./release-settings.js";
-export type { SchemeEntry } from "./schemes.js";
 export type { SemVer } from "./semver.js";
 export type { IntentEntry, Workspace, WorkspaceInput } from "./workspace.js";
 
