@@ -1063,6 +1063,7 @@ __metadata:
     ajv: "npm:^8.20.0"
     commander: "npm:^15.0.0"
     eslint: "npm:^10.13.0"
+    jiti: "npm:^2.7.0"
     picomatch: "npm:^4.0.7"
     prettier: "npm:^3.9.10"
     tinyglobby: "npm:^0.2.17"
@@ -2551,7 +2552,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"jiti@npm:^2.6.1":
+"jiti@npm:^2.6.1, jiti@npm:^2.7.0":
   version: 2.7.0
   resolution: "jiti@npm:2.7.0"
   bin:

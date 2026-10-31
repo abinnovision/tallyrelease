@@ -12,15 +12,16 @@ import {
 import { githubContext } from "./ci/github-env.js";
 import { cliCodes } from "./codes.js";
 import { loadConfig } from "./config/load.js";
+import { jitiImport, resolvePlugins } from "./config/plugins.js";
 import { githubForge } from "./forge/github.js";
 import { gitBlob, gitTreeFs, nodeFs } from "./fs-ctx.js";
 import { git as runGit } from "./git/exec.js";
 import { gitReader } from "./git/reader.js";
 import { gitWriter, identityFromEnv } from "./git/writer.js";
 import { painter } from "./output/paint.js";
-import { builtinPlugins } from "./plugins/index.js";
 
 import type { Env, GithubContext } from "./ci/github-env.js";
+import type { ImportPlugin } from "./config/plugins.js";
 import type { Forge } from "./forge/forge.js";
 import type { RepoGit } from "./git/reader.js";
 import type { GitWriter } from "./git/writer.js";
@@ -57,6 +58,8 @@ export interface Deps {
 	appendFile?: (path: string, content: string) => void;
 	/** Defaults to the system clock. */
 	clock?: () => Date;
+	/** Imports plugin modules from the repo root; defaults to jiti. */
+	importPlugin?: ImportPlugin;
 }
 
 export interface GlobalOptions {
@@ -239,6 +242,7 @@ export const createSession = (deps: Deps, opts: GlobalOptions): Session => {
 	};
 
 	const repoGit = deps.git ?? gitReader(root, debug, { env: deps.env, remote });
+	const importPlugin = deps.importPlugin ?? jitiImport(root);
 	const blobAt = gitBlob(root, deps.env);
 
 	const loadAt = async (
@@ -248,13 +252,16 @@ export const createSession = (deps: Deps, opts: GlobalOptions): Session => {
 			await assertRepoRoot();
 		}
 
-		const config = loadConfig(fs, configPath);
+		const { config, plugins } = await resolvePlugins(
+			loadConfig(fs, configPath),
+			importPlugin,
+		);
 		const files =
 			ref === null ? fs : (deps.fsAt?.(ref) ?? gitTreeFs(root, ref, deps.env));
 		const workspace = await loadWorkspace({
 			config,
 			configFile: configPath,
-			plugins: Object.values(builtinPlugins),
+			plugins,
 			fs: files,
 			repo: { name: await repoName() },
 			...(debug && { debug }),
