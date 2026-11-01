@@ -1,0 +1,21 @@
+description: Messages returned by validate become W_PLUGIN plan warnings.
+plugins:
+  - name: stub
+    validate: [msg]
+    units:
+      - { id: a, root: packages/a }
+config:
+  plugins: { stub: {} }
+  branches:
+    - { name: main, line: default }
+git:
+  commits:
+    - id: c0
+      files: { packages/a/index.ts: "1" }
+base: null
+plan: {}
+expect:
+  plan:
+    warnings:
+      - { code: W_NO_RELEASED_UNITS }
+      - { code: W_PLUGIN, message: msg, plugin: stub }

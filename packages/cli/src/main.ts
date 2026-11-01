@@ -19,6 +19,7 @@ import { version } from "./version.js";
 import type { PlanFlags } from "./app/setup.js";
 import type { cliCodes } from "./codes.js";
 import type { AffectedFlags } from "./commands/affected.js";
+import type { CheckFlags } from "./commands/check.js";
 import type { ExplainFlags } from "./commands/explain.js";
 import type { GraphFlags } from "./commands/graph.js";
 import type { PrFlags } from "./commands/pr.js";
@@ -62,9 +63,14 @@ export const main = async (
 
 	program
 		.command("check")
-		.description("validate config, plugins, units and graph")
-		.action(async () => {
-			await check(session());
+		.description("validate config, plugins, units, graph and the plan")
+		.option("--branch <name>", "plan for this branch (default: current)")
+		.option(
+			"--head <ref>",
+			"check this commit with the current config; pass --branch for its branch rule",
+		)
+		.action(async (flags: CheckFlags) => {
+			await check(session(), flags);
 		});
 	program
 		.command("graph")
