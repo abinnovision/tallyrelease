@@ -1,0 +1,35 @@
+description: >-
+  A versionFiles entry without pattern rewrites the first version on each line
+  marked with a hash comment and leaves unmarked lines alone.
+plugins:
+  - name: stub
+    units:
+      - { id: app, root: apps/app }
+config:
+  plugins: { stub: {} }
+  defaults: { release: true }
+  units:
+    apps/app:
+      versionFiles: [{ file: deploy/values.yaml }]
+  branches:
+    - { name: main, line: default }
+git:
+  commits:
+    - id: c0
+      files:
+        apps/app/i.ts: "0"
+        deploy/values.yaml: "image: ghcr.io/acme/app:1.4.0 # x-tallyrelease-version\nsidecar: ghcr.io/acme/proxy:1.4.0\nref: v1.4.0 2.0.0 # x-tallyrelease-version\n"
+    - id: c1
+      message: "fix: app"
+      files: { apps/app/i.ts: "1" }
+  tags:
+    - { name: app-v1.4.0, commit: c0 }
+base: c0
+plan: { all: true }
+release:
+  files: { date: "2026-10-15" }
+expect:
+  paths: [apps/app/CHANGELOG.md, deploy/values.yaml]
+  files:
+    deploy/values.yaml: "image: ghcr.io/acme/app:1.4.1 # x-tallyrelease-version\nsidecar: ghcr.io/acme/proxy:1.4.0\nref: v1.4.1 2.0.0 # x-tallyrelease-version\n"
+  fileWarnings: []
