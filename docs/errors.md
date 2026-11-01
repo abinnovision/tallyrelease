@@ -364,6 +364,12 @@ Fix: Report it as a bug with the version named in the message and the `--verbose
 
 ## Warnings
 
+### W_BUILD_NUMBER_MAINTENANCE
+
+Cause: A unit with `buildNumber` is released or prereleased on a maintenance branch. Its build number is the first-parent commit count, which can repeat build numbers already uploaded from the default branch.
+
+Fix: Upload `max(N, latest store build + 1)` instead of the build number N, or give the maintenance line its own store app or a higher `offset`.
+
 ### W_CYCLE
 
 Cause: The dependency graph has a cycle. The message shows the path.

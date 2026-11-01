@@ -1,0 +1,53 @@
+description: >-
+  Build numbers are the first-parent count of the release sha plus offset,
+  HEAD for a prerelease, so they strictly increase; a unit without buildNumber
+  gets null.
+plugins:
+  - name: stub
+    units:
+      - { id: a, root: packages/a }
+      - { id: b, root: packages/b }
+      - { id: n, root: packages/n }
+config:
+  plugins: { stub: {} }
+  defaults: { release: true }
+  units:
+    packages/a: { buildNumber: {} }
+    packages/b: { buildNumber: {} }
+  branches:
+    - { name: main, line: default, channel: beta }
+git:
+  commits:
+    - id: c0
+      files:
+        packages/a/index.ts: "0"
+        packages/b/index.ts: "0"
+        packages/n/index.ts: "0"
+    - id: c1
+      message: "chore(release): a@1.1.0, n@1.1.0"
+      files:
+        { packages/a/CHANGELOG.md: "1.1.0", packages/n/CHANGELOG.md: "1.1.0" }
+    - id: c2
+      message: "chore(release): b@1.1.0"
+      files: { packages/b/CHANGELOG.md: "1.1.0" }
+    - id: c3
+      message: "feat(a): more"
+      files: { packages/a/index.ts: "3" }
+  tags:
+    - { name: a-v1.0.0, commit: c0 }
+    - { name: b-v1.0.0, commit: c0 }
+    - { name: n-v1.0.0, commit: c0 }
+    - { name: a-v1.1.0, commit: c1 }
+    - { name: n-v1.1.0, commit: c1 }
+    - { name: b-v1.1.0, commit: c2 }
+base: c0
+plan: { released: true, buildNumbers: true }
+expect:
+  plan:
+    released:
+      - { id: a, releaseSha: c1 }
+      - { id: n, releaseSha: c1 }
+      - { id: b, releaseSha: c2 }
+  buildNumbers:
+    numbers: [2, null, 3, 4]
+    warnings: []
