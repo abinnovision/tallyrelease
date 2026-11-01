@@ -3,10 +3,11 @@ import { defaultUnitId, definePlugin } from "@tallyrelease/core";
 import { edgeBetween } from "../_kit/edges.js";
 import { joinRoot, rootOf } from "../_kit/paths.js";
 
-import type { Ctx, EdgeDraft, UnitDraft } from "@tallyrelease/core";
+import type { Ctx, EdgeDraft, Plan, UnitDraft } from "@tallyrelease/core";
 
 const GO_MOD = "go.mod";
 const MODULE = /^module\s+"?([^\s"]+)"?/;
+const MAJOR_SUFFIX = /\/v(\d+)$/;
 const LOCAL = /^\.{1,2}(\/|$)/;
 
 const readGoMod = (ctx: Ctx, root: string): string | undefined =>
@@ -75,6 +76,28 @@ const resolve = (root: string, rel: string): string | undefined => {
 	return out.length === 0 ? "." : out.join("/");
 };
 
+/** Throws `E_GO_MAJOR_PATH` for the first unit whose module path lacks the `/v<major>` suffix of its next version. */
+const checkMajorPaths = (ctx: Ctx, plan: Plan): void => {
+	for (const unit of plan.units) {
+		if (unit.plugin !== "go" || unit.next === null) {
+			continue;
+		}
+
+		const major = Number.parseInt(unit.next, 10);
+		const path = modulePath(readGoMod(ctx, unit.path) ?? "");
+		if (path === undefined) {
+			continue;
+		}
+
+		const suffix = Number(MAJOR_SUFFIX.exec(path)?.[1] ?? 0);
+		if (major >= 2 ? suffix !== major : suffix >= 2) {
+			throw new Error(
+				`E_GO_MAJOR_PATH: unit "${unit.id}" releases ${unit.next} but module path "${path}" ${major >= 2 ? `must end in "/v${String(major)}"` : "must not end in a /vN suffix"}`,
+			);
+		}
+	}
+};
+
 export const goPlugin = definePlugin({
 	apiVersion: 1,
 	name: "go",
@@ -122,4 +145,5 @@ export const goPlugin = definePlugin({
 
 		return edges;
 	},
+	validate: checkMajorPaths,
 });
