@@ -2,6 +2,7 @@ import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterAll, describe, expect, it, vi } from "vitest";
 
+import { fakeForge, memoryRemote } from "./harness/fake-forge.js";
 import { createRepo, git, removeTmpDirs, tmpDir } from "./harness/git-repo.js";
 import { runCli } from "./harness/run-cli.js";
 import { affectedDocSchema } from "../../src/affected-schema.js";
@@ -181,5 +182,90 @@ describe("e2e", () => {
 		} finally {
 			vi.unstubAllEnvs();
 		}
+	});
+
+	it("releases a manifest-less config-only unit (C23)", async () => {
+		const { dir } = createRepo({
+			commits: [
+				{
+					id: "c0",
+					files: {
+						"tallyrelease.yaml": [
+							"branches:",
+							"  - { name: main, line: default }",
+							"units:",
+							"  tools/setup:",
+							"    release: true",
+							"    versionFiles:",
+							'      - { file: docs/install.md, pattern: "setup@{version}" }',
+							"      - { file: tools/setup/env.sh }",
+							"",
+						].join("\n"),
+						"docs/install.md": "Run `npx setup@1.0.0`.\n",
+						"tools/setup/env.sh": "VERSION=1.0.0 # x-tallyrelease-version\n",
+						"tools/setup/run.sh": "0",
+					},
+				},
+				{
+					id: "c1",
+					message: "feat: add setup",
+					files: { "tools/setup/run.sh": "1" },
+				},
+			],
+			tags: [{ name: "setup-v1.0.0", commit: "c0" }],
+		});
+		const origin = tmpDir("origin.git");
+		git(origin, "init", "--quiet", "--bare");
+		git(dir, "remote", "add", "origin", origin);
+		git(dir, "push", "--quiet", "origin", "main");
+
+		const remote = memoryRemote();
+		remote.branches.set("main", git(dir, "rev-parse", "HEAD"));
+		const forge = fakeForge([], remote);
+		const env = {
+			GITHUB_TOKEN: "t",
+			GITHUB_SERVER_URL: "https://github.com",
+			GITHUB_REPOSITORY: "acme/repo",
+		};
+		const pr = await runCli(["pr"], { cwd: dir, forge, env });
+		expect(pr).toMatchObject({ code: 0 });
+
+		git(dir, "fetch", "--quiet", "origin", "tallyrelease/release/main/shared");
+		const headSha = git(dir, "rev-parse", "FETCH_HEAD");
+		git(dir, "merge", "--squash", "--quiet", "FETCH_HEAD");
+		git(
+			dir,
+			"-c",
+			"user.name=T",
+			"-c",
+			"user.email=t@example.com",
+			"commit",
+			"--quiet",
+			"-m",
+			"chore(release): setup (#1)",
+		);
+		const merge = git(dir, "rev-parse", "HEAD");
+		git(dir, "push", "--quiet", "origin", "main");
+		Object.assign(remote.prs[0] ?? {}, {
+			headSha,
+			state: "closed",
+			mergedAt: "2025-01-01T00:00:00Z",
+			mergeCommitSha: merge,
+		});
+
+		const release = await runCli(["release"], { cwd: dir, forge, env });
+		expect(release).toMatchObject({ code: 0 });
+
+		expect(git(dir, "rev-parse", "setup-v1.1.0^{commit}")).toBe(merge);
+		expect(git(origin, "tag", "--list")).toBe("setup-v1.1.0");
+		expect(git(dir, "show", "HEAD:tools/setup/CHANGELOG.md")).toContain(
+			"add setup",
+		);
+		expect(git(dir, "show", "HEAD:docs/install.md")).toBe(
+			"Run `npx setup@1.1.0`.",
+		);
+		expect(git(dir, "show", "HEAD:tools/setup/env.sh")).toBe(
+			"VERSION=1.1.0 # x-tallyrelease-version",
+		);
 	});
 });
