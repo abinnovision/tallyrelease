@@ -1,5 +1,43 @@
 # Changelog
 
+## [0.5.0](https://github.com/abinnovision/tallyrelease/compare/cli-v0.4.1...cli-v0.5.0) (2026-11-01)
+
+
+### Features
+
+* **cli:** add --format json to explain ([#158](https://github.com/abinnovision/tallyrelease/issues/158)) ([11df886](https://github.com/abinnovision/tallyrelease/commit/11df886a1bec5ec18fcb59e0068c4e8794a219f0))
+* **cli:** gate local plugins in privileged commands ([#124](https://github.com/abinnovision/tallyrelease/issues/124)) ([b9796b4](https://github.com/abinnovision/tallyrelease/commit/b9796b4ee4413784cbf4e06d47b3a4268de4c444))
+* **cli:** load local plugins from plugins.&lt;name&gt;.path ([#122](https://github.com/abinnovision/tallyrelease/issues/122)) ([7743418](https://github.com/abinnovision/tallyrelease/commit/7743418a3cb8e84c1a45b6d939907dc444cb4ae8))
+* **cli:** load npm plugin packages from plugins.&lt;name&gt;.package ([#123](https://github.com/abinnovision/tallyrelease/issues/123)) ([b4d43e4](https://github.com/abinnovision/tallyrelease/commit/b4d43e4ed2e94c71200561c6885b7bd8c7d75638))
+* **cli:** remove the shadow command ([#157](https://github.com/abinnovision/tallyrelease/issues/157)) ([f6c741b](https://github.com/abinnovision/tallyrelease/commit/f6c741b457f508535c01f6f3c6876862644efcba))
+* **cli:** throw typed forge errors ([#152](https://github.com/abinnovision/tallyrelease/issues/152)) ([505be19](https://github.com/abinnovision/tallyrelease/commit/505be19f17c6a0059b6b417da61175959eb94793))
+* **core:** add calver scheme ([#145](https://github.com/abinnovision/tallyrelease/issues/145)) ([3dfb7e7](https://github.com/abinnovision/tallyrelease/commit/3dfb7e76e615ae55da27a66453289db9135f60b4))
+* **core:** add validate plugin hook ([#130](https://github.com/abinnovision/tallyrelease/issues/130)) ([11e3d7e](https://github.com/abinnovision/tallyrelease/commit/11e3d7e8aeded2a42b39400118f6ba6a8dcba266))
+* **core:** delete files consumed by released intent changes ([#141](https://github.com/abinnovision/tallyrelease/issues/141)) ([ce538f6](https://github.com/abinnovision/tallyrelease/commit/ce538f62a9ea5876f5af654a15e0b9fce27ce62c))
+* **core:** rewrite version markers in configured files ([#132](https://github.com/abinnovision/tallyrelease/issues/132)) ([c43bbbc](https://github.com/abinnovision/tallyrelease/commit/c43bbbc46865a587a6005b6d312da16b008bb7a4))
+* generate docs from the config schema and typed error code registries ([#82](https://github.com/abinnovision/tallyrelease/issues/82)) ([9ee6b60](https://github.com/abinnovision/tallyrelease/commit/9ee6b6048cefaf74c9bd63403ab2db3badbc8b11))
+* **plugins:** add changesets plugin ([#142](https://github.com/abinnovision/tallyrelease/issues/142)) ([2499f71](https://github.com/abinnovision/tallyrelease/commit/2499f710f546f7b5f5acb09737d669374fb522f9))
+* **plugins:** add dart plugin ([#147](https://github.com/abinnovision/tallyrelease/issues/147)) ([2c7c229](https://github.com/abinnovision/tallyrelease/commit/2c7c2297aa186db84e572fb266cadc252a2e3270))
+* **plugins:** add go plugin ([#136](https://github.com/abinnovision/tallyrelease/issues/136)) ([1442763](https://github.com/abinnovision/tallyrelease/commit/1442763f263ece8217ada540a94cd6c231916413))
+* **plugins:** check go module major version paths ([#137](https://github.com/abinnovision/tallyrelease/issues/137)) ([e348478](https://github.com/abinnovision/tallyrelease/commit/e3484787af5f19ce615ddedd8ce84a20d76d623f))
+
+
+### Bug Fixes
+
+* **cli:** name the file in malformed plugin manifest errors ([#78](https://github.com/abinnovision/tallyrelease/issues/78)) ([81f23f8](https://github.com/abinnovision/tallyrelease/commit/81f23f8542ee4897b46fbe244bbdbcfce38affe8))
+* **cli:** run git with the injected env and drop hook repository variables ([#79](https://github.com/abinnovision/tallyrelease/issues/79)) ([c008d0a](https://github.com/abinnovision/tallyrelease/commit/c008d0ac88fe4d66cf72409686e73c2ffd550274))
+* **cli:** search older workflow run pages for the last success ([#74](https://github.com/abinnovision/tallyrelease/issues/74)) ([7d1002c](https://github.com/abinnovision/tallyrelease/commit/7d1002c6dce6a8b0aeb702e87f8837c6768a057d))
+* **core:** import the testing fakes without vitest ([#76](https://github.com/abinnovision/tallyrelease/issues/76)) ([91c69dc](https://github.com/abinnovision/tallyrelease/commit/91c69dc36c5cb4fbd47cec360559450893842d52))
+* **deps:** bump zod from 4.6.6 to 4.6.7 in the production-dependencies group ([#84](https://github.com/abinnovision/tallyrelease/issues/84)) ([880286d](https://github.com/abinnovision/tallyrelease/commit/880286d582b8a70ee790056f72a1ac76829b0ca8))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @tallyrelease/core bumped to 0.5.0
+    * @tallyrelease/plugins bumped to 0.5.0
+
 ## [0.4.1](https://github.com/abinnovision/tallyrelease/compare/cli-v0.4.0...cli-v0.4.1) (2026-10-17)
 
 
