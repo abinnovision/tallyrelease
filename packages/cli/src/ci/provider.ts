@@ -12,6 +12,14 @@ export type CiEvent =
 	| { kind: "dispatch"; name: string }
 	| { kind: "other"; name: string };
 
+/** Output of a CI step. */
+export interface OutputEntry {
+	key: string;
+	value: string;
+	/** Delimiter syntax, as for `affected-paths`. */
+	multiline?: boolean;
+}
+
 /** Inputs of the last successful run lookup. */
 export interface BaseInputs {
 	/** Workflow file name, for example `ci.yaml`. */
@@ -36,7 +44,23 @@ export interface CiProvider {
 	readonly repository: string | undefined;
 	/** Web URL of the repository from the CI environment. */
 	readonly repoUrl: string | undefined;
+	/** Step outputs can be written. */
+	readonly hasOutput: boolean;
+	/** Appends step outputs; `E_GITHUB_OUTPUT` when they cannot be written. */
+	readonly writeOutput: (entries: readonly OutputEntry[]) => void;
+	/** Default directory of the plan file of `--github-output`. */
+	readonly outputDir: string | undefined;
+	readonly hasSummary: boolean;
+	/** Appends markdown to the step summary; false when there is none. */
+	readonly writeSummary: (markdown: string) => boolean;
+	/** Commit sha of the run. */
+	readonly sha: string | undefined;
+	/** Warning annotation line; undefined when unsupported. */
+	readonly annotate: ((title: string, message: string) => string) | undefined;
 }
 
-/** CI provider of the environment; always GitHub Actions. */
-export const detectCi = (env: Env): CiProvider => githubCi(env);
+/** CI provider of the environment; always GitHub Actions. `appendFile` defaults to `node:fs`. */
+export const detectCi = (
+	env: Env,
+	appendFile?: (path: string, content: string) => void,
+): CiProvider => githubCi(env, appendFile);

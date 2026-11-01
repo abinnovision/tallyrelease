@@ -1,7 +1,6 @@
 import { computePlan, TallyError } from "@tallyrelease/core";
 
 import { outPath, toJson } from "../app/outputs.js";
-import { appendStepSummary } from "../ci/summary.js";
 import { cliCodes } from "../codes.js";
 import { count } from "../output/count.js";
 import {
@@ -155,21 +154,23 @@ const writeReport = (
 	flags: ShadowFlags,
 	report: ShadowReport,
 ): void => {
-	const { env } = session;
 	const out = outPath(session, flags.out);
 	if (out !== undefined) {
 		session.writeOutFile(out, toJson(report));
 	}
 
 	const appended =
-		flags.summary && appendStepSummary(session, shadowMarkdown(report));
+		flags.summary && session.ci.writeSummary(shadowMarkdown(report));
 	session.stdout.write(
 		flags.summary && !appended ? shadowMarkdown(report) : shadowText(report),
 	);
 
-	if (env["GITHUB_ACTIONS"] === "true") {
+	const { annotate } = session.ci;
+	if (annotate) {
 		for (const r of unlabelled(report.rows)) {
-			session.stdout.write(shadowAnnotation(r));
+			session.stdout.write(
+				annotate("tallyrelease shadow", shadowAnnotation(r)),
+			);
 		}
 	}
 };
@@ -225,7 +226,7 @@ export const shadow = async (
 	}
 
 	const planned = (await git.resolve(`${head}^1`)) ?? null;
-	const sha = session.env["GITHUB_SHA"] ?? null;
+	const sha = session.ci.sha ?? null;
 	const report: ShadowReport = {
 		schema: 1,
 		tool: `tallyrelease@${version}`,

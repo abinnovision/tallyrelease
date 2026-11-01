@@ -2,6 +2,7 @@ import { CONFIG_FILE, TallyError } from "@tallyrelease/core";
 import { Command, CommanderError, Option } from "commander";
 import { inspect } from "node:util";
 
+import { detectCi } from "./ci/provider.js";
 import { affected } from "./commands/affected.js";
 import { check } from "./commands/check.js";
 import { explain } from "./commands/explain.js";
@@ -147,7 +148,7 @@ export const main = async (
 			if (
 				flags.summary &&
 				(flags.json || flags.format === "json") &&
-				!deps.env["GITHUB_STEP_SUMMARY"]
+				!detectCi(deps.env, deps.appendFile).hasSummary
 			) {
 				cmd.error(
 					"--summary needs GITHUB_STEP_SUMMARY when printing JSON; both use stdout",
