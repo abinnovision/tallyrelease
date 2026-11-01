@@ -53,10 +53,6 @@ export interface CiProvider {
 	readonly hasSummary: boolean;
 	/** Appends markdown to the step summary; false when there is none. */
 	readonly writeSummary: (markdown: string) => boolean;
-	/** Commit sha of the run. */
-	readonly sha: string | undefined;
-	/** Warning annotation line; undefined when unsupported. */
-	readonly annotate: ((title: string, message: string) => string) | undefined;
 }
 
 /** CI provider of the environment; always GitHub Actions. `appendFile` defaults to `node:fs`. */

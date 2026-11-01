@@ -40,8 +40,7 @@ export const cliCodes = defineCodes({
 		fix: "Check that the ref and path exist (`git cat-file -e <ref>:<path>`). In CI, fetch enough history with `fetch-depth: 0`.",
 	},
 	E_HEAD_UNRESOLVED: {
-		cause:
-			"The ref given by `--head` (or `HEAD` for `shadow`) does not resolve to a commit.",
+		cause: "The ref given by `--head` does not resolve to a commit.",
 		fix: "Pass an existing commit to `--head`, and fetch it first if it is not available locally.",
 	},
 	E_INTERNAL: {
@@ -94,12 +93,12 @@ export const cliCodes = defineCodes({
 	},
 	E_SHADOW_INPUT: {
 		cause:
-			"The release-please manifest (`--manifest`) or config (`--rp-config`) read by `shadow` is not valid JSON, or is not an object (of version strings for the manifest).",
+			"Retired: The release-please manifest (`--manifest`) or config (`--rp-config`) read by `shadow` is not valid JSON, or is not an object (of version strings for the manifest).",
 		fix: "Fix the JSON in the file named in the message.",
 	},
 	E_SHADOW_MISMATCH: {
 		cause:
-			"`shadow --strict` found rows of the comparison between the plan and the release-please manifest change that are not labelled as expected differences.",
+			"Retired: `shadow --strict` found rows of the comparison between the plan and the release-please manifest change that are not labelled as expected differences.",
 		fix: "Inspect the report (`--out` or `--summary`) and resolve or label the differing rows, or run without `--strict`.",
 	},
 	E_SHALLOW_BASE: {
@@ -149,12 +148,12 @@ export const cliCodes = defineCodes({
 	},
 	W_SHADOW_INPUT_MISSING: {
 		cause:
-			"A file passed to `shadow` with `--manifest` or `--rp-config` does not exist at the compared commit.",
+			"Retired: A file passed to `shadow` with `--manifest` or `--rp-config` does not exist at the compared commit.",
 		fix: "Correct the path, or omit the flag to use the default file name.",
 	},
 	W_SHADOW_SKIPPED: {
 		cause:
-			"`shadow` skipped the comparison, either because the manifest did not change in the compared commit or because a maintenance limit (`E_CAP` or `E_CAP_BASE`) applies. The message gives the reason.",
+			"Retired: `shadow` skipped the comparison, either because the manifest did not change in the compared commit or because a maintenance limit (`E_CAP` or `E_CAP_BASE`) applies. The message gives the reason.",
 		fix: "Nothing to do for a commit that did not touch the manifest. For a limit, see `E_CAP` or `E_CAP_BASE`.",
 	},
 	W_TAG_UNKNOWN: {

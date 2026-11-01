@@ -1,6 +1,6 @@
 # @tallyrelease/cli
 
-tallyrelease computes the affected build units of a monorepo or single repo from git history and a dependency graph supplied by ecosystem plugins (`node`, `php`, `go`, `kustomize` and `dart` are built in, see the [plugin reference](https://github.com/abinnovision/tallyrelease/blob/main/docs/plugins.md#built-in-plugins)). It also plans releases and runs the release effects (version files, release PRs, tags, forge releases); release-please still owns versions in this repo until the switch.
+tallyrelease computes the affected build units of a monorepo or single repo from git history and a dependency graph supplied by ecosystem plugins (`node`, `php`, `go`, `kustomize`, `dart` and `changesets` are built in, see the [plugin reference](https://github.com/abinnovision/tallyrelease/blob/main/docs/plugins.md#built-in-plugins)). It also plans releases and runs the release effects (version files, release PRs, tags, forge releases).
 
 ## Install
 
@@ -62,8 +62,6 @@ Errors print as `error[E_*]` and warnings as `warning[W_*]`. The [error and warn
 - `tallyrelease pr [--branch <name>] [--dry-run]` opens or updates the release PRs (needs a token).
 - `tallyrelease release [--branch <name>] [--dry-run]` tags merged release PRs, moves floating tags and creates forge releases (needs a token).
 - `tallyrelease run [--branch <name>] [--base <ref>] [--dry-run] [--out <file>] [--github-output] [--summary]` is the CI entry point: `release`, then the plan, then `pr`. `--github-output` also writes `releases`.
-
-- `tallyrelease shadow [--manifest <path>] [--rp-config <path>] [--head <ref>] [--branch <name>] [--pin <spec>] [--out <file>] [--summary] [--strict]` compares tallyrelease with a release-please release: on a push that changes the release-please manifest, it plans the parent commit and compares each unit's next version with the new manifest value. See [Shadow mode](#shadow-mode).
 
 Exit codes: `0` ok, `1` error, `2` usage. For scripts use `--format tsv` or `--json`; the text layout may change between versions.
 
@@ -149,7 +147,6 @@ The token comes from `--token` or `GITHUB_TOKEN`. It authenticates two things: R
 | Command             | Permissions                                                                                                | Without a token                                                                                                |
 | :------------------ | :--------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------- |
 | `affected`, `plan`  | `Actions: read` for the build base. `Pull requests: read` for the PR numbers in `plan` (`released` units). | Warns `W_NO_FORGE`. A push uses the event's `before` sha; `schedule` and `workflow_dispatch` build everything. |
-| `shadow`            | none; reads local git only                                                                                 | unchanged                                                                                                      |
 | `pr --dry-run`      | `Contents: read`, `Pull requests: read`, `Issues: read`                                                    | `E_NO_FORGE`                                                                                                   |
 | `pr`                | `Contents: write`, `Pull requests: write`, `Issues: write`                                                 | `E_NO_FORGE`                                                                                                   |
 | `release --dry-run` | `Contents: read`, `Pull requests: read`, `Issues: read`                                                    | `E_NO_FORGE`                                                                                                   |
@@ -213,23 +210,7 @@ Release commits use `GIT_AUTHOR_NAME`/`GIT_AUTHOR_EMAIL` and `GIT_COMMITTER_NAME
 
 ## Shadow mode
 
-While release-please owns versions, `shadow` checks that tallyrelease would have released the same versions. Run it on pushes to the default branch:
-
-```yaml
-shadow:
-  if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-  runs-on: ubuntu-latest
-  permissions:
-    contents: read
-  steps:
-    - uses: actions/checkout@v6
-      with:
-        fetch-depth: 0
-        persist-credentials: false
-    - run: npx @tallyrelease/cli@<version> shadow --pin <version> --out shadow-report.json --summary
-```
-
-Pushes that do not change `.release-please-manifest.json` are skipped (`W_SHADOW_SKIPPED`). Each row is `match`, `mismatch`, `tallyrelease-only` or `rp-only`; known differences are labelled (`release-config`, `dependent-patch`, `absorbed-internal`, `group-vs-rp`, `separate-pr`, `squash-split`). `--strict` exits 1 on unlabelled rows. Replay an earlier release merge locally with `shadow --head <sha> --branch main`.
+To compare with release-please, pin `@tallyrelease/cli` 0.4.x and run `shadow` from it.
 
 ## Editor support
 

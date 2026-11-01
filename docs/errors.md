@@ -148,7 +148,7 @@ Fix: Correct the id in `groups.<name>.units`.
 
 ### E_HEAD_UNRESOLVED
 
-Cause: The ref given by `--head` (or `HEAD` for `shadow`) does not resolve to a commit.
+Cause: The ref given by `--head` does not resolve to a commit.
 
 Fix: Pass an existing commit to `--head`, and fetch it first if it is not available locally.
 
@@ -286,13 +286,13 @@ Fix: Correct `scheme` on the unit, or enable the plugin that provides it under `
 
 ### E_SHADOW_INPUT
 
-Cause: The release-please manifest (`--manifest`) or config (`--rp-config`) read by `shadow` is not valid JSON, or is not an object (of version strings for the manifest).
+Cause: Retired: The release-please manifest (`--manifest`) or config (`--rp-config`) read by `shadow` is not valid JSON, or is not an object (of version strings for the manifest).
 
 Fix: Fix the JSON in the file named in the message.
 
 ### E_SHADOW_MISMATCH
 
-Cause: `shadow --strict` found rows of the comparison between the plan and the release-please manifest change that are not labelled as expected differences.
+Cause: Retired: `shadow --strict` found rows of the comparison between the plan and the release-please manifest change that are not labelled as expected differences.
 
 Fix: Inspect the report (`--out` or `--summary`) and resolve or label the differing rows, or run without `--strict`.
 
@@ -492,13 +492,13 @@ Fix: Build and publish the unit for that release, or ignore the warning if it wa
 
 ### W_SHADOW_INPUT_MISSING
 
-Cause: A file passed to `shadow` with `--manifest` or `--rp-config` does not exist at the compared commit.
+Cause: Retired: A file passed to `shadow` with `--manifest` or `--rp-config` does not exist at the compared commit.
 
 Fix: Correct the path, or omit the flag to use the default file name.
 
 ### W_SHADOW_SKIPPED
 
-Cause: `shadow` skipped the comparison, either because the manifest did not change in the compared commit or because a maintenance limit (`E_CAP` or `E_CAP_BASE`) applies. The message gives the reason.
+Cause: Retired: `shadow` skipped the comparison, either because the manifest did not change in the compared commit or because a maintenance limit (`E_CAP` or `E_CAP_BASE`) applies. The message gives the reason.
 
 Fix: Nothing to do for a commit that did not touch the manifest. For a limit, see `E_CAP` or `E_CAP_BASE`.
 
