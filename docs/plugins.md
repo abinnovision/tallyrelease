@@ -12,7 +12,7 @@ Each page covers discovery, edges, inputs, version files, options and an example
 - [php](plugins/php.md): Composer projects and local path repositories, versioned through tags.
 - [go](plugins/go.md): Go modules with module-path tags and the major version path check.
 - [kustomize](plugins/kustomize.md): kustomization directories and the local files they reference.
-- [dart](plugins/dart.md): Dart and Flutter packages, with `pubspec.yaml` as the version file and the `flutter` scheme.
+- [dart](plugins/dart.md): Dart and Flutter packages, with `pubspec.yaml` as the version file.
 - [changesets](plugins/changesets.md): `.changeset/*.md` files as an intent source.
 - [config-only](plugins/config-only.md): units without a plugin or manifest, versioned through tags and `versionFiles`.
 
@@ -164,11 +164,10 @@ Every hook receives a frozen `Ctx`:
 
 A `VersionScheme<V>` parses, formats, compares and bumps versions. A plugin registers schemes by name and units opt in with `scheme`. `semver` and `calver` are built in and reserved. `release` and `prerelease` receive a `PreCtx` with git-derived data (`head`, `date`, `baseTag`, `tags`, `firstParent`), for example to derive a build number. `date` is the committer date of the planned commit and is set only when the git reader implements the optional `commitDate`, which the cli reader does. Duplicate scheme names fail with `E_SCHEME_CLASH`. A `x.y.z+build` sketch lives in core's tests ([`packages/core/test/fixtures/flutter.ts`](../packages/core/test/fixtures/flutter.ts)).
 
-| Scheme    | Registered by | Versions                                                                                                                                                                                                                                                                                                    |
-| :-------- | :------------ | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `semver`  | core          | SemVer 2.0; bumps follow the commit types. Default for every unit.                                                                                                                                                                                                                                          |
-| `calver`  | core          | `Y.M.N` such as `2026.11.0`. Every bump increments `N`; a release in a newer month than `next` (by the planned commit's UTC committer date) starts at `Y.M.0`. `Release-As` values move the same way. A `{major}` maintenance line means a year, so its releases stay within that year (`E_CAP` otherwise). |
-| `flutter` | `dart`        | `x.y.z+build`. The build number is the larger of the first-parent commit count plus the owning plugin's `buildOffset` meta and the highest tagged build plus one.                                                                                                                                           |
+| Scheme   | Registered by | Versions                                                                                                                                                                                                                                                                                                    |
+| :------- | :------------ | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `semver` | core          | SemVer 2.0; bumps follow the commit types. Default for every unit.                                                                                                                                                                                                                                          |
+| `calver` | core          | `Y.M.N` such as `2026.11.0`. Every bump increments `N`; a release in a newer month than `next` (by the planned commit's UTC committer date) starts at `Y.M.0`. `Release-As` values move the same way. A `{major}` maintenance line means a year, so its releases stay within that year (`E_CAP` otherwise). |
 
 ### Tag helpers
 
