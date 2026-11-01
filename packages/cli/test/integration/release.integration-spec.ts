@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
 
 import {
@@ -9,6 +11,7 @@ import {
 import { createRepo, git, removeTmpDirs, tmpDir } from "./harness/git-repo.js";
 import { memoryRepo } from "./harness/memory-repo.js";
 import { runCli } from "./harness/run-cli.js";
+import { planSchema } from "../../src/plan-schema.js";
 
 import type { RunOptions } from "./harness/run-cli.js";
 import type { Dag } from "@tallyrelease/core/testing";
@@ -212,6 +215,44 @@ describe("release", () => {
 		expect(remote.releases).toMatchObject([
 			{ tag: "a-v1.1.0", makeLatest: false },
 			{ tag: "b-v1.1.0", makeLatest: true },
+		]);
+	});
+
+	it("takes the release another run created between lookup and create", async () => {
+		const dag = repo(config(), { feats: ["a"] });
+		const { remote, forge, run, merge } = setup(dag);
+		await run("pr", dag);
+		const merged = merge(dag, 1);
+		const lookups: string[] = [];
+		const racing: typeof forge = {
+			...forge,
+			releaseByTag: async (repoRef, tag) => {
+				lookups.push(tag);
+				if (lookups.length === 1) {
+					remote.releases.push({
+						tag,
+						name: tag,
+						body: "",
+						makeLatest: true,
+						id: 9,
+					});
+
+					return undefined;
+				}
+
+				return await forge.releaseByTag(repoRef, tag);
+			},
+		};
+		const out = join(tmpDir("release"), "plan.json");
+
+		const result = await run("run", merged, ["--out", out], { forge: racing });
+		expect(result.code).toBe(0);
+		expect(lookups).toEqual(["a-v1.1.0", "a-v1.1.0"]);
+		expect(remote.releases.map((r) => r.id)).toEqual([9]);
+		expect(
+			planSchema.parse(JSON.parse(readFileSync(out, "utf8"))).released,
+		).toMatchObject([
+			{ tag: "a-v1.1.0", forge: { release: { url: "release/a-v1.1.0" } } },
 		]);
 	});
 

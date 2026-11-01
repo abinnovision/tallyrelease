@@ -9,6 +9,7 @@ import {
 import { effectSkipped, repoRef } from "../app/effects.js";
 import { planOptions } from "../app/setup.js";
 import { cliCodes } from "../codes.js";
+import { ForgeConflictError } from "../forge/errors.js";
 import { LABELS } from "../forge/forge.js";
 import {
 	reconcileLines,
@@ -81,7 +82,7 @@ const createReleases = async (
 			});
 			urls.set(r.tag, release.url);
 		} catch (error) {
-			if ((error as { status?: unknown } | null)?.status !== 422) {
+			if (!(error instanceof ForgeConflictError)) {
 				throw error;
 			}
 

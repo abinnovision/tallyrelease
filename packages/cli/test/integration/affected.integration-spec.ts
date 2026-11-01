@@ -7,6 +7,7 @@ import { removeTmpDirs, tmpDir } from "./harness/git-repo.js";
 import { memoryRepo } from "./harness/memory-repo.js";
 import { actionsEnv, runCli } from "./harness/run-cli.js";
 import { affectedDocSchema } from "../../src/affected-schema.js";
+import { ForgeError } from "../../src/index.js";
 
 import type { RunOptions } from "./harness/run-cli.js";
 import type { Dag } from "@tallyrelease/core/testing";
@@ -342,9 +343,7 @@ describe("affected", () => {
 		const forge = {
 			...fakeForge(),
 			lastSuccessfulPushRuns: async () =>
-				await Promise.reject(
-					Object.assign(new Error("Bad Gateway"), { status: 502 }),
-				),
+				await Promise.reject(new ForgeError("Bad Gateway", 502)),
 		};
 		const result = await affected([], { event: push("p2"), env: token, forge });
 		expect(result.build).toEqual({ base: "p2", source: "push-before" });

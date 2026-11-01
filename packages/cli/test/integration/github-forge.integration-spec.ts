@@ -4,6 +4,11 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { memoryRepo } from "./harness/memory-repo.js";
 import { actionsEnv, runCli } from "./harness/run-cli.js";
 import { githubForge } from "../../src/forge/github.js";
+import {
+	ForgeConflictError,
+	ForgeError,
+	ForgeNotFoundError,
+} from "../../src/index.js";
 
 import type { IncomingHttpHeaders, Server } from "node:http";
 
@@ -99,9 +104,12 @@ describe("github forge", () => {
 			}),
 		).toEqual([]);
 
-		await expect(
-			forge.lastSuccessfulPushRuns({ ...query, workflow: "broken.yaml" }),
-		).rejects.toMatchObject({ status: 502 });
+		const broken = forge.lastSuccessfulPushRuns({
+			...query,
+			workflow: "broken.yaml",
+		});
+		await expect(broken).rejects.toMatchObject({ status: 502 });
+		await expect(broken).rejects.toBeInstanceOf(ForgeError);
 	});
 
 	it("searches older pages of runs for a local ancestor", async () => {
@@ -450,6 +458,34 @@ describe("github forge", () => {
 				body: "notes",
 				make_latest: "false",
 			});
+		});
+
+		it("throws typed errors on a conflict and a missing resource", async () => {
+			routes = {
+				"POST /repos/acme/repo/releases": [422, { message: "exists" }],
+				"POST /repos/acme/repo/pulls": [422, { message: "exists" }],
+			};
+			const f = forge();
+
+			const create = f.createRelease(repo, {
+				tag: "cli-v1.0.1",
+				name: "cli: v1.0.1",
+				body: "",
+				makeLatest: false,
+			});
+			await expect(create).rejects.toBeInstanceOf(ForgeConflictError);
+			await expect(create).rejects.toMatchObject({
+				status: 422,
+				message: expect.stringContaining("exists"),
+				cause: expect.any(ForgeError),
+			});
+			await expect(
+				f.createPr(repo, { head: "h", base: "main", title: "t", body: "" }),
+			).rejects.toBeInstanceOf(ForgeConflictError);
+			// Unlisted routes are 404.
+			await expect(f.updatePr(repo, 1, { body: "" })).rejects.toBeInstanceOf(
+				ForgeNotFoundError,
+			);
 		});
 	});
 });
