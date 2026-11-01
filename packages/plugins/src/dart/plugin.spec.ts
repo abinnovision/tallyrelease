@@ -1,4 +1,3 @@
-import { flutter } from "@tallyrelease/core";
 import { memoryCtx } from "@tallyrelease/core/testing";
 import { describe, expect, it } from "vitest";
 
@@ -25,8 +24,6 @@ const APP = `name: app
 publish_to: none
 version: 1.2.0+5
 dependencies:
-  flutter:
-    sdk: flutter
   core:
     path: ../../packages/core
 dev_dependencies:
@@ -43,23 +40,19 @@ const files = {
 
 describe("dart discovery", () => {
 	it("discovers each pubspec.yaml outside dot, build and example directories", async () => {
-		const units = await dartPlugin.discover?.(
-			memoryCtx({ files, options: { buildOffset: 100 } }),
-		);
+		const units = await dartPlugin.discover?.(memoryCtx({ files }));
 		expect(units).toEqual([
 			{
 				id: "app",
 				root: "apps/app",
 				version: "file",
-				scheme: "flutter",
-				meta: { packageName: "app", buildOffset: 100 },
+				meta: { packageName: "app" },
 			},
 			{
 				id: "core",
 				root: "packages/core",
 				version: "file",
-				scheme: "semver",
-				meta: { packageName: "core", buildOffset: 100 },
+				meta: { packageName: "core" },
 			},
 		]);
 	});
@@ -74,14 +67,16 @@ describe("dart discovery", () => {
 				id: "mono",
 				root: ".",
 				version: "file",
-				scheme: "semver",
 				meta: { packageName: "solo" },
 			},
 		]);
 	});
 
-	it("registers the flutter scheme", () => {
-		expect(dartPlugin.schemes).toEqual({ flutter });
+	it("rejects buildOffset", async () => {
+		const result = await dartPlugin.options?.["~standard"].validate({
+			buildOffset: 1,
+		});
+		expect(result?.issues).toBeDefined();
 	});
 });
 
