@@ -127,6 +127,35 @@ describe("dart version file", () => {
 		);
 	});
 
+	it("reads and writes a CRLF pubspec", async () => {
+		const file = await versionFile();
+		const crlf = "name: a\r\nversion: 1.0.0\r\nenvironment: {}\r\n";
+		expect(file.read(crlf)).toBe("1.0.0");
+		expect(file.write(crlf, "1.0.1", ctx)).toBe(
+			"name: a\r\nversion: 1.0.1\r\nenvironment: {}\r\n",
+		);
+	});
+
+	it("adds a missing version line with CRLF and keeps the trailing newline", async () => {
+		const file = await versionFile();
+		expect(file.write("name: a\r\nenvironment: {}\r\n", "1.0.0", ctx)).toBe(
+			"name: a\r\nversion: 1.0.0\r\nenvironment: {}\r\n",
+		);
+		expect(file.write("name: a\n", "1.0.0", ctx)).toBe(
+			"name: a\nversion: 1.0.0\n",
+		);
+	});
+
+	it("drops the build number and keeps quotes", async () => {
+		const file = await versionFile();
+		expect(file.write("name: a\nversion: 1.2.0+5\n", "1.2.1", ctx)).toBe(
+			"name: a\nversion: 1.2.1\n",
+		);
+		expect(file.write('name: a\nversion: "1.2.0+5"\n', "1.2.1", ctx)).toBe(
+			'name: a\nversion: "1.2.1"\n',
+		);
+	});
+
 	it("keeps quotes and comments", async () => {
 		const file = await versionFile();
 		const quoted = "name: a\nversion: '1.0.0' # app\n";
