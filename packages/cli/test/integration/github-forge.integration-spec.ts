@@ -457,6 +457,31 @@ describe("github forge", () => {
 				name: "cli: v1.0.1",
 				body: "notes",
 				make_latest: "false",
+				prerelease: false,
+			});
+		});
+
+		it("creates a prerelease that is never latest", async () => {
+			routes = {
+				"POST /repos/acme/repo/releases": [
+					201,
+					{ id: 5, html_url: "https://example/r/5" },
+				],
+			};
+
+			await forge().createRelease(repo, {
+				tag: "cli-v1.1.0-beta.3",
+				name: "cli: v1.1.0-beta.3",
+				body: "notes",
+				makeLatest: false,
+				prerelease: true,
+			});
+			expect(requests[0]?.body).toEqual({
+				tag_name: "cli-v1.1.0-beta.3",
+				name: "cli: v1.1.0-beta.3",
+				body: "notes",
+				make_latest: "false",
+				prerelease: true,
 			});
 		});
 

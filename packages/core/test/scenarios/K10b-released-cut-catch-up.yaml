@@ -1,0 +1,49 @@
+description: >-
+  A cut tag of a unit outside the build set (no next with all false) is listed
+  as a catch-up prerelease, never latest and without floating tags; a tag of
+  another label is not.
+plugins:
+  - name: stub
+    units:
+      - { id: a, root: packages/a }
+      - { id: b, root: packages/b }
+config:
+  plugins: { stub: {} }
+  defaults: { release: true }
+  tags: { floating: ["{id}-v{major}"] }
+  branches:
+    - { name: main, line: default, channels: { cut: beta } }
+git:
+  commits:
+    - id: c0
+      files: { packages/a/i.ts: "0", packages/b/i.ts: "0" }
+    - id: c1
+      message: "feat: a"
+      files: { packages/a/i.ts: "1" }
+    - id: c2
+      message: "fix: b"
+      files: { packages/b/i.ts: "1" }
+    - id: c3
+      message: "fix: b again"
+      files: { packages/b/i.ts: "2" }
+  tags:
+    - { name: a-v1.0.0, commit: c0 }
+    - { name: b-v1.0.0, commit: c0 }
+    - { name: a-v1.1.0-beta.2, commit: c2 }
+    - { name: a-v1.1.0-rc.1, commit: c2 }
+base: c1
+plan: { released: true }
+expect:
+  affected:
+    units:
+      - { id: b, reason: direct }
+  plan:
+    released:
+      - id: a
+        tag: a-v1.1.0-beta.2
+        releaseSha: c2
+        catchUp: true
+        prerelease: true
+        latest: false
+        floatingTags: []
+    warnings: []
