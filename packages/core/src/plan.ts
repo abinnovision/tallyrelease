@@ -3,11 +3,12 @@ import { checkLimits, matchBranch } from "./branches.js";
 import { changeLevel, reach } from "./bump.js";
 import { coreCodes } from "./codes.js";
 import { collectPlanFacts } from "./facts.js";
+import { pluginCtx, runHook } from "./plugins.js";
 import { propagate } from "./propagate.js";
 import { releaseAsWarnings } from "./release-as.js";
 import { footerOf, releaseGroup, releaseUnit, unitIntent } from "./release.js";
 import { noMatchingTag } from "./tags.js";
-import { maxLevel } from "./util.js";
+import { frozenCopy, maxLevel } from "./util.js";
 import { validateRelease } from "./validate.js";
 
 import type { Warning } from "./errors.js";
@@ -486,6 +487,39 @@ const resolveReleases = (
 	};
 };
 
+/** Warnings of the plugins' `validate` hooks, run in config order on one frozen copy of the plan. */
+const pluginValidation = async (
+	workspace: Workspace,
+	plan: Plan,
+	opts: PlanOptions,
+): Promise<Warning[]> => {
+	const warnings: Warning[] = [];
+	const ctx = pluginCtx({ ...opts, repo: { name: workspace.repo } }, warnings);
+	let frozen: Plan | undefined;
+	for (const { plugin, options } of workspace.plugins) {
+		const { validate } = plugin;
+		if (validate) {
+			const copy = (frozen ??= frozenCopy(plan));
+			// eslint-disable-next-line no-await-in-loop -- hooks run in config order
+			const messages = await runHook(plugin.name, "validate", async () => {
+				const result = await validate(ctx(plugin.name, options), copy);
+				if (result !== undefined && !Array.isArray(result)) {
+					throw new TypeError("validate must return string[] or nothing");
+				}
+
+				return result ?? [];
+			});
+			for (const message of messages) {
+				warnings.push(
+					coreCodes.warning("W_PLUGIN", message, { plugin: plugin.name }),
+				);
+			}
+		}
+	}
+
+	return warnings;
+};
+
 /** Release math over collected facts; no I/O. */
 export const resolvePlan = (workspace: Workspace, input: ResolveInput): Plan =>
 	resolveReleases(workspace, input).plan;
@@ -517,13 +551,15 @@ export const planWithFacts = async (
 		schemes: workspace.schemes,
 		all: opts.all ?? false,
 	});
+	plan.warnings.push(...(await pluginValidation(workspace, plan, opts)));
 
 	return { plan, facts, releases };
 };
 
 /**
  * Plans `head`: validates release config, computes the build set, collects
- * git and intent facts and resolves versions and kinds.
+ * git and intent facts, resolves versions and kinds and runs the plugins'
+ * `validate` hooks.
  */
 export const computePlan = async (
 	workspace: Workspace,

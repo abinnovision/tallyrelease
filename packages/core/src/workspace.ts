@@ -137,6 +137,11 @@ export interface Workspace {
 	readonly schemes: ReadonlyMap<string, VersionScheme<any>>;
 	/** Core sources first, then enabled plugins in config order. */
 	readonly intents: readonly IntentEntry[];
+	/** Core first, then enabled plugins in config order, with their options. */
+	readonly plugins: readonly {
+		readonly plugin: Plugin;
+		readonly options: unknown;
+	}[];
 	/** Bumps and branch rules with defaults applied. */
 	readonly release: ReleaseSettings;
 	/** Fixed groups, sorted by name. */
@@ -183,6 +188,10 @@ export const loadWorkspace = async (
 		warnings: [...warnings, ...graph.warnings],
 		schemes: schemeRegistry(active.map((a) => a.plugin)),
 		intents,
+		plugins: active.map(({ plugin, ctx }) => ({
+			plugin,
+			options: ctx.options,
+		})),
 		release: releaseSettings(input.config, units),
 		groups,
 		versionFiles: versionFilesOf(active, units),

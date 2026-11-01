@@ -1,5 +1,6 @@
 import { coreCodes } from "./codes.js";
 
+import type { Plan } from "./model/plan-types.js";
 import type { StandardSchemaV1 } from "@standard-schema/spec";
 
 const PLUGIN_NAME = /^[a-z][a-z0-9-]*$/;
@@ -21,6 +22,9 @@ export interface Plugin<O = unknown> {
 	versionFiles?: (ctx: Ctx<O>, unit: Unit) => MaybePromise<VersionFile[]>;
 	schemes?: Record<string, VersionScheme<any>>;
 	intent?: IntentSource<O>[];
+	/** Checks the computed plan; returned messages become `W_PLUGIN` warnings. */
+	// eslint-disable-next-line @typescript-eslint/no-invalid-void-type -- a hook without warnings returns nothing
+	validate?: (ctx: Ctx<O>, plan: Plan) => MaybePromise<string[] | void>;
 }
 
 export interface Ctx<O = unknown> {

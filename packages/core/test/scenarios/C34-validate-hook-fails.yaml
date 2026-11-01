@@ -1,0 +1,15 @@
+description: An error thrown by validate is wrapped with plugin and hook name.
+plugins:
+  - name: stub
+    throws: validate
+    units:
+      - { id: a, root: packages/a }
+git:
+  commits:
+    - id: c0
+      files: { packages/a/index.ts: "1" }
+base: null
+plan: {}
+error:
+  code: E_PLUGIN_HOOK
+  details: { plugin: stub, hook: validate }

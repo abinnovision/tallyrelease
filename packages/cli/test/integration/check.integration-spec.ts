@@ -164,10 +164,54 @@ describe("check", () => {
 		});
 	});
 
+	it("runs the plugins' validate hooks on the plan", async () => {
+		const run = async (validate: () => string[], argv: string[] = []) =>
+			await runCli(["check", ...argv], {
+				...memoryRepo({
+					commits: [
+						{
+							id: "c0",
+							files: {
+								"tallyrelease.yaml": "plugins:\n  stub: { path: stub.ts }\n",
+								"app/x": "",
+							},
+						},
+					],
+				}),
+				importPlugin: () =>
+					Promise.resolve({
+						apiVersion: 1,
+						name: "stub",
+						discover: () => [{ id: "app", root: "app" }],
+						validate,
+					}),
+			});
+
+		expect(await run(() => ["careful"])).toEqual({
+			code: 0,
+			stdout: "ok: 1 unit (0 released), 0 edges\n",
+			stderr: "warning[W_PLUGIN]: stub: careful\n",
+		});
+		expect((await run(() => ["careful"], ["--head", "c0"])).stderr).toBe(
+			'warning[W_HEAD_BRANCH]: planning --head under the branch rule for "main"; pass --branch to choose\nwarning[W_PLUGIN]: stub: careful\n',
+		);
+
+		const failed = await run(() => {
+			throw new Error("bad app");
+		});
+		expect(failed.code).toBe(1);
+		expect(failed.stderr).toMatch(
+			/^error\[E_PLUGIN_HOOK\]: plugin "stub" failed in validate: bad app/,
+		);
+	});
+
 	it("reads --config relative to --cwd", async () => {
 		const result = await runCli(
 			["check", "--cwd", "sub", "--config", "conf/t.yaml"],
-			{ fs: memoryFs({ "conf/t.yaml": "plugins: {}\n" }) },
+			{
+				fs: memoryFs({ "conf/t.yaml": "plugins: {}\n" }),
+				git: memoryRepo({ commits: [{ id: "c0" }] }).git,
+			},
 		);
 		expect(result).toMatchObject({
 			code: 0,

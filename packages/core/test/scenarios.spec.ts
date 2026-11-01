@@ -37,10 +37,12 @@ interface Stub {
 	inputs?: string[];
 	/** Accepted option keys; any other key is a validation issue. */
 	optionKeys?: string[];
-	throws?: "discover" | "edges" | "inputs";
+	throws?: "discover" | "edges" | "inputs" | "validate";
 	schemes?: (keyof typeof SCHEMES)[];
 	/** Returned by an intent source for every range. */
 	changes?: Change[];
+	/** Returned by `validate`. */
+	validate?: string[];
 	/** Version file paths by unit id; `write` puts the version on one line. */
 	versionFiles?: Record<string, string[]>;
 }
@@ -114,6 +116,7 @@ const stubPlugin = (stub: Stub): Plugin => {
 		discover: hook("discover", stub.units ?? []),
 		edges: hook("edges", stub.edges ?? []),
 		inputs: hook("inputs", { global: stub.inputs ?? [] }),
+		validate: hook("validate", stub.validate),
 		...(stub.schemes && {
 			schemes: Object.fromEntries(stub.schemes.map((n) => [n, SCHEMES[n]])),
 		}),
