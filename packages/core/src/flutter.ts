@@ -1,14 +1,8 @@
-import type { BumpLevel, PreCtx, VersionScheme } from "../../src/index.js";
-
-/** Flutter `x.y.z+build` scheme from design A.5, typed against public exports only. */
-interface FlutterVersion {
-	major: number;
-	minor: number;
-	patch: number;
-	build: number;
-}
+import type { BumpLevel, PreCtx, VersionScheme } from "./plugin.js";
 
 const RE = /^(\d+)\.(\d+)\.(\d+)\+(\d+)$/u;
+/** A version at the end of a tag name. */
+const TAG_VERSION = /\d+\.\d+\.\d+\+\d+$/u;
 
 const bumpCore = (v: FlutterVersion, level: BumpLevel): FlutterVersion => {
 	switch (level) {
@@ -36,13 +30,26 @@ const parse = (raw: string): FlutterVersion | undefined => {
 
 const buildNo = (ctx: PreCtx): number => {
 	const tagged = ctx.tags.map(
-		(t) => parse(t.replace(/^.*?(?=\d)/u, ""))?.build ?? 0,
+		(t) => parse(TAG_VERSION.exec(t)?.[0] ?? "")?.build ?? 0,
 	);
-	const offset = Number(ctx.unit.meta["dart"]?.["buildOffset"] ?? 0);
+	const offset = Number(ctx.unit.meta[ctx.unit.plugin]?.["buildOffset"] ?? 0);
 
 	return Math.max(ctx.firstParent.total + offset, Math.max(0, ...tagged) + 1);
 };
 
+/** A parsed flutter version `x.y.z+build`. */
+export interface FlutterVersion {
+	major: number;
+	minor: number;
+	patch: number;
+	build: number;
+}
+
+/**
+ * Flutter `x.y.z+build` scheme. The build number is the larger of the
+ * first-parent total plus the owning plugin's `buildOffset` meta and the
+ * highest tagged build plus one.
+ */
 export const flutter: VersionScheme<FlutterVersion> = {
 	parse,
 	format: (v) => `${[v.major, v.minor, v.patch].join(".")}+${String(v.build)}`,

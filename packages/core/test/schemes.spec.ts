@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import { flutter } from "./fixtures/flutter.js";
 import { corePlugin } from "../src/builtin.js";
 import { calver } from "../src/calver.js";
+import { flutter } from "../src/flutter.js";
 import { loadWorkspace } from "../src/index.js";
 import { PLUGIN_API_VERSION } from "../src/plugin.js";
 import { assertSchemes, schemeRegistry } from "../src/schemes.js";
@@ -68,6 +68,36 @@ describe("schemes", () => {
 		expect(v && flutter.format(v)).toBe("1.2.3+45");
 		expect(v && flutter.format(flutter.bump(v, "minor"))).toBe("1.3.0+45");
 		expect(flutter.parse("1.2.3")).toBeUndefined();
+	});
+
+	it("adds the owning plugin's buildOffset to the first-parent total", () => {
+		const v = flutter.parse("1.2.3+0");
+		const unit = {
+			id: "app",
+			root: ".",
+			plugin: "dart",
+			include: [],
+			exclude: [],
+			version: "file" as const,
+			scheme: "flutter",
+			tagFormat: "v{version}",
+			propagate: "auto" as const,
+			tags: [],
+			initialVersion: null,
+			meta: { dart: { buildOffset: 100 }, other: { buildOffset: 5 } },
+		};
+		const ctx = {
+			unit,
+			head: "h",
+			baseTag: null,
+			tags: ["v1.2.2+7"],
+			firstParent: { sinceLineBase: 1, total: 3 },
+		};
+		expect(v && flutter.format(flutter.release(v, ctx))).toBe("1.2.3+103");
+		const tags = ["app2-v1.2.2+500"];
+		expect(v && flutter.format(flutter.release(v, { ...ctx, tags }))).toBe(
+			"1.2.3+501",
+		);
 	});
 });
 
