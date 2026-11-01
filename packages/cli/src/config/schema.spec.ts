@@ -94,6 +94,19 @@ describe("configJsonSchema", () => {
 		]);
 	});
 
+	it("accepts buildNumber on glob keys with a non-negative integer offset", () => {
+		expect(
+			validate({ units: { "apps/*": { buildNumber: { offset: 1000 } } } }),
+		).toBe(true);
+		expect(validate({ units: { a: { buildNumber: {} } } })).toBe(true);
+		expect(validate({ units: { a: { buildNumber: { offset: -1 } } } })).toBe(
+			false,
+		);
+		expect(validate({ units: { a: { buildNumber: { offset: 1.5 } } } })).toBe(
+			false,
+		);
+	});
+
 	it("rejects version none and unknown keys", () => {
 		expect(validate({ units: { a: { version: "none" } } })).toBe(false);
 		expect(validate({ nope: 1 })).toBe(false);

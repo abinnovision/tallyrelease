@@ -22,6 +22,8 @@ interface Entry {
 	tags?: string[] | undefined;
 	/** From the config overlay only. */
 	initialVersion?: string | undefined;
+	/** From the config overlay only. */
+	buildNumber?: { offset?: number } | undefined;
 }
 
 /** Escapes glob metacharacters so a root matches literally. */
@@ -75,10 +77,13 @@ const globMatches = (segments: readonly string[], root: string): boolean => {
 	);
 };
 
-/** Merges draft fields; sets `release`, `tags` and `initialVersion` when defined. */
+/**
+ * Merges draft fields; sets `release`, `tags`, `initialVersion` and
+ * `buildNumber` when defined.
+ */
 const applyOverlay = (
 	entry: Entry,
-	{ release, tags, initialVersion, ...overlay }: UnitOverlay,
+	{ release, tags, initialVersion, buildNumber, ...overlay }: UnitOverlay,
 ): void => {
 	entry.draft = { ...entry.draft, ...overlay };
 	if (release !== undefined) {
@@ -91,6 +96,10 @@ const applyOverlay = (
 
 	if (initialVersion !== undefined) {
 		entry.initialVersion = initialVersion;
+	}
+
+	if (buildNumber !== undefined) {
+		entry.buildNumber = buildNumber;
 	}
 };
 
@@ -239,36 +248,49 @@ export const discoverUnits = async (
 	const { defaults } = env.config;
 
 	return [...byId.values()]
-		.map(({ plugin, draft, meta, release, tags, initialVersion }): Unit => {
-			const { root } = draft;
-			const nested = roots
-				.filter((r) => isInside(r, root))
-				.map((r) => `${escapeGlob(r)}/**`);
-
-			return Object.freeze({
-				id: draft.id,
-				root,
+		.map(
+			({
 				plugin,
-				include: Object.freeze([
-					...(draft.include ?? [
-						root === "." ? "**" : `${escapeGlob(root)}/**`,
+				draft,
+				meta,
+				release,
+				tags,
+				initialVersion,
+				buildNumber,
+			}): Unit => {
+				const { root } = draft;
+				const nested = roots
+					.filter((r) => isInside(r, root))
+					.map((r) => `${escapeGlob(r)}/**`);
+
+				return Object.freeze({
+					id: draft.id,
+					root,
+					plugin,
+					include: Object.freeze([
+						...(draft.include ?? [
+							root === "." ? "**" : `${escapeGlob(root)}/**`,
+						]),
 					]),
-				]),
-				exclude: Object.freeze([...nested, ...(draft.exclude ?? [])]),
-				version:
-					(release ?? defaults?.release ?? false)
-						? (draft.version ?? "tag")
-						: "none",
-				scheme: draft.scheme ?? "semver",
-				tagFormat:
-					draft.tagFormat ??
-					defaults?.tagFormat ??
-					(root === "." ? "v{version}" : "{id}-v{version}"),
-				propagate: draft.propagate ?? defaults?.propagate ?? "auto",
-				tags: Object.freeze(uniqueSorted(tags ?? [])),
-				initialVersion: initialVersion ?? defaults?.initialVersion ?? null,
-				meta: Object.freeze(meta),
-			});
-		})
+					exclude: Object.freeze([...nested, ...(draft.exclude ?? [])]),
+					version:
+						(release ?? defaults?.release ?? false)
+							? (draft.version ?? "tag")
+							: "none",
+					scheme: draft.scheme ?? "semver",
+					tagFormat:
+						draft.tagFormat ??
+						defaults?.tagFormat ??
+						(root === "." ? "v{version}" : "{id}-v{version}"),
+					propagate: draft.propagate ?? defaults?.propagate ?? "auto",
+					tags: Object.freeze(uniqueSorted(tags ?? [])),
+					initialVersion: initialVersion ?? defaults?.initialVersion ?? null,
+					...(buildNumber && {
+						buildNumber: Object.freeze({ offset: buildNumber.offset ?? 0 }),
+					}),
+					meta: Object.freeze(meta),
+				});
+			},
+		)
 		.sort((a, b) => compare(a.id, b.id));
 };
