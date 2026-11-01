@@ -516,6 +516,8 @@ export const releaseFiles = async (
 	},
 ): Promise<{
 	files: Map<string, string>;
+	/** Paths the release removes. */
+	deletes: Set<string>;
 	/** Changelog section of each unit, by unit id. */
 	sections: Map<string, string>;
 	warnings: Warning[];
@@ -580,6 +582,7 @@ export const releaseFiles = async (
 
 	return {
 		files: new Map([...files].filter(([path, c]) => fs.read(path) !== c)),
+		deletes: new Set(),
 		sections,
 		warnings,
 	};

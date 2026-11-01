@@ -57,12 +57,14 @@ export interface PushOptions {
 /** Git writes of effects; never touches the working tree, index or HEAD. */
 export interface GitWriter {
 	/**
-	 * Commit of `files` on top of `parent` with the configured identity and both
-	 * dates set to `date`, so equal input gives an equal sha; not signed.
+	 * Commit of `files` without `deletes` on top of `parent` with the configured
+	 * identity and both dates set to `date`, so equal input gives an equal sha;
+	 * not signed. Deleting a missing path is a no-op.
 	 */
 	commitFiles: (commit: {
 		parent: string;
 		files: ReadonlyMap<string, string>;
+		deletes?: readonly string[];
 		message: string;
 		date: string;
 	}) => Promise<string>;
@@ -112,7 +114,7 @@ export const gitWriter = (
 	};
 
 	return {
-		commitFiles: async ({ parent, files, message, date }) => {
+		commitFiles: async ({ parent, files, deletes = [], message, date }) => {
 			const dir = await mkdtemp(join(tmpdir(), "tallyrelease-index-"));
 			try {
 				const index = { GIT_INDEX_FILE: join(dir, "index") };
@@ -158,6 +160,10 @@ export const gitWriter = (
 						],
 						index,
 					);
+				}
+
+				if (deletes.length > 0) {
+					await ok(["update-index", "--force-remove", "--", ...deletes], index);
 				}
 
 				const tree = await ok(["write-tree"], index);

@@ -39,7 +39,12 @@ export interface MemoryRemote {
 	/** Commits made by `fakeGitWriter`, with the files they change. */
 	commits: Map<
 		string,
-		{ parent: string; files: Record<string, string>; message: string }
+		{
+			parent: string;
+			files: Record<string, string>;
+			deletes?: string[];
+			message: string;
+		}
 	>;
 	/** Branch name to commit id. */
 	branches: Map<string, string>;
@@ -191,14 +196,19 @@ export const fakeGitWriter = (
 
 	return {
 		tags,
-		commitFiles: async ({ parent, files, message, date }) => {
+		commitFiles: async ({ parent, files, deletes = [], message, date }) => {
 			const entries = [...files].sort(([a], [b]) => (a < b ? -1 : 1));
+			const removed = [...deletes].sort();
+			const input = [parent, entries, message, date];
 			const id = createHash("sha1")
-				.update(JSON.stringify([parent, entries, message, date]))
+				.update(
+					JSON.stringify(removed.length > 0 ? [...input, removed] : input),
+				)
 				.digest("hex");
 			remote.commits.set(id, {
 				parent,
 				files: Object.fromEntries(entries),
+				...(removed.length > 0 && { deletes: removed }),
 				message,
 			});
 
@@ -269,8 +279,8 @@ export const fakeGitWriter = (
 };
 
 /**
- * `dag` plus a squash merge of PR `number` (its head commit's files on top
- * of HEAD, id `merge-<number>`), or with `mergeCommit` a merge commit whose
+ * `dag` plus a squash merge of PR `number` (its head commit's files and
+ * deletes on top of HEAD, id `merge-<number>`), or with `mergeCommit` a merge commit whose
  * second parent is the PR head; marks the PR merged.
  */
 export const mergePr = (
@@ -288,6 +298,10 @@ export const mergePr = (
 	).toISOString();
 	p.mergeCommitSha = id;
 	const tip = dag.commits.at(-1)?.id ?? "";
+	const files = {
+		...head?.files,
+		...Object.fromEntries((head?.deletes ?? []).map((path) => [path, null])),
+	};
 
 	return {
 		...dag,
@@ -298,7 +312,7 @@ export const mergePr = (
 						id: p.headSha,
 						parents: [head?.parent ?? tip],
 						message: p.title,
-						files: head?.files ?? {},
+						files,
 					},
 					{
 						id,
@@ -313,7 +327,7 @@ export const mergePr = (
 						id,
 						message: `${p.title} (#${String(number)})\n\n${p.body}`,
 						date: p.mergedAt,
-						files: head?.files ?? {},
+						files,
 					},
 				],
 	};

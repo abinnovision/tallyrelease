@@ -1,5 +1,11 @@
 import { computePlan, loadWorkspace, withReleased } from "@tallyrelease/core";
-import { appendFileSync, existsSync, mkdirSync, writeFileSync } from "node:fs";
+import {
+	appendFileSync,
+	existsSync,
+	mkdirSync,
+	rmSync,
+	writeFileSync,
+} from "node:fs";
 import {
 	basename,
 	dirname,
@@ -56,6 +62,8 @@ export interface Deps {
 	gitWriter?: GitWriter;
 	/** Writes a file relative to the repo root; defaults to `node:fs`. */
 	writeFile?: (path: string, content: string) => void;
+	/** Deletes a file relative to the repo root, if present; defaults to `node:fs`. */
+	deleteFile?: (path: string) => void;
 	/** Writes a file at `path` as given, such as `--out`; defaults to `node:fs`. */
 	writeOutFile?: (path: string, content: string) => void;
 	/** Appends to a file at `path` as given, such as `$GITHUB_OUTPUT`; defaults to `node:fs`. */
@@ -96,6 +104,7 @@ export interface Session {
 	readonly remote: string;
 	readonly gitWriter: GitWriter;
 	readonly writeFile: (path: string, content: string) => void;
+	readonly deleteFile: (path: string) => void;
 	readonly writeOutFile: (path: string, content: string) => void;
 	readonly appendFile: (path: string, content: string) => void;
 	readonly clock: () => Date;
@@ -172,6 +181,26 @@ export const createSession = (deps: Deps, opts: GlobalOptions): Session => {
 		.join("/");
 	// Injected git or fs means there is no repository on disk to query.
 	const onDisk = deps.git === undefined && deps.fs === undefined;
+
+	/** Absolute path of a repo-relative `path`; `E_PATH_OUTSIDE_ROOT` outside. */
+	const inRoot = (path: string): string => {
+		const file = resolve(root, path);
+		const rel = relative(root, file);
+		if (
+			rel === "" ||
+			rel === ".." ||
+			rel.startsWith(`..${sep}`) ||
+			isAbsolute(rel)
+		) {
+			throw cliCodes.error(
+				"E_PATH_OUTSIDE_ROOT",
+				`"${path}" is outside the repository root`,
+				{ path },
+			);
+		}
+
+		return file;
+	};
 
 	const assertRepoRoot = async () => {
 		if (!existsSync(root)) {
@@ -317,23 +346,14 @@ export const createSession = (deps: Deps, opts: GlobalOptions): Session => {
 		writeFile:
 			deps.writeFile ??
 			((path, content) => {
-				const file = resolve(root, path);
-				const rel = relative(root, file);
-				if (
-					rel === "" ||
-					rel === ".." ||
-					rel.startsWith(`..${sep}`) ||
-					isAbsolute(rel)
-				) {
-					throw cliCodes.error(
-						"E_PATH_OUTSIDE_ROOT",
-						`"${path}" is outside the repository root`,
-						{ path },
-					);
-				}
-
+				const file = inRoot(path);
 				mkdirSync(dirname(file), { recursive: true });
 				writeFileSync(file, content);
+			}),
+		deleteFile:
+			deps.deleteFile ??
+			((path) => {
+				rmSync(inRoot(path), { force: true });
 			}),
 		writeOutFile:
 			deps.writeOutFile ??
