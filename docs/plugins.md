@@ -1,6 +1,6 @@
 # Plugin authoring guide
 
-A plugin teaches tallyrelease about an ecosystem: where its units live, how they depend on each other, where their versions are written and, optionally, how versions are numbered or where release intent comes from. `node`, `php`, `kustomize` and `dart` are built in. Anything else is a plugin you write, either as a file in your repository or as an npm package.
+A plugin teaches tallyrelease about an ecosystem: where its units live, how they depend on each other, where their versions are written and, optionally, how versions are numbered or where release intent comes from. `node`, `php`, `kustomize` and `dart` are built in, as is the `changesets` intent source. Anything else is a plugin you write, either as a file in your repository or as an npm package.
 
 This guide covers the contract, testing, distribution, the trust model and purity. [configuration.md](configuration.md) lists every config key and [errors.md](errors.md) every error code. Plugin API version 1 is in beta like the rest of tallyrelease: until 1.0, a minor release may change it.
 
@@ -171,7 +171,23 @@ renderTag({ id: "web", tagFormat: "{id}-v{version}" }, "1.2.0"); // "web-v1.2.0"
 
 ### Intent sources
 
-An `IntentSource` has a `name` and `collect(ctx, { from, to, commits })` that returns `Change[]`. Core always runs the Conventional Commits source (`parseCommit` is exported for plugins that read commit messages). A source can attribute a change through a commit (`sha`, by the files it touched) or explicitly (`units`).
+An `IntentSource` has a `name` and `collect(ctx, { from, to, commits, units })` that returns `Change[]`. `units` lists all units of the workspace, for example to map package names to unit ids. Core always runs the Conventional Commits source (`parseCommit` is exported for plugins that read commit messages). A source can attribute a change through a commit (`sha`, by the files it touched) or explicitly (`units`).
+
+A change with explicit `units` can consume files with `files`. A file is deleted in the release commit once every unit named by the changes that carry it is released by that commit: `version` removes it from the working tree (`would delete <path>` with `--dry-run`) and the release PR commit drops it. When the named units release in different release PRs, no release commit deletes the file; remove it by hand after they are released.
+
+#### The changesets plugin
+
+The built-in `changesets` plugin reads [Changesets](https://github.com/changesets/changesets) files. Enable it next to your ecosystem plugin; it has no options.
+
+```yaml
+plugins:
+  node: {}
+  changesets: {}
+```
+
+Each `.changeset/*.md` file has a frontmatter that maps keys to `major`, `minor` or `patch` (`none` is skipped, anything else warns), and its body is the summary: the first line becomes the subject, the rest the body. A key is a unit id or the `packageName` a plugin stores in the unit's `meta`, such as the `name` of a `package.json`; an unknown key warns `W_UNIT_UNKNOWN`. A changeset becomes one change per bump level with explicit `units` and `files: [<path>]`: `major` is a breaking `feat`, `minor` a `feat` and `patch` a `fix`. Files without frontmatter are skipped with a warning, except `.changeset/README.md`.
+
+A changeset counts for a unit only when a commit in the unit's range touched the file, so a changeset that is still present after a release does not bump again. `collect` cannot tell an added file from a modified one, so editing an old changeset counts it again in that range. The release commit deletes the file once every unit it names is released.
 
 ### Validation
 
@@ -255,6 +271,7 @@ const changes = await source.collect(memoryCtx(), {
   from: null,
   to: "HEAD",
   commits,
+  units: [],
 });
 ```
 
@@ -298,7 +315,7 @@ With `buildOffset: 1000`, a fix on a flutter app tagged `v1.2.0+5` after 40 firs
 
 A plugin is loaded from the config, by the key under `plugins`. The cli resolves each key in this order:
 
-1. A built-in plugin of that name (`node`, `php`, `kustomize`, `dart`). Built-ins cannot be replaced: setting `path` or `package` on one fails with `E_PLUGIN_LOAD`.
+1. A built-in plugin of that name (`node`, `php`, `kustomize`, `dart`, `changesets`). Built-ins cannot be replaced: setting `path` or `package` on one fails with `E_PLUGIN_LOAD`.
 2. `plugins.<name>.path`, a local plugin.
 3. `plugins.<name>.package`, an npm package. `path` and `package` exclude each other.
 
