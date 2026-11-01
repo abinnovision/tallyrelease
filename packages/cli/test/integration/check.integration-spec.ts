@@ -132,6 +132,26 @@ describe("check", () => {
 		expect(none.stdout).toBe("ok: 1 unit (0 released), 0 edges\n");
 	});
 
+	it("rejects a dart path dependency across release PRs unless it rebuilds", async () => {
+		const files = {
+			"apps/app/pubspec.yaml":
+				"name: app\nversion: 1.0.0\ndependencies:\n  core:\n    path: ../../packages/core\n",
+			"packages/core/pubspec.yaml": "name: core\nversion: 1.0.0\n",
+		};
+		const config =
+			"plugins: { dart: {} }\ndefaults: { release: true, releasePr: separate }\n";
+
+		const split = await check({ ...files, "tallyrelease.yaml": config });
+		expect(split.code).toBe(1);
+		expect(split.stderr).toMatch(/^error\[E_RELEASE_PR_SPLIT_EDGE\]: /);
+
+		const rebuild = await check({
+			...files,
+			"tallyrelease.yaml": `${config}units:\n  apps/app: { propagate: rebuild }\n`,
+		});
+		expect(rebuild).toMatchObject({ code: 0, stderr: "" });
+	});
+
 	it("validates release config and tags (G32)", async () => {
 		const units = "units:\n  a: { release: true }\n  b: { release: true }\n";
 		const files = { "a/x": "", "b/x": "" };
