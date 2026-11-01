@@ -1,0 +1,40 @@
+description: >-
+  Fixed group members released at one sha share the count, each plus its own
+  offset.
+plugins:
+  - name: stub
+    units:
+      - { id: g1, root: packages/g1 }
+      - { id: g2, root: packages/g2 }
+config:
+  plugins: { stub: {} }
+  defaults: { release: true }
+  units:
+    packages/g1: { buildNumber: {} }
+    packages/g2: { buildNumber: { offset: 100 } }
+  groups:
+    g: { units: [g1, g2] }
+  branches:
+    - { name: main, line: default }
+git:
+  commits:
+    - id: c0
+      files: { packages/g1/index.ts: "0", packages/g2/index.ts: "0" }
+    - id: c1
+      message: "chore(release): g@1.1.0"
+      files: { packages/g1/CHANGELOG.md: "1.1.0" }
+  tags:
+    - { name: g1-v1.0.0, commit: c0 }
+    - { name: g2-v1.0.0, commit: c0 }
+    - { name: g1-v1.1.0, commit: c1 }
+    - { name: g2-v1.1.0, commit: c1 }
+base: c0
+plan: { released: true, buildNumbers: true }
+expect:
+  plan:
+    released:
+      - { id: g1, releaseSha: c1 }
+      - { id: g2, releaseSha: c1 }
+  buildNumbers:
+    numbers: [2, 102]
+    warnings: []
