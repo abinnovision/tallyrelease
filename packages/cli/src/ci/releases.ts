@@ -33,10 +33,11 @@ const propagatedChanges = (units: Plan["units"], id: string): PlanChange[] => {
 };
 
 /**
- * Releases first (`plan.released` order), then the prereleases in plan unit
- * order, none for a unit released at HEAD. A release lists the changes of the
- * unit in `atParent`, the plan units at the first parent of each release sha;
- * a prerelease those in `plan.units`. Both include propagated changes.
+ * Releases and cuts first (`plan.released` order), then the build
+ * prereleases in plan unit order, none for a unit released or cut at HEAD. A
+ * release or cut lists the changes of the unit in `atParent`, the plan units
+ * at the first parent of each release sha; a build those in `plan.units`. All
+ * include propagated changes.
  */
 export const releaseListEntries = (
 	plan: Plan,
@@ -55,9 +56,9 @@ export const releaseListEntries = (
 		...plan.released.map((r): ReleaseEntry => ({
 			id: r.id,
 			path: r.path,
-			kind: "release",
+			kind: r.prerelease ? "prerelease" : "release",
 			version: r.version,
-			channel: null,
+			channel: r.prerelease ? (plan.line?.cut ?? null) : null,
 			tag: r.tag,
 			releaseSha: r.releaseSha,
 			catchUp: r.catchUp,

@@ -1,4 +1,5 @@
 import { coreCodes } from "./codes.js";
+import { isCutVersion } from "./cut.js";
 import { renderFloatingTags } from "./floating.js";
 import { matchUnitTags } from "./tags.js";
 import { compare } from "./util.js";
@@ -16,7 +17,8 @@ const stable = (scheme: VersionScheme<any>, version: string): boolean => {
 };
 
 /**
- * Released entries of the stable tags `keep` accepts: oldest release commit
+ * Released entries of the stable tags, and of the cut tags on a line with a
+ * cut channel (form only), that `keep` accepts: oldest release commit
  * on the first-parent chain first, then plan unit order (topological), then
  * tag name.
  */
@@ -34,6 +36,7 @@ const releasedEntries = async (
 		workspace.schemes,
 	);
 	const line = plan.line?.kind ?? "default";
+	const cut = plan.line?.cut ?? null;
 	const built = new Set(
 		plan.units.filter((u) => u.affected !== null).map((u) => u.id),
 	);
@@ -43,27 +46,43 @@ const releasedEntries = async (
 			return [];
 		}
 
+		const { scheme } = m;
 		const names = m.tags.map((t) => t.name);
-		const highest = m.tags.findLast((t) => stable(m.scheme, t.version))?.name;
+		const highest = m.tags.findLast((t) => stable(scheme, t.version))?.name;
+		const isCut = (version: string) => {
+			const v: unknown = scheme.parse(version);
 
-		return m.tags
-			.filter((tag) => stable(m.scheme, tag.version))
-			.map((tag): ReleasedUnit => ({
-				id: unit.id,
-				path: unit.root,
-				version: tag.version,
-				tag: tag.name,
-				floatingTags: renderFloatingTags(unit, tag.version, {
-					tags: names,
-					scheme: m.scheme,
-					formats: workspace.release.floating,
-				}),
-				releaseSha: tag.sha,
-				catchUp: tag.sha !== plan.head || !built.has(unit.id),
-				forge: null,
-				line,
-				latest: line !== "maintenance" && tag.name === highest,
-			}));
+			return cut !== null && v !== undefined && isCutVersion(scheme, v, cut);
+		};
+
+		return m.tags.flatMap((tag): ReleasedUnit[] => {
+			const prerelease = !stable(scheme, tag.version);
+			if (prerelease && !isCut(tag.version)) {
+				return [];
+			}
+
+			return [
+				{
+					id: unit.id,
+					path: unit.root,
+					version: tag.version,
+					tag: tag.name,
+					floatingTags: prerelease
+						? []
+						: renderFloatingTags(unit, tag.version, {
+								tags: names,
+								scheme,
+								formats: workspace.release.floating,
+							}),
+					releaseSha: tag.sha,
+					catchUp: tag.sha !== plan.head || !built.has(unit.id),
+					forge: null,
+					line,
+					prerelease,
+					latest: line !== "maintenance" && tag.name === highest,
+				},
+			];
+		});
 	});
 	const kept = await Promise.all(
 		candidates.map(
@@ -89,11 +108,11 @@ const releasedEntries = async (
 };
 
 /**
- * `plan` with `released`: stable unit tags whose commit is on HEAD's
- * first-parent chain and not an ancestor of `build.base`. With a null base
- * only tags at HEAD, warning `W_RELEASED_NO_BASE` when earlier releases on the
- * chain are left out. A release at HEAD of a unit outside the build set warns
- * `W_RELEASE_NOT_BUILT`.
+ * `plan` with `released`: stable unit tags, and cut tags on a line with a cut
+ * channel, whose commit is on HEAD's first-parent chain and not an ancestor
+ * of `build.base`. With a null base only tags at HEAD, warning
+ * `W_RELEASED_NO_BASE` when earlier releases on the chain are left out. A
+ * release at HEAD of a unit outside the build set warns `W_RELEASE_NOT_BUILT`.
  */
 export const withReleased = async (
 	workspace: Workspace,
@@ -151,8 +170,9 @@ export const withReleased = async (
 
 /**
  * Released entries of the named tags, in `plan.released` order; names that
- * are not stable tags of a released unit are skipped. Callers add the tags a
- * reconcile created by passing the union of those and `plan.released` tags.
+ * are not stable or cut tags of a released unit are skipped. Callers add the
+ * tags a reconcile created by passing the union of those and `plan.released`
+ * tags.
  */
 export const releasedFromTags = async (
 	workspace: Workspace,
