@@ -1,5 +1,11 @@
+import { decodeMarker } from "@tallyrelease/core";
 import { afterAll, describe, expect, it } from "vitest";
 
+import {
+	fakeForge,
+	fakeGitWriter,
+	memoryRemote,
+} from "./harness/fake-forge.js";
 import { createRepo, removeTmpDirs } from "./harness/git-repo.js";
 import { memoryRepo } from "./harness/memory-repo.js";
 import { runCli } from "./harness/run-cli.js";
@@ -179,4 +185,41 @@ describe("local plugins in privileged commands", () => {
 			expect(result.stderr).toContain(error);
 		},
 	);
+});
+
+describe("go plugin", () => {
+	it("tags a module below the root as <root>/v<version>", async () => {
+		const dag: Dag = {
+			commits: [
+				{
+					id: "c0",
+					files: {
+						"tallyrelease.yaml":
+							"plugins: { go: {} }\ndefaults: { release: true }\nbranches:\n  - { name: main, line: default }\n",
+						"mod/a/go.mod": "module example.com/mono/mod/a\n",
+						"mod/a/a.go": "0",
+					},
+				},
+				{ id: "c1", message: "feat: add a", files: { "mod/a/a.go": "1" } },
+			],
+			tags: [{ name: "mod/a/v1.1.0", commit: "c0" }],
+		};
+		const remote = memoryRemote();
+		remote.branches.set("main", "c1");
+
+		const result = await runCli(["pr"], {
+			...memoryRepo(dag),
+			forge: fakeForge([], remote),
+			gitWriter: fakeGitWriter(remote),
+			env: {
+				GITHUB_TOKEN: "t",
+				GITHUB_SERVER_URL: "https://github.com",
+				GITHUB_REPOSITORY: "acme/repo",
+			},
+		});
+		expect(result).toMatchObject({ code: 0 });
+		expect(decodeMarker(remote.prs[0]?.body ?? "")?.releases).toEqual([
+			{ id: "a", version: "1.2.0", tag: "mod/a/v1.2.0" },
+		]);
+	});
 });
