@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { memoryRepo } from "./harness/memory-repo.js";
 import { runCli } from "./harness/run-cli.js";
 
-import type { DagTag } from "@tallyrelease/core/testing";
+import type { Dag, DagTag } from "@tallyrelease/core/testing";
 
 const check = (files: Record<string, string>, tags: DagTag[] = []) =>
 	runCli(["check"], {
@@ -217,5 +217,28 @@ describe("check", () => {
 			code: 0,
 			stdout: "ok: 0 units (0 released), 0 edges\n",
 		});
+	});
+
+	it("fails a go module whose next major lacks the /vN path", async () => {
+		const dag: Dag = {
+			commits: [
+				{
+					id: "c0",
+					files: {
+						"tallyrelease.yaml":
+							"plugins: { go: {} }\ndefaults: { release: true }\nbranches:\n  - { name: main, line: default }\n",
+						"go.mod": "module example.com/app\n",
+					},
+				},
+				{ id: "c1", message: "feat!: drop api", files: { "a.go": "1" } },
+			],
+			tags: [{ name: "v1.2.3", commit: "c0" }],
+		};
+
+		const result = await runCli(["check"], memoryRepo(dag));
+		expect(result.code).toBe(1);
+		expect(result.stderr).toMatch(
+			/^error\[E_PLUGIN_HOOK\]: plugin "go" failed in validate: E_GO_MAJOR_PATH: /,
+		);
 	});
 });
