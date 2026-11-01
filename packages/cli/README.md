@@ -135,6 +135,7 @@ With `--github-output`, `run` writes two outputs to `$GITHUB_OUTPUT`:
 | `changes`    | Changes in the shape of the plan's `units[].changes`: the unit's own, then those of the units it was propagated from (transitively), each with `via` set to the owning unit; for a prerelease, those since the last stable release.                                                                                   |
 | `tags`       | The unit's tags, sorted.                                                                                                                                                                                                                                                                                              |
 | `group`      | Name of the unit's fixed group, else `null`.                                                                                                                                                                                                                                                                          |
+| `line`       | Line of the planned branch, `default` or `maintenance`, for releases and prereleases.                                                                                                                                                                                                                                 |
 
 Within a major, entries only gain fields. The entry schema is `releaseEntrySchema` in `src/plan-schema.ts`.
 
