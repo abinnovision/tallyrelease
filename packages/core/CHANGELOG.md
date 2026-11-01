@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.5.0](https://github.com/abinnovision/tallyrelease/compare/core-v0.4.1...core-v0.5.0) (2026-11-01)
+
+
+### Features
+
+* **core:** add calver scheme ([#145](https://github.com/abinnovision/tallyrelease/issues/145)) ([3dfb7e7](https://github.com/abinnovision/tallyrelease/commit/3dfb7e76e615ae55da27a66453289db9135f60b4))
+* **core:** add changelog plugin hook ([#131](https://github.com/abinnovision/tallyrelease/issues/131)) ([b258709](https://github.com/abinnovision/tallyrelease/commit/b2587092839aeba8aaaac4118fa13eb0347f56b4))
+* **core:** add flutter scheme ([#146](https://github.com/abinnovision/tallyrelease/issues/146)) ([46239ff](https://github.com/abinnovision/tallyrelease/commit/46239ff0917530309d05b9c459847e95f0e4e91d))
+* **core:** add schemeConformance to testing/conformance ([#113](https://github.com/abinnovision/tallyrelease/issues/113)) ([764df33](https://github.com/abinnovision/tallyrelease/commit/764df33adcb3f6fda03f27e52974b0609a1de71d))
+* **core:** add validate plugin hook ([#130](https://github.com/abinnovision/tallyrelease/issues/130)) ([11e3d7e](https://github.com/abinnovision/tallyrelease/commit/11e3d7e8aeded2a42b39400118f6ba6a8dcba266))
+* **core:** delete files consumed by released intent changes ([#141](https://github.com/abinnovision/tallyrelease/issues/141)) ([ce538f6](https://github.com/abinnovision/tallyrelease/commit/ce538f62a9ea5876f5af654a15e0b9fce27ce62c))
+* **core:** export tag format helpers ([#120](https://github.com/abinnovision/tallyrelease/issues/120)) ([3357af8](https://github.com/abinnovision/tallyrelease/commit/3357af897518c8898560dd56d2cb68cdc8e2dd48))
+* **core:** rewrite version markers in configured files ([#132](https://github.com/abinnovision/tallyrelease/issues/132)) ([c43bbbc](https://github.com/abinnovision/tallyrelease/commit/c43bbbc46865a587a6005b6d312da16b008bb7a4))
+* generate docs from the config schema and typed error code registries ([#82](https://github.com/abinnovision/tallyrelease/issues/82)) ([9ee6b60](https://github.com/abinnovision/tallyrelease/commit/9ee6b6048cefaf74c9bd63403ab2db3badbc8b11))
+* **plugins:** add dart plugin ([#147](https://github.com/abinnovision/tallyrelease/issues/147)) ([2c7c229](https://github.com/abinnovision/tallyrelease/commit/2c7c2297aa186db84e572fb266cadc252a2e3270))
+
+
+### Bug Fixes
+
+* **core:** import the testing fakes without vitest ([#76](https://github.com/abinnovision/tallyrelease/issues/76)) ([91c69dc](https://github.com/abinnovision/tallyrelease/commit/91c69dc36c5cb4fbd47cec360559450893842d52))
+
 ## [0.4.1](https://github.com/abinnovision/tallyrelease/compare/core-v0.4.0...core-v0.4.1) (2026-10-17)
 
 
