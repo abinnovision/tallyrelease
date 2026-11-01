@@ -1,0 +1,22 @@
+description: >-
+  buildNumber is allowed on glob keys and defaults offset to 0; an exact key
+  replaces the whole value of a glob key.
+config:
+  plugins: { stub: {} }
+  units:
+    "apps/*": { buildNumber: { offset: 1000 } }
+    apps/b: { buildNumber: {} }
+plugins:
+  - name: stub
+    units:
+      - { id: a, root: apps/a }
+      - { id: b, root: apps/b }
+git:
+  commits:
+    - id: c0
+      files: { apps/a/x.ts: "1", apps/b/x.ts: "1" }
+base: null
+expect:
+  units:
+    - { id: a, buildNumber: { offset: 1000 } }
+    - { id: b, buildNumber: { offset: 0 } }

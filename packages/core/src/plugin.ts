@@ -130,6 +130,8 @@ export interface Unit {
 	readonly tags: readonly string[];
 	/** Config overlay, else `defaults.initialVersion`; null uses `scheme.initial()`. */
 	readonly initialVersion: string | null;
+	/** Config overlay only; absent when not configured. */
+	readonly buildNumber?: { readonly offset: number };
 	readonly meta: Readonly<Record<string, Readonly<Record<string, unknown>>>>;
 }
 
