@@ -1,6 +1,6 @@
 import { gitOk, git as run } from "./exec.js";
 
-import type { Env } from "../ci/github-env.js";
+import type { Env } from "../ci/env.js";
 import type {
 	GitReader,
 	MaybePromise,

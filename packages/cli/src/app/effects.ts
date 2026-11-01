@@ -1,4 +1,3 @@
-import { PR_EVENTS } from "../ci/github-env.js";
 import { cliCodes } from "../codes.js";
 
 import type { RepoRef } from "../forge/forge.js";
@@ -15,10 +14,10 @@ export const effectSkipped = (
 	command: string,
 	line?: { branch: string; line: PlanLine | null },
 ): boolean => {
-	const event = session.github?.eventName;
+	const { event, prEvent } = session.ci;
 	const reason =
-		event !== undefined && PR_EVENTS.has(event)
-			? `on ${event} events`
+		prEvent && event !== undefined
+			? `on ${event.name} events`
 			: line?.line === null
 				? `on branch "${line.branch}" without a line rule`
 				: undefined;
@@ -31,10 +30,10 @@ export const effectSkipped = (
 	return reason !== undefined;
 };
 
-/** `GITHUB_REPOSITORY`, else owner and name from the repository URL. */
+/** The CI repository, else owner and name from the repository URL. */
 export const repoRef = async (session: Session): Promise<RepoRef> => {
 	const [owner, repo] =
-		session.env["GITHUB_REPOSITORY"]?.split("/") ??
+		session.ci.repository?.split("/") ??
 		(await session.repoUrl())?.split("/").slice(-2) ??
 		[];
 	if (!owner || !repo) {

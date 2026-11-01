@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { cliCodes } from "../codes.js";
 import { gitOk, git as run } from "./exec.js";
 
-import type { Env } from "../ci/github-env.js";
+import type { Env } from "../ci/env.js";
 
 export interface Ident {
 	name: string;

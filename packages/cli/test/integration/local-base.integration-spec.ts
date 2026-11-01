@@ -6,7 +6,7 @@ import { createRepo, git, removeTmpDirs } from "./harness/git-repo.js";
 import { runCli } from "./harness/run-cli.js";
 import { affectedDocSchema } from "../../src/affected-schema.js";
 
-import type { Env } from "../../src/ci/github-env.js";
+import type { Env } from "../../src/ci/env.js";
 import type { Dag } from "@tallyrelease/core/testing";
 
 const dag: Dag = {

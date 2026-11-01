@@ -2,11 +2,10 @@ import { builtinPlugins } from "@tallyrelease/plugins";
 import { createJiti } from "jiti";
 import { join, posix } from "node:path";
 
-import { PR_EVENTS } from "../ci/github-env.js";
 import { cliCodes } from "../codes.js";
 
 import type { CliConfig, PluginEntry } from "./schema.js";
-import type { Env } from "../ci/github-env.js";
+import type { Env } from "../ci/env.js";
 import type { Plugin, TallyConfig } from "@tallyrelease/core";
 import type { Jiti } from "jiti";
 
@@ -89,14 +88,11 @@ export const jitiImport = (root: string): ImportPlugin => {
  * never on a pull request head, else only when allowed by flag or env.
  */
 export const localPluginsDenied = (
+	onPrHead: boolean,
 	env: Env,
 	allowFlag: boolean,
 ): string | undefined => {
-	const event = env["GITHUB_EVENT_NAME"];
-	if (
-		(event !== undefined && PR_EVENTS.has(event)) ||
-		env["GITHUB_REF"]?.startsWith("refs/pull/")
-	) {
+	if (onPrHead) {
 		return "privileged commands never load local plugins on a pull request head";
 	}
 
