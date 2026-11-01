@@ -185,6 +185,16 @@ describe("local plugins in privileged commands", () => {
 			expect(result.stderr).toContain(error);
 		},
 	);
+
+	it("never run on a pull request ref without an event", async () => {
+		const result = await run(["version", "--allow-local-plugins"], {
+			env: { GITHUB_REF: "refs/pull/1/merge" },
+		});
+
+		expect(result).toMatchObject({ code: 1, imported: [] });
+		expect(result.stderr).toContain("error[E_PLUGIN_LOCAL]");
+		expect(result.stderr).not.toContain("W_EFFECT_SKIPPED");
+	});
 });
 
 describe("go plugin", () => {

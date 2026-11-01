@@ -1,0 +1,7 @@
+affected=[{"id":"b","path":"packages/b","plugin":"node","reason":"direct","released":true,"tags":[]}]
+affected-paths<<ghadelimiter_<uuid>
+packages/b
+ghadelimiter_<uuid>
+all=false
+base=c0
+base-source=forge-last-success
