@@ -1,15 +1,23 @@
 import {
 	changelogPath,
 	changelogSection,
+	headingVersion,
 	updateChangelog,
 } from "./changelog.js";
 import { coreCodes } from "./codes.js";
 import { normalizeRoot } from "./discover.js";
-import { runHook } from "./plugins.js";
+import { pluginCtx, runHook } from "./plugins.js";
+import { frozenCopy } from "./util.js";
 
 import type { Warning } from "./errors.js";
 import type { Plan } from "./model/plan-types.js";
-import type { ReadonlyFs, Unit, VersionFile, VersionScheme } from "./plugin.js";
+import type {
+	Ctx,
+	ReadonlyFs,
+	Unit,
+	VersionFile,
+	VersionScheme,
+} from "./plugin.js";
 import type { ReleaseItem } from "./release-items.js";
 import type { Workspace } from "./workspace.js";
 
@@ -216,6 +224,10 @@ interface UnitStep {
 	prUnits: readonly string[];
 	repoUrl: string | null;
 	date: string;
+	/** Context of a plugin hook. */
+	ctx: (plugin: string, options: unknown) => Ctx;
+	/** Frozen copy of `plan` for plugin hooks, made on first use. */
+	hookPlan: () => Plan;
 }
 
 const required = (staged: Staged, path: string, unit: string): string => {
@@ -280,15 +292,64 @@ const templateStep = (staged: Staged, step: UnitStep): Warning[] => {
 	return warnings;
 };
 
+/**
+ * The owning plugin's `changelog` section, which must have one version
+ * heading, of the released version, on its first line; else `section`.
+ */
+const pluginSection = async (
+	step: UnitStep,
+	section: string,
+): Promise<string> => {
+	const { workspace, item, unit, scheme, ctx, hookPlan } = step;
+	const owner = workspace.plugins.find((p) => p.plugin.name === unit.plugin);
+	const hook = owner?.plugin.changelog;
+	if (!owner || !hook) {
+		return section;
+	}
+
+	return await runHook(unit.plugin, "changelog", async () => {
+		const result: unknown = await hook(ctx(unit.plugin, owner.options), {
+			unit,
+			plan: hookPlan(),
+			section,
+		});
+		if (typeof result !== "string") {
+			throw new TypeError("changelog must return a string");
+		}
+
+		const text = result.trim();
+		const [first = "", ...rest] = text.split("\n");
+		const version: unknown = headingVersion(first, scheme);
+		const next: unknown = scheme.parse(item.version);
+		if (
+			version === undefined ||
+			next === undefined ||
+			scheme.compare(version, next) !== 0 ||
+			rest.some((line) => headingVersion(line, scheme) !== undefined)
+		) {
+			throw new Error(
+				`section of unit "${unit.id}" must start with a heading of version ${item.version} and have no other version heading`,
+			);
+		}
+
+		return text;
+	});
+};
+
 /** Updates the unit's changelog; returns the new section, if any. */
-const changelogStep = (staged: Staged, step: UnitStep): string | undefined => {
+const changelogStep = async (
+	staged: Staged,
+	step: UnitStep,
+): Promise<string | undefined> => {
 	const { workspace, plan, unit, scheme, from, repoUrl, date, prUnits } = step;
-	const section = changelogSection(workspace, plan, {
+	const fallback = changelogSection(workspace, plan, {
 		id: unit.id,
 		repoUrl,
 		date,
 		prUnits,
 	});
+	const section =
+		fallback === undefined ? undefined : await pluginSection(step, fallback);
 	if (section !== undefined) {
 		const path = changelogPath(unit);
 		staged.files.set(
@@ -357,7 +418,8 @@ export const versionFileClaims = async (
 
 /**
  * Files of a release of `items` (stable `next`): plugin version files,
- * templates and `<root>/CHANGELOG.md` per unit, read through `fs`. Returns
+ * templates and `<root>/CHANGELOG.md` per unit, read through `fs`; the
+ * owning plugin's `changelog` hook may replace a unit's section. Returns
  * only files whose content changes, and each unit's changelog section;
  * checks claims first. Templates skip first releases and warn
  * `W_VERSION_FILE_NO_MATCH` without any match; a missing version file is
@@ -397,6 +459,9 @@ export const releaseFiles = async (
 	};
 	const sections = new Map<string, string>();
 	const warnings: Warning[] = [];
+	const ctx = pluginCtx({ fs, repo: { name: workspace.repo } }, warnings);
+	let frozen: Plan | undefined;
+	const hookPlan = () => (frozen ??= frozenCopy(plan));
 
 	for (const item of items) {
 		const prUnits = items
@@ -421,11 +486,14 @@ export const releaseFiles = async (
 				prUnits,
 				repoUrl,
 				date,
+				ctx,
+				hookPlan,
 			};
 			// eslint-disable-next-line no-await-in-loop -- files are written in order
 			await versionFileStep(staged, step, pluginFiles.get(id) ?? []);
 			warnings.push(...templateStep(staged, step));
-			const section = changelogStep(staged, step);
+			// eslint-disable-next-line no-await-in-loop -- files are written in order
+			const section = await changelogStep(staged, step);
 			if (section !== undefined) {
 				sections.set(id, section);
 			}

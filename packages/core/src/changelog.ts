@@ -120,7 +120,7 @@ const dependencyLines = (deps: readonly ChangelogDependency[]): string => {
 };
 
 /** Version of a version heading line, else undefined. */
-const headingVersion = <V>(
+export const headingVersion = <V>(
 	line: string,
 	scheme: VersionScheme<V>,
 ): V | undefined => {

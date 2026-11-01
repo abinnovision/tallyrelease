@@ -1,0 +1,39 @@
+description: >-
+  The owning plugin's changelog hook replaces the section of its unit; a unit
+  of another plugin keeps the default section, and releaseNotes reads both.
+plugins:
+  - name: stub
+    units:
+      - { id: a, root: packages/a }
+    changelog: "## 1.1.0 (2026-10-15)\n\nCustom notes for a.\n"
+  - name: other
+    units:
+      - { id: b, root: packages/b }
+config:
+  plugins: { stub: {}, other: {} }
+  defaults: { release: true }
+  branches:
+    - { name: main, line: default }
+git:
+  commits:
+    - id: c0
+      files: { packages/a/i.ts: "0", packages/b/i.ts: "0" }
+    - id: c1
+      message: "feat: both"
+      files: { packages/a/i.ts: "1", packages/b/i.ts: "1" }
+  tags:
+    - { name: a-v1.0.0, commit: c0 }
+    - { name: b-v1.0.0, commit: c0 }
+base: c0
+plan: { all: true }
+release:
+  files: { date: "2026-10-15" }
+expect:
+  paths: [packages/a/CHANGELOG.md, packages/b/CHANGELOG.md]
+  files:
+    packages/a/CHANGELOG.md: "# Changelog\n\n## 1.1.0 (2026-10-15)\n\nCustom notes for a.\n"
+    packages/b/CHANGELOG.md: "# Changelog\n\n## 1.1.0 (2026-10-15)\n\n\n### Features\n\n* both\n"
+  notes:
+    a: "## 1.1.0 (2026-10-15)\n\nCustom notes for a."
+    b: "## 1.1.0 (2026-10-15)\n\n\n### Features\n\n* both"
+  fileWarnings: []

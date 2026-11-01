@@ -1,0 +1,29 @@
+description: >-
+  A changelog section that does not start with a heading of the released
+  version is a hook error.
+plugins:
+  - name: stub
+    units:
+      - { id: a, root: packages/a }
+    changelog: "## 1.0.0\n\nWrong version.\n"
+config:
+  plugins: { stub: {} }
+  defaults: { release: true }
+  branches:
+    - { name: main, line: default }
+git:
+  commits:
+    - id: c0
+      files: { packages/a/i.ts: "0" }
+    - id: c1
+      message: "feat: a"
+      files: { packages/a/i.ts: "1" }
+  tags:
+    - { name: a-v1.0.0, commit: c0 }
+base: c0
+plan: { all: true }
+release:
+  files: { date: "2026-10-15" }
+error:
+  code: E_PLUGIN_HOOK
+  details: { plugin: stub, hook: changelog }

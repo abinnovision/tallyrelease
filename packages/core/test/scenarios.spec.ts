@@ -13,6 +13,7 @@ import {
 	planEquals,
 	releaseFiles,
 	releaseItems,
+	releaseNotes,
 	withReleased,
 } from "../src/index.js";
 import { memoryFs, memoryGit } from "../src/testing/index.js";
@@ -43,6 +44,8 @@ interface Stub {
 	changes?: Change[];
 	/** Returned by `validate`. */
 	validate?: string[];
+	/** Section returned by `changelog`. */
+	changelog?: string;
 	/** Version file paths by unit id; `write` puts the version on one line. */
 	versionFiles?: Record<string, string[]>;
 }
@@ -70,7 +73,8 @@ interface Scenario {
 	plan?: { all?: boolean; fails?: boolean; released?: boolean };
 	/**
 	 * With `plan`: release items, `planEquals` per marker, the changelog
-	 * section of each unit with a stable `next` and `releaseFiles` of all items.
+	 * section of each unit with a stable `next` and `releaseFiles` of all items
+	 * with the `releaseNotes` of each unit.
 	 */
 	release?: {
 		markers?: Record<string, MarkerRelease[]>;
@@ -117,6 +121,9 @@ const stubPlugin = (stub: Stub): Plugin => {
 		edges: hook("edges", stub.edges ?? []),
 		inputs: hook("inputs", { global: stub.inputs ?? [] }),
 		validate: hook("validate", stub.validate),
+		...(stub.changelog !== undefined && {
+			changelog: () => stub.changelog ?? "",
+		}),
 		...(stub.schemes && {
 			schemes: Object.fromEntries(stub.schemes.map((n) => [n, SCHEMES[n]])),
 		}),
@@ -210,6 +217,16 @@ const run = async (s: Scenario) => {
 				files: Object.fromEntries(written.files),
 				paths: [...written.files.keys()].sort(),
 				fileWarnings: written.warnings,
+				notes: Object.fromEntries(
+					plan.units.map((u) => [
+						u.id,
+						releaseNotes(
+							workspace,
+							u.id,
+							(path) => written.files.get(path) ?? fs.read(path),
+						),
+					]),
+				),
 			}),
 			equals: Object.fromEntries(
 				Object.entries(markers).map(([name, marker]) => [
