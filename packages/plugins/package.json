@@ -1,0 +1,75 @@
+{
+	"name": "@tallyrelease/plugins",
+	"version": "0.4.1",
+	"description": "Built-in ecosystem plugins of tallyrelease",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/abinnovision/tallyrelease.git",
+		"directory": "packages/plugins"
+	},
+	"license": "Apache-2.0",
+	"author": {
+		"name": "abi group GmbH",
+		"email": "info@abigroup.io",
+		"url": "https://abigroup.io"
+	},
+	"type": "module",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"development": "./src/index.ts",
+			"import": "./dist/index.js",
+			"default": "./dist/index.js"
+		}
+	},
+	"files": [
+		"dist"
+	],
+	"scripts": {
+		"build": "tsc --build tsconfig.build.json",
+		"check:purity": "node ../../tools/check-purity.mjs src/index.ts",
+		"format:check": "prettier --check '{{src,test}/**/*,*}.{{t,j}s{,x},json{,5},md,y{,a}ml,css,html,gql,graphql}'",
+		"format:fix": "prettier --write '{{src,test}/**/*,*}.{{t,j}s{,x},json{,5},md,y{,a}ml,css,html,gql,graphql}'",
+		"lint:check": "eslint '{{src,test}/**/*,*}.{t,j}s{,x}'",
+		"lint:fix": "eslint '{{src,test}/**/*,*}.{t,j}s{,x}' --fix",
+		"test-unit": "vitest --passWithNoTests --run --coverage --config vitest.config.ts --project='*#unit'",
+		"test-unit:watch": "vitest --passWithNoTests --config vitest.config.ts --project='*#unit'",
+		"typecheck": "tsc -p tsconfig.json"
+	},
+	"lint-staged": {
+		"{{src,test}/**/*,*}.{{t,j}s{,x},json{,5},md,y{,a}ml,css,html,gql,graphql}": "prettier --write",
+		"{{src,test}/**/*,*}.{t,j}s{,x}": "eslint --fix"
+	},
+	"prettier": "@abinnovision/prettier-config",
+	"dependencies": {
+		"@tallyrelease/core": "workspace:^",
+		"yaml": "^2.9.1",
+		"zod": "^4.6.7"
+	},
+	"devDependencies": {
+		"@abinnovision/eslint-config-base": "^3.4.2",
+		"@abinnovision/prettier-config": "^2.2.0",
+		"@internal/tsconfig": "workspace:*",
+		"@types/node": "^26.6.5",
+		"@vitest/coverage-v8": "^5.0.5",
+		"eslint": "^10.13.0",
+		"prettier": "^3.9.10",
+		"typescript": "^6.0.3",
+		"vite": "^8.3.5",
+		"vitest": "^5.0.5"
+	},
+	"engines": {
+		"node": ">=24"
+	},
+	"publishConfig": {
+		"access": "public",
+		"exports": {
+			".": {
+				"types": "./dist/index.d.ts",
+				"import": "./dist/index.js",
+				"default": "./dist/index.js"
+			}
+		},
+		"npm": true
+	}
+}
