@@ -1,6 +1,6 @@
 # Plugin authoring guide
 
-A plugin teaches tallyrelease about an ecosystem: where its units live, how they depend on each other, where their versions are written and, optionally, how versions are numbered or where release intent comes from. `node`, `php`, `kustomize` and `dart` are built in, as is the `changesets` intent source. Anything else is a plugin you write, either as a file in your repository or as an npm package.
+A plugin teaches tallyrelease about an ecosystem: where its units live, how they depend on each other, where their versions are written and, optionally, how versions are numbered or where release intent comes from. `node`, `php`, `kustomize`, `dart` and `go` are built in, as is the `changesets` intent source. Anything else is a plugin you write, either as a file in your repository or as an npm package.
 
 This guide covers the contract, testing, distribution, the trust model and purity. [configuration.md](configuration.md) lists every config key and [errors.md](errors.md) every error code. Plugin API version 1 is in beta like the rest of tallyrelease: until 1.0, a minor release may change it.
 
@@ -311,11 +311,38 @@ plugins:
 
 With `buildOffset: 1000`, a fix on a flutter app tagged `v1.2.0+5` after 40 first-parent commits releases `1.2.1+1040`; a tagged build of `1.2.0+2000` would give `1.2.1+2001` instead.
 
+## The go plugin
+
+`go` finds a unit for every `go.mod`. The unit id follows the directory (the repository name at the root), `version` is `tag` and there is no version file. The module path comes from the `module` line and is kept in `unit.meta.go.modulePath`. Relative `replace` directives (`replace example.com/b => ../b`) become edges from the replaced module to the module that declares them; replacements by path outside the repository or by another module are ignored. The tag format is `<root>/v{version}` as Go expects for a module below the root, and `v{version}` at the repository root.
+
+Its `validate` hook enforces the major version path rule. A module whose next version is 2.0.0 or higher must end its module path in `/v<major>`, and a path that ends in a different `/vN` is rejected too. The hook throws, so the command fails with `E_PLUGIN_HOOK` and a message that starts with `E_GO_MAJOR_PATH:` and names the unit, the module path and the expected suffix. Change the `module` line in the same change as the breaking commit, or every command that plans the unit fails.
+
+## Releasing units without a plugin
+
+A unit does not need a plugin or a manifest. A `units` entry for a root that no plugin discovered creates a config-only unit, and `release: true` releases it with tags and a changelog at `<root>/CHANGELOG.md`:
+
+```yaml
+units:
+  tools/setup:
+    release: true
+    versionFiles:
+      - { file: docs/install.md, pattern: "setup@{version}" }
+      - { file: tools/setup/env.sh }
+```
+
+`versionFiles` belongs to the unit whichever plugin owns it. An entry with `pattern` replaces the match when it holds an earlier version of the unit and leaves the file alone on a first release. An entry without `pattern` rewrites the version on every line that carries `# x-tallyrelease-version` or `<!-- x-tallyrelease-version -->`, also on a first release:
+
+```sh
+VERSION=1.0.0 # x-tallyrelease-version
+```
+
+Use this for scripts, Dockerfiles, Helm values or docs that name the version. A plugin is only needed to discover units, edges or version files of a whole ecosystem. See [configuration.md](configuration.md) for the `versionFiles` keys.
+
 ## Distribution
 
 A plugin is loaded from the config, by the key under `plugins`. The cli resolves each key in this order:
 
-1. A built-in plugin of that name (`node`, `php`, `kustomize`, `dart`, `changesets`). Built-ins cannot be replaced: setting `path` or `package` on one fails with `E_PLUGIN_LOAD`.
+1. A built-in plugin of that name (`node`, `php`, `kustomize`, `dart`, `go`, `changesets`). Built-ins cannot be replaced: setting `path` or `package` on one fails with `E_PLUGIN_LOAD`.
 2. `plugins.<name>.path`, a local plugin.
 3. `plugins.<name>.package`, an npm package. `path` and `package` exclude each other.
 
