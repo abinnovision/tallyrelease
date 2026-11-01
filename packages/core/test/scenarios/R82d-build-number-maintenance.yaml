@@ -1,0 +1,57 @@
+description: >-
+  On a maintenance line, releases and prereleases are numbered and each target
+  unit with buildNumber warns once, also with a release and a prerelease; a
+  target unit without it does not warn.
+branch: release/1.x
+plugins:
+  - name: stub
+    units:
+      - { id: a, root: packages/a }
+      - { id: b, root: packages/b }
+      - { id: n, root: packages/n }
+config:
+  plugins: { stub: {} }
+  defaults: { release: true }
+  units:
+    packages/a: { buildNumber: {} }
+    packages/b: { buildNumber: { offset: 10 } }
+  branches:
+    - { name: main, line: default }
+    - { name: "release/{major}.x", line: maintenance, channel: "rc-{major}" }
+git:
+  commits:
+    - id: c0
+      files:
+        packages/a/index.ts: "0"
+        packages/b/index.ts: "0"
+        packages/n/index.ts: "0"
+    - id: c1
+      message: "chore(release): a@1.0.1, n@1.0.1"
+      files:
+        { packages/a/CHANGELOG.md: "1.0.1", packages/n/CHANGELOG.md: "1.0.1" }
+    - id: c2
+      message: "fix: patch a and b"
+      files: { packages/a/index.ts: "2", packages/b/index.ts: "2" }
+  tags:
+    - { name: a-v1.0.0, commit: c0 }
+    - { name: b-v1.0.0, commit: c0 }
+    - { name: n-v1.0.0, commit: c0 }
+    - { name: a-v1.0.1, commit: c1 }
+    - { name: n-v1.0.1, commit: c1 }
+base: c0
+plan: { released: true, buildNumbers: true }
+expect:
+  plan:
+    line: { kind: maintenance }
+    released:
+      - { id: a, releaseSha: c1, line: maintenance }
+      - { id: n, releaseSha: c1, line: maintenance }
+    units:
+      - { id: a, kind: prerelease }
+      - { id: b, kind: prerelease }
+      - { id: n }
+  buildNumbers:
+    numbers: [2, null, 3, 13]
+    warnings:
+      - { code: W_BUILD_NUMBER_MAINTENANCE, unit: a }
+      - { code: W_BUILD_NUMBER_MAINTENANCE, unit: b }

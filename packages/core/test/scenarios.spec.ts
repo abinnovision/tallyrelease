@@ -6,6 +6,7 @@ import { parse } from "yaml";
 import { changelogSection } from "../src/changelog.js";
 import { collectPlanFacts } from "../src/facts.js";
 import {
+	buildNumbers,
 	computeAffected,
 	computePlan,
 	flutter,
@@ -68,9 +69,16 @@ interface Scenario {
 	branch?: string;
 	/**
 	 * Collects plan facts and computes the plan when set; with `fails` a plan
-	 * error is returned as `planError`; `released` fills `plan.released`.
+	 * error is returned as `planError`; `released` fills `plan.released`;
+	 * `buildNumbers` numbers the releases, then the prereleases not released at
+	 * HEAD, in the order of the release list.
 	 */
-	plan?: { all?: boolean; fails?: boolean; released?: boolean };
+	plan?: {
+		all?: boolean;
+		fails?: boolean;
+		released?: boolean;
+		buildNumbers?: boolean;
+	};
 	/**
 	 * With `plan`: release items, `planEquals` per marker, the changelog
 	 * section of each unit with a stable `next` and `releaseFiles` of all items
@@ -188,6 +196,28 @@ const run = async (s: Scenario) => {
 				})
 		: undefined;
 
+	const atHead = new Set(
+		plan?.released.filter((r) => r.releaseSha === plan.head).map((r) => r.id),
+	);
+	const numbered =
+		plan &&
+		s.plan?.buildNumbers &&
+		(await buildNumbers(
+			workspace,
+			[
+				...plan.released.map((r) => ({ id: r.id, sha: r.releaseSha })),
+				...plan.units
+					.filter(
+						(u) =>
+							u.kind === "prerelease" &&
+							u.version !== null &&
+							!atHead.has(u.id),
+					)
+					.map((u) => ({ id: u.id, sha: plan.head })),
+			],
+			{ git, line: plan.line?.kind ?? "default" },
+		));
+
 	const { markers = {}, changelog, files } = s.release ?? {};
 	const items = plan ? releaseItems(workspace, plan) : [];
 	const pr = (item: (typeof items)[number]) =>
@@ -260,6 +290,7 @@ const run = async (s: Scenario) => {
 		facts,
 		plan,
 		planError,
+		...(numbered && { buildNumbers: numbered }),
 	};
 };
 

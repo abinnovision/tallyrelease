@@ -72,6 +72,7 @@ export type { TagFormat } from "./tags.js";
 export type { IntentEntry, Workspace, WorkspaceInput } from "./workspace.js";
 
 export { computeAffected } from "./affected.js";
+export { buildNumbers } from "./build-numbers.js";
 export { calver } from "./calver.js";
 export { maintenanceCut } from "./branches.js";
 export { releaseNotes } from "./changelog.js";
