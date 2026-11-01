@@ -79,7 +79,7 @@ export const cliCodes = defineCodes({
 	},
 	E_PLUGIN_LOAD: {
 		cause:
-			"A plugin set with `plugins.<name>.path` or `plugins.<name>.package` could not be loaded: the file is missing or outside the repository, the package is not installed in the repository's `node_modules`, the module fails to import, or it does not export a plugin with that name. A built-in plugin (`node`, `php`, `kustomize`) that sets `path` or `package` is also rejected, since built-ins cannot be replaced.",
+			"A plugin set with `plugins.<name>.path` or `plugins.<name>.package` could not be loaded: the file is missing or outside the repository, the package is not installed in the repository's `node_modules`, the module fails to import, or it does not export a plugin with that name. A built-in plugin (`node`, `php`, `kustomize`, `dart`) that sets `path` or `package` is also rejected, since built-ins cannot be replaced.",
 		fix: "Check the path (relative to the repository root) or install the package at the repository root, and check that the module's default export is a plugin whose `name` is the config key. Remove `path` and `package` from built-in plugins.",
 	},
 	E_PLUGIN_LOCAL: {

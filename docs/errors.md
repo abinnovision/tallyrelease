@@ -214,7 +214,7 @@ Fix: Fix the cause given in the message, usually a malformed manifest or version
 
 ### E_PLUGIN_LOAD
 
-Cause: A plugin set with `plugins.<name>.path` or `plugins.<name>.package` could not be loaded: the file is missing or outside the repository, the package is not installed in the repository's `node_modules`, the module fails to import, or it does not export a plugin with that name. A built-in plugin (`node`, `php`, `kustomize`) that sets `path` or `package` is also rejected, since built-ins cannot be replaced.
+Cause: A plugin set with `plugins.<name>.path` or `plugins.<name>.package` could not be loaded: the file is missing or outside the repository, the package is not installed in the repository's `node_modules`, the module fails to import, or it does not export a plugin with that name. A built-in plugin (`node`, `php`, `kustomize`, `dart`) that sets `path` or `package` is also rejected, since built-ins cannot be replaced.
 
 Fix: Check the path (relative to the repository root) or install the package at the repository root, and check that the module's default export is a plugin whose `name` is the config key. Remove `path` and `package` from built-in plugins.
 
@@ -238,7 +238,7 @@ Fix: Fix the options named in the message, or remove them.
 
 ### E_PLUGIN_UNKNOWN
 
-Cause: `plugins` lists a name that matches no built-in plugin (`node`, `php`, `kustomize`).
+Cause: `plugins` lists a name that matches no built-in plugin (`node`, `php`, `kustomize`, `dart`).
 
 Fix: Correct the plugin name in `plugins`, or remove the entry.
 
