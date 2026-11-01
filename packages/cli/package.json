@@ -22,6 +22,7 @@
 			"default": "./dist/index.js"
 		},
 		"./affected.schema.json": "./dist/affected.schema.json",
+		"./explain.schema.json": "./dist/explain.schema.json",
 		"./plan.schema.json": "./dist/plan.schema.json",
 		"./tallyrelease.schema.json": "./dist/tallyrelease.schema.json"
 	},
@@ -84,6 +85,7 @@
 				"default": "./dist/index.js"
 			},
 			"./affected.schema.json": "./dist/affected.schema.json",
+			"./explain.schema.json": "./dist/explain.schema.json",
 			"./plan.schema.json": "./dist/plan.schema.json",
 			"./tallyrelease.schema.json": "./dist/tallyrelease.schema.json"
 		},

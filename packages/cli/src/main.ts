@@ -164,7 +164,18 @@ export const main = async (
 		.argument("<unit>", "unit id")
 		.option("--branch <name>", "plan for this branch (default: current)")
 		.option("--base <ref>", "diff against this ref")
-		.action(async (unit: string, flags: ExplainFlags) => {
+		.option("--json", "print the explanation (same as --format json)")
+		.addOption(
+			new Option("--format <format>", "output format").choices([
+				"text",
+				"json",
+			]),
+		)
+		.action(async (unit: string, flags: ExplainFlags, cmd: Command) => {
+			if (flags.json && flags.format !== undefined) {
+				cmd.error("--json and --format cannot be combined", { exitCode: 2 });
+			}
+
 			await explain(session(), unit, flags);
 		});
 
