@@ -135,7 +135,6 @@ export const run = async (session: Session, flags: RunFlags): Promise<void> => {
 				git,
 				opts: setup.opts,
 				mergeSha: releaseSha,
-				releases: undefined,
 			});
 			atParent.set(releaseSha, plan?.plan.units ?? []);
 		}

@@ -293,7 +293,10 @@ export const githubForge = (opts: GithubForgeOptions): Forge => {
 
 			return release && { id: release.data.id, url: release.data.html_url };
 		},
-		createRelease: async (repo, { tag, name, body, makeLatest }) => {
+		createRelease: async (
+			repo,
+			{ tag, name, body, makeLatest, prerelease = false },
+		) => {
 			const { data } = await conflict(
 				octokit.rest.repos.createRelease({
 					...repo,
@@ -301,6 +304,7 @@ export const githubForge = (opts: GithubForgeOptions): Forge => {
 					name,
 					body,
 					make_latest: makeLatest ? "true" : "false",
+					prerelease,
 				}),
 			);
 

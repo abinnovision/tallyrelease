@@ -106,6 +106,8 @@ export const planSchema = z.strictObject({
 			catchUp: z.boolean(),
 			forge: forgeSchema,
 			line: z.enum(["default", "maintenance"]),
+			/** A cut: a prerelease tag of the line's cut channel. */
+			prerelease: z.boolean(),
 			latest: z.boolean(),
 		}),
 	),
@@ -120,12 +122,14 @@ export const releaseEntrySchema = z.strictObject({
 	path: z.string(),
 	kind: z.enum(["release", "prerelease"]),
 	version: z.string(),
+	/** Build or cut channel of a prerelease, null for a release. */
 	channel: z.string().nullable(),
+	/** Null for build prereleases. */
 	tag: z.string().nullable(),
 	releaseSha: z.string(),
 	/** Not built from HEAD by this run (release sha differs from HEAD, or the unit is outside the build set). */
 	catchUp: z.boolean(),
-	/** Null for prereleases. */
+	/** Null for build prereleases. */
 	forge: forgeSchema,
 	/** Highest stable version tagged for the unit, never on a maintenance line; false for prereleases. */
 	latest: z.boolean(),

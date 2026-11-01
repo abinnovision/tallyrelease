@@ -15,6 +15,16 @@ export const staleReason = {
 		`its head ${short(head)} is not the release commit ${short(releaseCommit)}`,
 	planDiffers: (parent: string) =>
 		`its releases differ from the plan at ${short(parent)}, the commit it was merged onto`,
+	headOffLine: (head: string, parent: string) =>
+		`its planned commit ${short(head)} is not on the first-parent chain of ${short(parent)}, the commit it was merged onto`,
+	behindCut: (head: string) =>
+		`its planned commit ${short(head)} predates the latest prerelease tag`,
+	cutDiffers: (head: string, parent: string) =>
+		head === parent
+			? `the plan at ${short(head)}, its planned commit and the commit it was merged onto, no longer matches its marker`
+			: `its prereleases differ from the plan at ${short(head)}, its planned commit, or their release changed by ${short(parent)}, the commit it was merged onto`,
+	tagTaken: (tag: string, sha: string) =>
+		`its tag ${tag} exists at ${short(sha)}`,
 };
 
 /** Comment on a release PR labelled stale. */

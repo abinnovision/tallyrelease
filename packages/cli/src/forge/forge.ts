@@ -52,6 +52,8 @@ export interface NewRelease {
 	name: string;
 	body: string;
 	makeLatest: boolean;
+	/** Marks the release as a prerelease. */
+	prerelease?: boolean;
 }
 
 /** Code host API used by the cli. */

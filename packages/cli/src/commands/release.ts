@@ -1,8 +1,12 @@
 import {
 	computePlan,
+	cutEquals,
+	cutReleaseNotes,
 	decodeMarker,
 	planEquals,
+	previousCut,
 	releasedFromTags,
+	releaseItems,
 	releaseNotes,
 } from "@tallyrelease/core";
 
@@ -24,18 +28,21 @@ import type { Forge, ReleasePr, RepoRef } from "../forge/forge.js";
 import type { RepoGit } from "../git/reader.js";
 import type { Session } from "../session.js";
 import type {
+	Marker,
 	MarkerRelease,
 	Plan,
+	ReadonlyFs,
 	ReleasedUnit,
 	TagRef,
+	Warning,
 	Workspace,
 } from "@tallyrelease/core";
 
 /**
  * GitHub release per entry unless one exists (a 422 on create means it does);
- * latest for entries marked `latest`. Returns the tags of the missing
- * releases, created unless `dryRun`, and the release URL of every entry,
- * null for one not created in a dry run.
+ * latest for entries marked `latest`, a prerelease for cuts with the body from
+ * `notes`. Returns the tags of the missing releases, created unless `dryRun`,
+ * and the release URL of every entry, null for one not created in a dry run.
  */
 const createReleases = async (
 	session: Session,
@@ -45,12 +52,15 @@ const createReleases = async (
 		mergeSha,
 		workspace,
 		dryRun,
+		notes,
 	}: {
 		forge: Forge;
 		repo: RepoRef;
 		mergeSha: string;
 		workspace: Workspace;
 		dryRun: boolean | undefined;
+		/** Cut release notes by unit id. */
+		notes: ReadonlyMap<string, string> | undefined;
 	},
 	{ released }: { released: readonly ReleasedUnit[] },
 ): Promise<{ created: string[]; urls: Map<string, string | null> }> => {
@@ -75,10 +85,13 @@ const createReleases = async (
 				tag: r.tag,
 				name: releaseName(r),
 				body:
-					releaseNotes(workspace, r.id, (path) =>
-						session.readAt(mergeSha, path),
-					) ?? "",
+					(r.prerelease
+						? notes?.get(r.id)
+						: releaseNotes(workspace, r.id, (path) =>
+								session.readAt(mergeSha, path),
+							)) ?? "",
 				makeLatest: r.latest,
+				prerelease: r.prerelease,
 			});
 			urls.set(r.tag, release.url);
 		} catch (error) {
@@ -95,47 +108,238 @@ const createReleases = async (
 };
 
 /**
- * Workspace and plan at the first parent of `mergeSha`; `plan` is undefined
- * when `releases` are given and do not equal it.
+ * Why a merged prerelease PR planned at `marker.head` cannot be tagged at
+ * `mergeSha` on `atP` (the plan at the first parent of its merge), else
+ * undefined.
  */
+const cutProblem = async (
+	session: Session,
+	{
+		git,
+		opts,
+		marker,
+		mergeSha,
+		atP,
+	}: {
+		git: RepoGit;
+		opts: PlanSetup["opts"];
+		marker: Marker;
+		mergeSha: string;
+		atP: PlannedCommit;
+	},
+): Promise<string | undefined> => {
+	const { head } = marker;
+	const parent = atP.plan.head;
+	if (
+		(await git.resolve(head)) === undefined ||
+		!(await git.isFirstParentAncestor(head, parent))
+	) {
+		return staleReason.headOffLine(head, parent);
+	}
+
+	const ids = new Set(marker.releases.map((r) => r.id));
+	if (!(await descendsFromCuts(atP, { git, head, ids }))) {
+		return staleReason.behindCut(head);
+	}
+
+	const current = await Promise.all(
+		marker.releases.map(
+			async (r) => [r.tag, await git.resolve(r.tag)] as const,
+		),
+	);
+	const taken = current.find(
+		([, sha]) => sha !== undefined && sha !== mergeSha,
+	);
+	if (taken?.[1] !== undefined) {
+		return staleReason.tagTaken(taken[0], taken[1]);
+	}
+
+	const atH =
+		head === parent
+			? atP
+			: await planAtCommit(session, { git, opts, sha: head });
+
+	return cutEquals(marker.releases, atH, atP)
+		? undefined
+		: staleReason.cutDiffers(head, parent);
+};
+
+/**
+ * Release notes of the cuts in `releases` at `atP`, by unit id; undefined
+ * when every cut has a forge release.
+ */
+const missingCutNotes = async (
+	session: Session,
+	{
+		git,
+		forge,
+		repo,
+		atP,
+		releases,
+	}: {
+		git: RepoGit;
+		forge: Forge;
+		repo: RepoRef;
+		atP: PlannedCommit;
+		releases: readonly MarkerRelease[];
+	},
+): Promise<{ notes: Map<string, string>; warnings: Warning[] } | undefined> => {
+	const found = await Promise.all(
+		releases.map(async (r) => await forge.releaseByTag(repo, r.tag)),
+	);
+	if (found.every((r) => r !== undefined)) {
+		return undefined;
+	}
+
+	const byId = new Map(releases.map((r) => [r.id, r]));
+	const versions = new Map(releases.map((r) => [r.id, r.version]));
+	const prUnits = [...byId.keys()];
+	const repoUrl = await session.repoUrl();
+	const date = session.clock().toISOString().slice(0, 10);
+	const notes = new Map<string, string>();
+	const warnings: Warning[] = [];
+	/* eslint-disable no-await-in-loop -- hooks run in order */
+	for (const item of releaseItems(atP.workspace, atP.plan)) {
+		const version = item.units
+			.map((id) => byId.get(id)?.version)
+			.find((v) => v !== undefined);
+		if (version === undefined) {
+			continue;
+		}
+
+		const result = await cutReleaseNotes(atP.workspace, atP.plan, {
+			fs: atP.fs,
+			item: {
+				...item,
+				version,
+				tags: item.units.flatMap((id) => {
+					const r = byId.get(id);
+
+					return r ? [{ id, tag: r.tag }] : [];
+				}),
+			},
+			prUnits,
+			versions,
+			date,
+			repoUrl,
+			git,
+		});
+		for (const [id, note] of result.notes) {
+			notes.set(id, note);
+		}
+
+		warnings.push(...result.warnings);
+	}
+	/* eslint-enable no-await-in-loop */
+
+	return { notes, warnings };
+};
+
+/**
+ * Plan at the first parent of the merge of `pr`, else why the PR cannot be
+ * tagged there; a PR whose tags exist at the merge is not checked.
+ */
+const mergedPlan = async (
+	session: Session,
+	{
+		git,
+		opts,
+		pr,
+		marker,
+		mergeSha,
+		tagged,
+	}: {
+		git: RepoGit;
+		opts: PlanSetup["opts"];
+		pr: ReleasePr;
+		marker: Marker;
+		mergeSha: string;
+		tagged: boolean;
+	},
+): Promise<PlannedCommit | string> => {
+	const { parent, plan: atP } = await planAtParent(session, {
+		git,
+		opts,
+		mergeSha,
+	});
+	if (!atP) {
+		return staleReason.planDiffers(parent);
+	}
+
+	if (tagged) {
+		return atP;
+	}
+
+	if (pr.head.startsWith(CUT_PREFIX)) {
+		return (
+			(await cutProblem(session, { git, opts, marker, mergeSha, atP })) ?? atP
+		);
+	}
+
+	return planEquals(marker.releases, atP.plan, atP.workspace)
+		? atP
+		: staleReason.planDiffers(parent);
+};
+
+/** Workspace, files and plan of a commit. */
+interface PlannedCommit {
+	workspace: Workspace;
+	plan: Plan;
+	fs: ReadonlyFs;
+}
+
+/** Head branch prefix of the prerelease PRs of every base branch. */
+export const CUT_PREFIX = "tallyrelease/prerelease/";
+
+/** Workspace, files and plan (`all`) at `sha`, read through `git`. */
+export const planAtCommit = async (
+	session: Session,
+	{ git, opts, sha }: { git: RepoGit; opts: PlanSetup["opts"]; sha: string },
+): Promise<PlannedCommit> =>
+	await session.workspaceAt(sha, async (workspace, fs) => ({
+		workspace,
+		fs,
+		plan: await computePlan(workspace, git, {
+			...opts,
+			head: sha,
+			base: sha,
+			fs,
+			all: true,
+		}),
+	}));
+
+/** Workspace and plan at the first parent of `mergeSha`, undefined without one. */
 export const planAtParent = async (
 	session: Session,
 	{
 		git,
 		opts,
 		mergeSha,
-		releases,
-	}: {
-		git: RepoGit;
-		opts: PlanSetup["opts"];
-		mergeSha: string;
-		releases: readonly MarkerRelease[] | undefined;
-	},
-): Promise<{
-	parent: string;
-	plan: { workspace: Workspace; plan: Plan } | undefined;
-}> => {
+	}: { git: RepoGit; opts: PlanSetup["opts"]; mergeSha: string },
+): Promise<{ parent: string; plan: PlannedCommit | undefined }> => {
 	const parent = await git.resolve(`${mergeSha}^1`);
-	if (parent === undefined) {
-		return { parent: mergeSha, plan: undefined };
-	}
 
-	return {
-		parent,
-		plan: await session.workspaceAt(parent, async (workspace, fs) => {
-			const plan = await computePlan(workspace, git, {
-				...opts,
-				head: parent,
-				base: parent,
-				fs,
-				all: true,
-			});
+	return parent === undefined
+		? { parent: mergeSha, plan: undefined }
+		: { parent, plan: await planAtCommit(session, { git, opts, sha: parent }) };
+};
 
-			return releases === undefined || planEquals(releases, plan, workspace)
-				? { workspace, plan }
-				: undefined;
-		}),
-	};
+/**
+ * True when `head` descends from the previous cut tag (on `at.plan.head`'s
+ * chain) of each unit in `ids`.
+ */
+export const descendsFromCuts = async (
+	at: Pick<PlannedCommit, "workspace" | "plan">,
+	{ git, head, ids }: { git: RepoGit; head: string; ids: ReadonlySet<string> },
+): Promise<boolean> => {
+	const previous = await previousCut(at.workspace, at.plan, { git });
+	const found = await Promise.all(
+		[...previous].map(async ([id, tag]) =>
+			tag === null || !ids.has(id) ? true : await git.isAncestor(tag.sha, head),
+		),
+	);
+
+	return found.every(Boolean);
 };
 
 /** `git` with `local` tags on top; dry runs tag here instead of the repository. */
@@ -252,6 +456,7 @@ export const reconcile = async (
 		state: "merged",
 	});
 	const lines: string[] = [];
+	const warnings: Warning[] = [];
 	const reconciled: Reconciled[] = [];
 	const line = reconcileLines(flags.dryRun);
 
@@ -297,18 +502,31 @@ export const reconcile = async (
 		);
 		// Tags already at the merge: a run after a partial failure; no plan check.
 		const tagged = current.every((sha) => sha === mergeSha);
-		const planned = await planAtParent(session, {
+		const atP = await mergedPlan(session, {
 			git,
 			opts,
+			pr,
+			marker,
 			mergeSha,
-			releases: tagged ? undefined : marker.releases,
+			tagged,
 		});
-		if (!planned.plan) {
-			await stale(pr, staleReason.planDiffers(planned.parent));
+		if (typeof atP === "string") {
+			await stale(pr, atP);
 			continue;
 		}
 
-		const { workspace, plan } = planned.plan;
+		const { workspace, plan } = atP;
+		// Cut notes before any effect, only for missing releases.
+		const cutNotes = pr.head.startsWith(CUT_PREFIX)
+			? await missingCutNotes(session, {
+					git,
+					forge,
+					repo,
+					atP,
+					releases: marker.releases,
+				})
+			: undefined;
+		warnings.push(...(cutNotes?.warnings ?? []));
 		for (const t of tags) {
 			await tag(t, mergeSha);
 		}
@@ -350,6 +568,7 @@ export const reconcile = async (
 				mergeSha,
 				workspace,
 				dryRun: flags.dryRun,
+				notes: cutNotes?.notes,
 			},
 			{ released },
 		);
@@ -373,7 +592,7 @@ export const reconcile = async (
 	}
 	/* eslint-enable no-await-in-loop */
 
-	session.warn(setup.warnings);
+	session.warn([...setup.warnings, ...warnings]);
 	session.stdout.write(reconcileText(lines));
 
 	return reconciled;
