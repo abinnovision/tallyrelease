@@ -51,6 +51,37 @@ describe("configJsonSchema", () => {
 		expect(validate({ bumps: { types: { feat: "none" } } })).toBe(false);
 	});
 
+	it("accepts channels and the deprecated channel", () => {
+		const rule = { name: "main", line: "default" };
+		expect(
+			validate({ branches: [{ ...rule, channels: { cut: "beta" } }] }),
+		).toBe(true);
+		expect(
+			validate({
+				branches: [
+					{ ...rule, channel: "a", channels: { build: "a", cut: "b" } },
+				],
+			}),
+		).toBe(true);
+		expect(validate({ branches: [{ ...rule, channels: {} }] })).toBe(false);
+		expect(validate({ branches: [{ ...rule, channels: { x: "a" } }] })).toBe(
+			false,
+		);
+		expect(
+			configSchema.safeParse({ branches: [{ ...rule, channels: {} }] }).success,
+		).toBe(false);
+		const schema = configJsonSchema() as unknown as {
+			properties: {
+				branches: {
+					items: { properties: Record<string, { deprecated?: boolean }> };
+				};
+			};
+		};
+		expect(
+			schema.properties.branches.items.properties["channel"]?.deprecated,
+		).toBe(true);
+	});
+
 	it("accepts groups by units or tags", () => {
 		expect(
 			validate({

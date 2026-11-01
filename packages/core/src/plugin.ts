@@ -32,7 +32,13 @@ export interface Plugin<O = unknown> {
 	 */
 	changelog?: (
 		ctx: Ctx<O>,
-		input: { unit: Unit; plan: Plan; section: string },
+		input: {
+			unit: Unit;
+			plan: Plan;
+			section: string;
+			/** Set for a prerelease cut; read the version from here, not from `plan`. */
+			cut: { version: string } | null;
+		},
 	) => MaybePromise<string>;
 }
 

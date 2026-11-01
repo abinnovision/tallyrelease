@@ -1,0 +1,32 @@
+description: >-
+  A cut channel that does not sort above the build channel as a SemVer
+  prerelease identifier warns W_CHANNEL_ORDER.
+plugins:
+  - name: stub
+    units:
+      - { id: a, root: packages/a }
+config:
+  plugins: { stub: {} }
+  defaults: { release: true }
+  branches:
+    - { name: main, line: default, channels: { build: rc, cut: beta } }
+git:
+  commits:
+    - id: c0
+      files: { packages/a/index.ts: "0" }
+    - id: c1
+      message: "feat: one"
+      files: { packages/a/index.ts: "1" }
+  tags:
+    - { name: a-v1.0.0, commit: c0 }
+base: c0
+plan: {}
+expect:
+  plan:
+    units:
+      - { id: a, version: 1.1.0-rc.1, cut: 1.1.0-beta.2 }
+    warnings:
+      - code: W_CHANNEL_ORDER
+        message: >-
+          cut channel "beta" of branch rule "main" does not sort above build
+          channel "rc"; builds rank above cuts of the same version

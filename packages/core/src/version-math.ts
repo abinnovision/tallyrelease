@@ -1,4 +1,5 @@
 import { coreCodes } from "./codes.js";
+import { isCutVersion } from "./cut.js";
 
 import type { Warning } from "./errors.js";
 import type { UnitFacts } from "./model/facts-types.js";
@@ -64,27 +65,58 @@ export const ctxOf = (
 	firstParent: { sinceLineBase: at.sinceLineBase, total: at.total },
 });
 
-/** `next` and prerelease of `raw` under `ctx`. */
+/**
+ * `next`, prerelease of `raw` under `ctx` and its cut, numbered one past the
+ * planned commit; the cut is null unless it has the cut form and sorts below
+ * `next`.
+ */
 export const render = <V>({
 	scheme,
 	raw,
 	ctx,
 	channel,
+	cut,
 }: {
 	scheme: VersionScheme<V>;
 	raw: V | undefined;
 	ctx: PreCtx;
 	channel: string | null;
+	cut: string | null;
 }): {
 	readonly next: string | null;
 	readonly prerelease: string | null;
-} => ({
-	next: raw === undefined ? null : scheme.format(scheme.release(raw, ctx)),
-	prerelease:
-		raw === undefined || channel === null
-			? null
-			: scheme.format(scheme.prerelease(raw, { ...ctx, channel })),
-});
+	readonly cut: string | null;
+} => {
+	if (raw === undefined) {
+		return { next: null, prerelease: null, cut: null };
+	}
+
+	const next = scheme.release(raw, ctx);
+	let cutVersion: string | null = null;
+	if (cut !== null) {
+		const { sinceLineBase, total } = ctx.firstParent;
+		const candidate = scheme.prerelease(raw, {
+			...ctx,
+			channel: cut,
+			firstParent: { sinceLineBase: sinceLineBase + 1, total: total + 1 },
+		});
+		if (
+			isCutVersion(scheme, candidate, cut) &&
+			scheme.compare(candidate, next) < 0
+		) {
+			cutVersion = scheme.format(candidate);
+		}
+	}
+
+	return {
+		next: scheme.format(next),
+		prerelease:
+			channel === null
+				? null
+				: scheme.format(scheme.prerelease(raw, { ...ctx, channel })),
+		cut: cutVersion,
+	};
+};
 
 /** Warns when a first release's initial version is not above the unit's highest prerelease tag. */
 export const initialBelowPrerelease = <V>(

@@ -30,7 +30,7 @@ Fix: Correct the rule named in the message. Use either `unit` (ungrouped release
 
 Cause: On a maintenance branch, a release item would leave the line of its current version, for example a breaking change or `Release-As` on a `release/1.x` branch. The message lists the offending commits.
 
-Fix: Remove or reword the commits that exceed the limit, for example by moving them to the default branch, or use a `Release-As` value inside the line. If the branch should release a new major, use a `default` line rule with a `channel` instead of a `maintenance` rule.
+Fix: Remove or reword the commits that exceed the limit, for example by moving them to the default branch, or use a `Release-As` value inside the line. If the branch should release a new major, use a `default` line rule with `channels.build` or `channels.cut` instead of a `maintenance` rule.
 
 ### E_CAP_BASE
 
@@ -40,27 +40,27 @@ Fix: Cut the branch from the last release of that line, or remove the newer comm
 
 ### E_CHANNEL_DUPLICATE
 
-Cause: Two `branches` rules set the same `channel`.
+Cause: Two `branches` rules set the same channel, or one rule uses the same channel for `channels.build` and `channels.cut`. Build and cut channels (and the deprecated `channel`) share one namespace.
 
-Fix: Give each rule a distinct `channel`, or remove the `channel` from one of them.
+Fix: Give each `channels.build` and `channels.cut` a distinct value, or remove one of them.
 
 ### E_CHANNEL_INVALID
 
-Cause: A rule's `channel` is not a valid prerelease identifier: it must match `[0-9A-Za-z-]+`, contain a letter or dash, and use only `{major}` and `{minor}` tokens that the rule's `name` captures. The same code is raised when the channel does not form a valid prerelease for a version.
+Cause: A rule's `channels.build` or `channels.cut` (or the deprecated `channel`) is not a valid prerelease identifier: it must match `[0-9A-Za-z-]+`, contain a letter or dash, and use only `{major}` and `{minor}` tokens that the rule's `name` captures. The same code is raised when the channel does not form a valid prerelease for a version.
 
 Fix: Use letters, digits and dashes only (for example `beta` or `rc-{major}`) and capture any token you use in the rule `name`.
 
 ### E_CHANNEL_WILDCARD
 
-Cause: A `branches` rule sets a `channel` while its `name` contains `*`, so the channel would be ambiguous.
+Cause: A `branches` rule sets `channels.build` or `channels.cut` (or the deprecated `channel`) while its `name` contains `*`, so the channel would be ambiguous.
 
-Fix: Remove the `*` from the rule `name`, or remove the `channel` from that rule.
+Fix: Remove the `*` from the rule `name`, or remove the channels from that rule.
 
 ### E_CONFIG
 
-Cause: The config file is not valid YAML, does not match the schema (unknown key, wrong type), or fails a semantic check: a unit sets `releasePr` while being in a group, a `tags.floating` format uses a token other than `{id}`, `{major}` or `{minor}`, or a `versionFiles` entry has a bad `file` or `pattern`.
+Cause: The config file is not valid YAML, does not match the schema (unknown key, wrong type), or fails a semantic check: a unit sets `releasePr` while being in a group, a `tags.floating` format uses a token other than `{id}`, `{major}` or `{minor}`, a `versionFiles` entry has a bad `file` or `pattern`, or a `branches` rule sets both `channel` and `channels.build`.
 
-Fix: Fix the key named in the message. A `versionFiles` `pattern` needs literal text and either `{version}` or the `{major}`, `{minor}`, `{patch}` tokens (not mixed), and `file` must be a repo-relative path without `..`. Set `releasePr` on the group instead of on its members.
+Fix: Fix the key named in the message. Replace the deprecated `channel` with `channels.build`. A `versionFiles` `pattern` needs literal text and either `{version}` or the `{major}`, `{minor}`, `{patch}` tokens (not mixed), and `file` must be a repo-relative path without `..`. Set `releasePr` on the group instead of on its members.
 
 ### E_CONFIG_MISSING
 
@@ -363,6 +363,24 @@ Cause: Bumping a version produced a string that is not a valid version. This doe
 Fix: Report it as a bug with the version named in the message and the `--verbose` output.
 
 ## Warnings
+
+### W_CHANNEL_DEPRECATED
+
+Cause: A `branches` rule uses `channel`, a deprecated alias of `channels.build` that a later minor version removes.
+
+Fix: Replace `channel: <name>` with `channels: { build: <name> }`.
+
+### W_CHANNEL_ORDER
+
+Cause: A rule's `channels.cut` does not sort above its `channels.build` as a SemVer prerelease identifier (identifiers compare in ASCII order), so a build of a version ranks above or equal to a cut of the same version.
+
+Fix: Pick labels whose ASCII order matches their maturity, for example `alpha` for builds and `beta` for cuts.
+
+### W_CUT_SCHEME
+
+Cause: A unit with a pending release cannot be cut: its scheme does not render `<major>.<minor>.<patch>-<cut>.<n>` for the rule's `channels.cut`, for example the `flutter` scheme.
+
+Fix: Move the unit to a scheme with SemVer prereleases, or ignore the warning; the unit still releases through release PRs.
 
 ### W_CYCLE
 

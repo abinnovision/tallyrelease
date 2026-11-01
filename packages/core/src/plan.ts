@@ -1,5 +1,5 @@
 import { computeAffected } from "./affected.js";
-import { checkLimits, matchBranch } from "./branches.js";
+import { channelWarnings, checkLimits, matchBranch } from "./branches.js";
 import { changeLevel, reach } from "./bump.js";
 import { coreCodes } from "./codes.js";
 import { collectPlanFacts } from "./facts.js";
@@ -93,7 +93,7 @@ const planChanges = (intent: UnitIntent<unknown> | undefined): PlanChange[] =>
 const releaseInputs = (
 	workspace: Workspace,
 	{ facts, schemes }: Pick<ResolveInput, "facts" | "schemes">,
-	channel: string | null,
+	line: Line | null,
 ): Map<string, ReleaseInput<any>> => {
 	const units = new Map(workspace.units.map((u) => [u.id, u]));
 	const entries = facts.units.flatMap((unitFacts) => {
@@ -117,7 +117,8 @@ const releaseInputs = (
 				absorbed: reach(unit.id, workspace.graph.dependencies, released),
 				head: facts.head,
 				...(facts.date === undefined ? {} : { date: facts.date }),
-				channel,
+				channel: line?.channel ?? null,
+				cut: line?.cut ?? null,
 			},
 		]),
 	);
@@ -142,6 +143,7 @@ const UNRELEASED: UnitRelease = {
 	next: null,
 	nextSource: null,
 	prerelease: null,
+	cut: null,
 };
 
 /** The unit's plan entry; undefined when it is not listed. */
@@ -173,6 +175,7 @@ const unitPlan = (entry: Entry, all: boolean): UnitPlan | undefined => {
 		absorbedFrom: [...(entry.intent?.absorbedFrom ?? [])],
 		next: release.next,
 		version: kind === "prerelease" ? prerelease : null,
+		cut: release.cut,
 		sha: entry.head,
 		changes: planChanges(entry.intent),
 	};
@@ -342,6 +345,7 @@ const resolveGroupReleases = (
 			version: group.members.some((id) => hits.has(id))
 				? release.prerelease
 				: null,
+			cut: release.cut,
 		});
 	}
 
@@ -363,6 +367,7 @@ const resolveReleases = (
 	const warnings = [
 		...affected.warnings,
 		...lineWarnings(workspace, affected.branch, line),
+		...channelWarnings(workspace.release.branches, line),
 		...facts.warnings,
 		...releaseAsWarnings(workspace.units, facts.ranges),
 	];
@@ -373,7 +378,7 @@ const resolveReleases = (
 	);
 	const hits = new Map(affected.units.map((u) => [u.id, u]));
 	const factsById = new Map(facts.units.map((f) => [f.id, f]));
-	const inputs = releaseInputs(workspace, input, line?.channel ?? null);
+	const inputs = releaseInputs(workspace, input, line);
 	const intents = new Map<string, UnitIntent<unknown>>(
 		[...inputs].map(([id, i]) => [id, unitIntent(i, warnings)]),
 	);

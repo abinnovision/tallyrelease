@@ -25,7 +25,7 @@ deps:
   - { from: db, to: ui }
   - { from: ui, to: web, pinned: true }
 branches:
-  - { name: main, line: default, channel: beta }
+  - { name: main, line: default, channels: { build: beta } }
 `;
 
 /** ui and web released at p0; db is absorbed by ui; web pins ui. */
@@ -340,7 +340,7 @@ describe("explain", () => {
 								"units:",
 								"  a: { release: true }",
 								"branches:",
-								"  - { name: main, line: default, channel: beta }",
+								"  - { name: main, line: default, channels: { build: beta } }",
 								"",
 							].join("\n"),
 						},
@@ -440,7 +440,7 @@ describe("plan on a maintenance branch", () => {
 						"  apps/api: { id: api, release: true }",
 						"branches:",
 						"  - { name: main, line: default }",
-						"  - { name: 'release/{major}.x', line: maintenance, channel: 'rc-{major}', unit: web }",
+						"  - { name: 'release/{major}.x', line: maintenance, channels: { build: 'rc-{major}' }, unit: web }",
 					].join("\n"),
 					"apps/web/a.ts": "0",
 					"apps/api/a.ts": "0",

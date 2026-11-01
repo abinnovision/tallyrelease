@@ -1,0 +1,33 @@
+description: >-
+  With only a cut channel, affected units stay rebuilds without a build
+  version; the cut is still planned.
+plugins:
+  - name: stub
+    units:
+      - { id: a, root: packages/a }
+config:
+  plugins: { stub: {} }
+  defaults: { release: true }
+  branches:
+    - { name: main, line: default, channels: { cut: beta } }
+git:
+  commits:
+    - id: c0
+      files: { packages/a/index.ts: "0" }
+    - id: c1
+      message: "feat: one"
+      files: { packages/a/index.ts: "1" }
+  tags:
+    - { name: a-v1.0.0, commit: c0 }
+base: c0
+plan: {}
+expect:
+  plan:
+    line: { rule: main, channel: null, cut: beta }
+    units:
+      - id: a
+        kind: rebuild
+        next: 1.1.0
+        version: null
+        cut: 1.1.0-beta.2
+    warnings: []

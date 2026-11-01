@@ -1,6 +1,7 @@
 import { coreCodes } from "./codes.js";
 import { maxLevel } from "./util.js";
 
+import type { Warning } from "./errors.js";
 import type {
 	BranchRule,
 	Core,
@@ -84,8 +85,9 @@ const commitLabel = ({ sha, subject, level, via, releaseAs }: LimitCommit) => {
 };
 
 /**
- * Validates rule names, `unit`/`group` and channels: `E_BRANCH_RULE`, `E_CHANNEL_WILDCARD`,
- * `E_CHANNEL_INVALID` and `E_CHANNEL_DUPLICATE`.
+ * Validates rule names, `unit`/`group` and channels: `E_BRANCH_RULE`, `E_CONFIG`
+ * (`channel` with `channels.build`), `E_CHANNEL_WILDCARD`, `E_CHANNEL_INVALID`
+ * and `E_CHANNEL_DUPLICATE` (over build and cut channels).
  */
 export const validateBranches = (rules: readonly BranchRule[]): void => {
 	const channels = new Map<string, string>();
@@ -105,43 +107,54 @@ export const validateBranches = (rules: readonly BranchRule[]): void => {
 			);
 		}
 
-		const { channel } = rule;
-		if (channel === null) {
-			continue;
-		}
-
-		if (rule.name.includes("*")) {
+		if (rule.channel !== null && rule.build !== null) {
 			throw coreCodes.error(
-				"E_CHANNEL_WILDCARD",
-				`branch rule "${rule.name}" contains * and cannot set a channel`,
-				{ rule: rule.name, channel },
+				"E_CONFIG",
+				`branch rule "${rule.name}" sets both channel and channels.build; channel is a deprecated alias of channels.build`,
+				{ rule: rule.name },
 			);
 		}
 
-		const literal = channel.replace(/\{(major|minor)\}/gu, (token) =>
-			rule.name.includes(token) ? "0" : token,
-		);
-		if (
-			!CHANNEL.test(literal) ||
-			!/[A-Za-z-]/u.test(channel.replace(/\{(major|minor)\}/gu, ""))
-		) {
-			throw coreCodes.error(
-				"E_CHANNEL_INVALID",
-				`channel "${channel}" of branch rule "${rule.name}" must match ${CHANNEL.source}, contain a letter or dash and use only tokens captured by the rule`,
-				{ rule: rule.name, channel },
-			);
-		}
+		for (const channel of [rule.build ?? rule.channel, rule.cut]) {
+			if (channel === null) {
+				continue;
+			}
 
-		const other = channels.get(channel);
-		if (other !== undefined) {
-			throw coreCodes.error(
-				"E_CHANNEL_DUPLICATE",
-				`channel "${channel}" is set by branch rules "${other}" and "${rule.name}"`,
-				{ channel, rules: [other, rule.name] },
-			);
-		}
+			if (rule.name.includes("*")) {
+				throw coreCodes.error(
+					"E_CHANNEL_WILDCARD",
+					`branch rule "${rule.name}" contains * and cannot set a channel`,
+					{ rule: rule.name, channel },
+				);
+			}
 
-		channels.set(channel, rule.name);
+			const literal = channel.replace(/\{(major|minor)\}/gu, (token) =>
+				rule.name.includes(token) ? "0" : token,
+			);
+			if (
+				!CHANNEL.test(literal) ||
+				!/[A-Za-z-]/u.test(channel.replace(/\{(major|minor)\}/gu, ""))
+			) {
+				throw coreCodes.error(
+					"E_CHANNEL_INVALID",
+					`channel "${channel}" of branch rule "${rule.name}" must match ${CHANNEL.source}, contain a letter or dash and use only tokens captured by the rule`,
+					{ rule: rule.name, channel },
+				);
+			}
+
+			const other = channels.get(channel);
+			if (other !== undefined) {
+				throw coreCodes.error(
+					"E_CHANNEL_DUPLICATE",
+					other === rule.name
+						? `channel "${channel}" is both the build and the cut channel of branch rule "${rule.name}"`
+						: `channel "${channel}" is set by branch rules "${other}" and "${rule.name}"`,
+					{ channel, rules: [other, rule.name] },
+				);
+			}
+
+			channels.set(channel, rule.name);
+		}
 	}
 };
 
@@ -169,14 +182,17 @@ export const matchBranch = (
 				? { unit: rule.unit, group: rule.group }
 				: single;
 
+		const render = (channel: string | null) =>
+			channel?.replace(
+				/\{(major|minor)\}/gu,
+				(_, token: string) => captures[token] ?? "",
+			) ?? null;
+
 		return {
 			rule: rule.name,
 			kind: rule.line,
-			channel:
-				rule.channel?.replace(
-					/\{(major|minor)\}/gu,
-					(_, token: string) => captures[token] ?? "",
-				) ?? null,
+			channel: render(rule.build ?? rule.channel),
+			cut: render(rule.cut),
 			maxBump: !capped ? null : minor === undefined ? "minor" : "patch",
 			absolute:
 				!capped || target === null
@@ -190,6 +206,40 @@ export const matchBranch = (
 	}
 
 	return null;
+};
+
+/**
+ * `W_CHANNEL_DEPRECATED` per rule using `channel`, and `W_CHANNEL_ORDER` when
+ * the line's cut channel does not sort above its build channel as a SemVer
+ * prerelease identifier.
+ */
+export const channelWarnings = (
+	rules: readonly BranchRule[],
+	line: Line | null,
+): Warning[] => {
+	const warnings = rules
+		.filter((r) => r.channel !== null)
+		.map((r) =>
+			coreCodes.warning(
+				"W_CHANNEL_DEPRECATED",
+				`branch rule "${r.name}" uses channel, a deprecated alias of channels.build`,
+			),
+		);
+	if (
+		line !== null &&
+		line.channel !== null &&
+		line.cut !== null &&
+		line.cut <= line.channel
+	) {
+		warnings.push(
+			coreCodes.warning(
+				"W_CHANNEL_ORDER",
+				`cut channel "${line.cut}" of branch rule "${line.rule}" does not sort above build channel "${line.channel}"; builds rank above cuts of the same version`,
+			),
+		);
+	}
+
+	return warnings;
 };
 
 /**

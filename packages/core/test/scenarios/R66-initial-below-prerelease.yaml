@@ -7,7 +7,7 @@ config:
   plugins: { stub: {} }
   defaults: { release: true, initialVersion: 0.1.0 }
   branches:
-    - { name: main, line: default, channel: beta }
+    - { name: main, line: default, channels: { build: beta } }
 git:
   commits:
     - id: c0

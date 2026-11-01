@@ -9,7 +9,7 @@ config:
   plugins: { stub: {} }
   defaults: { release: true }
   branches:
-    - { name: main, line: default, channel: beta }
+    - { name: main, line: default, channels: { build: beta } }
     - { name: "release/{major}.x", line: maintenance }
 git:
   commits:

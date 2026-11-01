@@ -1,0 +1,19 @@
+description: A rule whose build and cut channels are equal fails.
+plugins:
+  - name: stub
+    units:
+      - { id: a, root: packages/a }
+config:
+  plugins: { stub: {} }
+  defaults: { release: true }
+  branches:
+    - { name: main, line: default, channels: { build: beta, cut: beta } }
+git:
+  commits:
+    - id: c0
+      files: { packages/a/index.ts: "0" }
+base: null
+plan: {}
+error:
+  code: E_CHANNEL_DUPLICATE
+  details: { channel: beta, rules: [main, main] }

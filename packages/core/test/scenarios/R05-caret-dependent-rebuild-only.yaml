@@ -16,7 +16,7 @@ config:
   units:
     packages/c: { propagate: patch }
   branches:
-    - { name: main, line: default, channel: beta }
+    - { name: main, line: default, channels: { build: beta } }
 git:
   commits:
     - id: c0

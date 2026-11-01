@@ -83,13 +83,16 @@ Branch rules; the first rule matching the branch wins.
 
 Type: list of object.
 
-| Key                  | Type                           | Required | Description                                                                                                    |
-| -------------------- | ------------------------------ | -------- | -------------------------------------------------------------------------------------------------------------- |
-| `branches[].name`    | string                         | yes      | Branch name pattern; supports * and the captures {major} and {minor}.                                          |
-| `branches[].line`    | `"default"` or `"maintenance"` | yes      | Release line of matching branches.                                                                             |
-| `branches[].channel` | string                         | no       | Prerelease channel (letters, digits, dash); may use {major} and {minor} captured by name.                      |
-| `branches[].unit`    | string                         | no       | Maintenance rules: ungrouped released unit whose version must be on the line captured by name. Excludes group. |
-| `branches[].group`   | string                         | no       | Maintenance rules: fixed group whose version must be on the line captured by name. Excludes unit.              |
+| Key                         | Type                           | Required | Description                                                                                                    |
+| --------------------------- | ------------------------------ | -------- | -------------------------------------------------------------------------------------------------------------- |
+| `branches[].name`           | string                         | yes      | Branch name pattern; supports * and the captures {major} and {minor}.                                          |
+| `branches[].line`           | `"default"` or `"maintenance"` | yes      | Release line of matching branches.                                                                             |
+| `branches[].channel`        | string                         | no       | Deprecated alias of channels.build; cannot be set together with channels.build.                                |
+| `branches[].channels`       | object                         | no       | Prerelease channels (letters, digits, dash); may use {major} and {minor} captured by name. Set at least one.   |
+| `branches[].channels.build` | string                         | no       | Build channel: labels the untagged prerelease version of every push.                                           |
+| `branches[].channels.cut`   | string                         | no       | Cut channel: labels the tagged prereleases that prerelease PRs cut.                                            |
+| `branches[].unit`           | string                         | no       | Maintenance rules: ungrouped released unit whose version must be on the line captured by name. Excludes group. |
+| `branches[].group`          | string                         | no       | Maintenance rules: fixed group whose version must be on the line captured by name. Excludes unit.              |
 
 ## `bumps`
 

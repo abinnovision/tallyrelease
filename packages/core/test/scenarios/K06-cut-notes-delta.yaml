@@ -1,0 +1,43 @@
+description: >-
+  Cut notes list the changes not reachable from the previous cut and compare
+  to it; without a previous cut they fall back to the base tag. Dependencies
+  of the same prerelease PR are named at their cut versions.
+plugins:
+  - name: stub
+    units:
+      - { id: a, root: packages/a }
+      - { id: b, root: packages/b }
+    edges:
+      - { from: a, to: b, reason: "dependencies: a", pinned: true }
+config:
+  plugins: { stub: {} }
+  defaults: { release: true }
+  branches:
+    - { name: main, line: default, channels: { cut: beta } }
+git:
+  commits:
+    - id: c0
+      files: { packages/a/i.ts: "0", packages/b/i.ts: "0" }
+    - id: c1
+      message: "feat: first"
+      files: { packages/a/i.ts: "1" }
+    - id: c2
+      message: "fix: b only"
+      files: { packages/b/i.ts: "2" }
+    - id: c3
+      message: "feat: second"
+      files: { packages/a/i.ts: "3" }
+  tags:
+    - { name: a-v1.0.0, commit: c0 }
+    - { name: b-v1.0.0, commit: c0 }
+    - { name: a-v1.1.0-beta.2, commit: c1 }
+base: c0
+plan: { all: true }
+release:
+  cut: true
+  changelog: { date: "2026-11-01", repoUrl: "https://github.com/o/r" }
+expect:
+  previousCut: { a: a-v1.1.0-beta.2, b: null }
+  changelogs:
+    a: "## [1.1.0-beta.4](https://github.com/o/r/compare/a-v1.1.0-beta.2...a-v1.1.0-beta.4) (2026-11-01)\n\n\n### Features\n\n* second ([c3](https://github.com/o/r/commit/c3))"
+    b: "## [1.0.1-beta.4](https://github.com/o/r/compare/b-v1.0.0...b-v1.0.1-beta.4) (2026-11-01)\n\n\n### Bug Fixes\n\n* b only ([c2](https://github.com/o/r/commit/c2))\n\n\n### Dependencies\n\n* The following workspace dependencies were updated\n  * dependencies\n    * a bumped to 1.1.0-beta.4"
