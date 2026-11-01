@@ -1,8 +1,20 @@
 # Plugin authoring guide
 
-A plugin teaches tallyrelease about an ecosystem: where its units live, how they depend on each other, where their versions are written and, optionally, how versions are numbered or where release intent comes from. `node`, `php`, `kustomize`, `dart` and `go` are built in, as is the `changesets` intent source. Anything else is a plugin you write, either as a file in your repository or as an npm package.
+A plugin teaches tallyrelease about an ecosystem: where its units live, how they depend on each other, where their versions are written and, optionally, how versions are numbered or where release intent comes from. Anything the [built-in plugins](#built-in-plugins) do not cover is a plugin you write, either as a file in your repository or as an npm package.
 
 This guide covers the contract, testing, distribution, the trust model and purity. [configuration.md](configuration.md) lists every config key and [errors.md](errors.md) every error code. Plugin API version 1 is in beta like the rest of tallyrelease: until 1.0, a minor release may change it.
+
+## Built-in plugins
+
+Each page covers discovery, edges, inputs, version files, options and an example config.
+
+- [node](plugins/node.md): npm, Yarn and pnpm packages, with `package.json` as the version file.
+- [php](plugins/php.md): Composer projects and local path repositories, versioned through tags.
+- [go](plugins/go.md): Go modules with module-path tags and the major version path check.
+- [kustomize](plugins/kustomize.md): kustomization directories and the local files they reference.
+- [dart](plugins/dart.md): Dart and Flutter packages, with `pubspec.yaml` as the version file and the `flutter` scheme.
+- [changesets](plugins/changesets.md): `.changeset/*.md` files as an intent source.
+- [config-only](plugins/config-only.md): units without a plugin or manifest, versioned through tags and `versionFiles`.
 
 ## What a plugin does
 
@@ -171,23 +183,9 @@ renderTag({ id: "web", tagFormat: "{id}-v{version}" }, "1.2.0"); // "web-v1.2.0"
 
 ### Intent sources
 
-An `IntentSource` has a `name` and `collect(ctx, { from, to, commits, units })` that returns `Change[]`. `units` lists all units of the workspace, for example to map package names to unit ids. Core always runs the Conventional Commits source (`parseCommit` is exported for plugins that read commit messages). A source can attribute a change through a commit (`sha`, by the files it touched) or explicitly (`units`).
+An `IntentSource` has a `name` and `collect(ctx, { from, to, commits, units })` that returns `Change[]`. `units` lists all units of the workspace, for example to map package names to unit ids. Core always runs the Conventional Commits source (`parseCommit` is exported for plugins that read commit messages). A source can attribute a change through a commit (`sha`, by the files it touched) or explicitly (`units`). The built-in `changesets` plugin is an example.
 
 A change with explicit `units` can consume files with `files`. A file is deleted in the release commit once every unit named by the changes that carry it is released by that commit: `version` removes it from the working tree (`would delete <path>` with `--dry-run`) and the release PR commit drops it. When the named units release in different release PRs, no release commit deletes the file; remove it by hand after they are released.
-
-#### The changesets plugin
-
-The built-in `changesets` plugin reads [Changesets](https://github.com/changesets/changesets) files. Enable it next to your ecosystem plugin; it has no options.
-
-```yaml
-plugins:
-  node: {}
-  changesets: {}
-```
-
-Each `.changeset/*.md` file has a frontmatter that maps keys to `major`, `minor` or `patch` (`none` is skipped, anything else warns), and its body is the summary: the first line becomes the subject, the rest the body. A key is a unit id or the `packageName` a plugin stores in the unit's `meta`, such as the `name` of a `package.json`; an unknown key warns `W_UNIT_UNKNOWN`. A changeset becomes one change per bump level with explicit `units` and `files: [<path>]`: `major` is a breaking `feat`, `minor` a `feat` and `patch` a `fix`. Files without frontmatter are skipped with a warning, except `.changeset/README.md`.
-
-A changeset counts for a unit only when a commit in the unit's range touched the file, so a changeset that is still present after a release does not bump again. `collect` cannot tell an added file from a modified one, so editing an old changeset counts it again in that range. The release commit deletes the file once every unit it names is released.
 
 ### Validation
 
@@ -289,54 +287,6 @@ describe("myScheme", () => {
 ```
 
 `gitReaderConformance(makeReader)` is for implementations of `GitReader` and is not needed for plugins.
-
-## The `dart` plugin
-
-The built-in `dart` plugin finds one unit per `pubspec.yaml`, skipping dot directories (such as `.dart_tool`), `build` and `example` directories. A root `pubspec.yaml` is the unit `.`, named after the repository.
-
-- **Versions.** Units are released with `version: file`; the top-level `version:` line of `pubspec.yaml` is the version file, rewritten in place with its quotes and comment kept, or added after `name:` when missing.
-- **Scheme.** A pubspec with `publish_to: none` that uses the Flutter SDK (`dependencies.flutter.sdk: flutter` or `environment.flutter`) defaults to `flutter`; every other unit defaults to `semver`. `units.<root>.scheme` overrides it.
-- **Edges.** A `path:` dependency on another `dart` unit in `dependencies`, `dev_dependencies` or `dependency_overrides` is an unpinned edge. Dependencies resolved by version, as between pub workspace members, and `pubspec_overrides.yaml` add no edges; declare them with `deps` in the config.
-- **Inputs.** `pubspec.lock` is a global input.
-- **Changelog.** The plugin has no `changelog` hook, so units get the default section.
-
-| Option        | Type                 | Default | Meaning                                                                                                                                |
-| :------------ | :------------------- | :------ | :------------------------------------------------------------------------------------------------------------------------------------- |
-| `buildOffset` | non-negative integer | `0`     | Added to the first-parent commit count for `flutter` build numbers, for example to continue above builds uploaded before tallyrelease. |
-
-```yaml
-plugins:
-  dart: { buildOffset: 1000 }
-```
-
-With `buildOffset: 1000`, a fix on a flutter app tagged `v1.2.0+5` after 40 first-parent commits releases `1.2.1+1040`; a tagged build of `1.2.0+2000` would give `1.2.1+2001` instead.
-
-## The go plugin
-
-`go` finds a unit for every `go.mod`. The unit id follows the directory (the repository name at the root), `version` is `tag` and there is no version file. The module path comes from the `module` line and is kept in `unit.meta.go.modulePath`. Relative `replace` directives (`replace example.com/b => ../b`) become edges from the replaced module to the module that declares them; replacements by path outside the repository or by another module are ignored. The tag format is `<root>/v{version}` as Go expects for a module below the root, and `v{version}` at the repository root.
-
-Its `validate` hook enforces the major version path rule. A module whose next version is 2.0.0 or higher must end its module path in `/v<major>`, and a path that ends in a different `/vN` is rejected too. The hook throws, so the command fails with `E_PLUGIN_HOOK` and a message that starts with `E_GO_MAJOR_PATH:` and names the unit, the module path and the expected suffix. Change the `module` line in the same change as the breaking commit, or every command that plans the unit fails.
-
-## Releasing units without a plugin
-
-A unit does not need a plugin or a manifest. A `units` entry for a root that no plugin discovered creates a config-only unit, and `release: true` releases it with tags and a changelog at `<root>/CHANGELOG.md`:
-
-```yaml
-units:
-  tools/setup:
-    release: true
-    versionFiles:
-      - { file: docs/install.md, pattern: "setup@{version}" }
-      - { file: tools/setup/env.sh }
-```
-
-`versionFiles` belongs to the unit whichever plugin owns it. An entry with `pattern` replaces the match when it holds an earlier version of the unit and leaves the file alone on a first release. An entry without `pattern` rewrites the version on every line that carries `# x-tallyrelease-version` or `<!-- x-tallyrelease-version -->`, also on a first release:
-
-```sh
-VERSION=1.0.0 # x-tallyrelease-version
-```
-
-Use this for scripts, Dockerfiles, Helm values or docs that name the version. A plugin is only needed to discover units, edges or version files of a whole ecosystem. See [configuration.md](configuration.md) for the `versionFiles` keys.
 
 ## Distribution
 

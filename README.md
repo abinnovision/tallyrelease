@@ -30,7 +30,7 @@ tallyrelease reads git history, Conventional Commits and a dependency graph supp
 - **Prereleases without committed state.** Prerelease versions are `{next}-{channel}.{N}`, where `N` counts first-parent commits since the last stable release on the line. Nothing is written to the repo and no registry is queried.
 - **Maintenance lines.** Branch rules such as `release/{major}.x` cap bumps at minor (and `release/{major}.{minor}.x` at patch), and fail with the offending commits when a change would leave the line.
 - **See before you write.** `plan`, `explain` and `--dry-run` show versions, bumps and the commits behind them before anything changes. The planning core does no I/O and is deterministic for a given repository state.
-- **Ecosystem plugins.** `node`, `php`, `kustomize` and `dart` are built in. Anything else can be declared as a config-only unit that versions through git tags, or added with your own plugin (see the [plugin authoring guide](docs/plugins.md)).
+- **Ecosystem plugins.** `node`, `php`, `go`, `kustomize` and `dart` are built in, see the [plugin reference](docs/plugins.md#built-in-plugins). Anything else can be declared as a [config-only unit](docs/plugins/config-only.md) that versions through git tags and `versionFiles`, or added with your own plugin (see the [plugin authoring guide](docs/plugins.md)).
 
 ## How it works
 
