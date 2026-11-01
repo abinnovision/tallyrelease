@@ -11,7 +11,6 @@ import { plan } from "./commands/plan.js";
 import { releasePrs } from "./commands/pr.js";
 import { reconcile } from "./commands/release.js";
 import { run } from "./commands/run.js";
-import { shadow } from "./commands/shadow.js";
 import { applyVersions } from "./commands/version.js";
 import { painter } from "./output/paint.js";
 import { createSession } from "./session.js";
@@ -26,7 +25,6 @@ import type { GraphFlags } from "./commands/graph.js";
 import type { PrFlags } from "./commands/pr.js";
 import type { ReleaseFlags } from "./commands/release.js";
 import type { RunFlags } from "./commands/run.js";
-import type { ShadowFlags } from "./commands/shadow.js";
 import type { VersionFlags } from "./commands/version.js";
 import type { Deps, GlobalOptions } from "./session.js";
 import type { CodeOf, ErrorCode } from "@tallyrelease/core";
@@ -39,7 +37,9 @@ export const main = async (
 	deps: Deps,
 ): Promise<number> => {
 	const program = new Command("tallyrelease")
-		.description("Affected build units for monorepos and single repos")
+		.description(
+			"Affected build units and releases for monorepos and single repos",
+		)
 		.version(version)
 		.option("--cwd <dir>", "repository root")
 		.option("--config <file>", "config file", CONFIG_FILE)
@@ -166,29 +166,6 @@ export const main = async (
 		.option("--base <ref>", "diff against this ref")
 		.action(async (unit: string, flags: ExplainFlags) => {
 			await explain(session(), unit, flags);
-		});
-	program
-		.command("shadow")
-		.description("compare the plan with a release-please manifest change")
-		.option(
-			"--manifest <path>",
-			"release-please manifest (default: .release-please-manifest.json)",
-		)
-		.option(
-			"--rp-config <path>",
-			"release-please config (default: release-please-config.json)",
-		)
-		.option("--head <ref>", "compare this merge instead of HEAD (replay)")
-		.option("--branch <name>", "plan for this branch (default: current)")
-		.option("--pin <spec>", "cli version recorded in the report")
-		.option("--out <file>", "write the report to a file")
-		.option(
-			"--summary",
-			"write markdown to $GITHUB_STEP_SUMMARY, else print it",
-		)
-		.option("--strict", "exit 1 on unlabelled mismatches")
-		.action(async (flags: ShadowFlags) => {
-			await shadow(session(), flags);
 		});
 
 	program

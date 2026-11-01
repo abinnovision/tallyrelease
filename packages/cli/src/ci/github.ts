@@ -47,10 +47,6 @@ const outputLine = ({ key, value, multiline }: OutputEntry): string => {
 	return `${key}<<${delimiter}\n${value}\n${delimiter}\n`;
 };
 
-// Workflow command data escaping.
-const escapeData = (value: string) =>
-	value.replace(/%/g, "%25").replace(/\r/g, "%0D").replace(/\n/g, "%0A");
-
 /** `CiEvent` of `name`; `payload` is the parsed `GITHUB_EVENT_PATH`. */
 const ciEvent = (
 	name: string,
@@ -148,11 +144,5 @@ export const githubCi = (
 
 			return true;
 		},
-		sha: env["GITHUB_SHA"],
-		annotate:
-			env["GITHUB_ACTIONS"] === "true"
-				? (title, message) =>
-						`::warning title=${title}::${escapeData(message)}\n`
-				: undefined,
 	};
 };

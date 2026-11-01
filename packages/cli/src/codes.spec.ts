@@ -27,12 +27,26 @@ const sourceCodes = () => {
 	return [...new Set(codes)].sort();
 };
 
+// Codes of removed features stay registered and documented.
+const RETIRED_CODES = [
+	"E_SHADOW_INPUT",
+	"E_SHADOW_MISMATCH",
+	"W_SHADOW_INPUT_MISSING",
+	"W_SHADOW_SKIPPED",
+];
+
 const core = Object.keys(coreCodes.docs);
 const cli = Object.keys(cliCodes.docs);
 
 describe("code registries", () => {
 	it("register exactly the codes used in the sources", () => {
-		expect([...core, ...cli].sort()).toEqual(sourceCodes());
+		expect(
+			[...core, ...cli].filter((c) => !RETIRED_CODES.includes(c)).sort(),
+		).toEqual(sourceCodes());
+	});
+
+	it("keep the retired codes", () => {
+		expect(cli).toEqual(expect.arrayContaining(RETIRED_CODES));
 	});
 
 	it("do not share codes", () => {
