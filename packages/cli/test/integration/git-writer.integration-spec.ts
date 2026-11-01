@@ -84,6 +84,23 @@ describe("git writer (E30)", () => {
 		expect(git(dir, "cat-file", "commit", sha)).not.toContain("gpgsig");
 	});
 
+	it("deletes paths, a missing one as a no-op", async () => {
+		const { dir, head, date, writer } = setup();
+		const commit = {
+			parent: head,
+			files: new Map([["a.txt", "c\n"]]),
+			deletes: ["pkg/package.json", "missing.txt"],
+			message: "chore(release): x",
+			date,
+		};
+		const status = git(dir, "status", "--porcelain");
+		const sha = await writer.commitFiles(commit);
+
+		expect(await writer.commitFiles(commit)).toBe(sha);
+		expect(git(dir, "ls-tree", "-r", "--name-only", sha)).toBe("a.txt\nbin.sh");
+		expect(git(dir, "status", "--porcelain")).toBe(status);
+	});
+
 	it("commits as a custom identity deterministically", async () => {
 		const { dir, head, date } = setup();
 		const identity = {

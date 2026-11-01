@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import { memoryRepo } from "./harness/memory-repo.js";
 import { runCli } from "./harness/run-cli.js";
+import { versionText } from "../../src/render/version.js";
 
 import type { RunOptions } from "./harness/run-cli.js";
 import type { Dag } from "@tallyrelease/core/testing";
@@ -61,6 +62,9 @@ const setup = (opts: RunOptions = {}) => {
 			fs: memoryFs(files),
 			writeFile: (path, content) => {
 				files[path] = content;
+			},
+			deleteFile: (path) => {
+				Reflect.deleteProperty(files, path);
 			},
 			clock: () => new Date("2026-10-15T23:30:00Z"),
 			env: {
@@ -135,6 +139,15 @@ describe("version", () => {
 			stderr: "",
 		});
 		expect(files).toEqual(before);
+	});
+
+	it("lists deleted paths after updated ones", () => {
+		expect(versionText(["README.md"], [".changeset/a.md"], true)).toBe(
+			"would update README.md\nwould delete .changeset/a.md\n",
+		);
+		expect(versionText([], [".changeset/a.md"], false)).toBe(
+			"deleted .changeset/a.md\n",
+		);
 	});
 
 	it("does nothing on pull request events", async () => {

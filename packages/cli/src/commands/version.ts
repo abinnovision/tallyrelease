@@ -13,7 +13,8 @@ export interface VersionFlags {
 
 /**
  * Writes version files and changelogs of all pending release items to the
- * working tree and prints the changed paths.
+ * working tree, deletes the files the release removes and prints the changed
+ * paths.
  */
 export const applyVersions = async (
 	session: Session,
@@ -45,6 +46,7 @@ export const applyVersions = async (
 
 		return {
 			files: written.files,
+			deletes: written.deletes,
 			warnings: [...plan.warnings, ...setup.warnings, ...written.warnings],
 		};
 	});
@@ -52,14 +54,20 @@ export const applyVersions = async (
 		return;
 	}
 
-	const { files, warnings } = result;
+	const { files, deletes, warnings } = result;
 	session.warn(warnings);
 
 	if (!flags.dryRun) {
 		for (const [path, content] of files) {
 			session.writeFile(path, content);
 		}
+
+		for (const path of deletes) {
+			session.deleteFile(path);
+		}
 	}
 
-	session.stdout.write(versionText([...files.keys()], flags.dryRun));
+	session.stdout.write(
+		versionText([...files.keys()], [...deletes], flags.dryRun),
+	);
 };

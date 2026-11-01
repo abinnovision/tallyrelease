@@ -217,6 +217,7 @@ export const releasePrs = async (
 			const sha = await gitWriter.commitFiles({
 				parent: head,
 				files: d.files,
+				deletes: [...d.deletes],
 				message: d.title,
 				date: commitDate,
 			});
