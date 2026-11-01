@@ -143,7 +143,7 @@ export const coreCodes = defineCodes({
 	},
 	E_PLUGIN_UNKNOWN: {
 		cause:
-			"`plugins` lists a name that matches no built-in plugin (`node`, `php`, `kustomize`).",
+			"`plugins` lists a name that matches no built-in plugin (`node`, `php`, `kustomize`, `dart`).",
 		fix: "Correct the plugin name in `plugins`, or remove the entry.",
 	},
 	E_RELEASE_ITEM_NAME: {
