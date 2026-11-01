@@ -859,7 +859,9 @@ Calver, flutter and dart: core scenarios `R81-calver`, `R81b-calver-month-rollov
 
 ### Later (no committed order)
 
-`generic` (regex version files); linked groups; `go` with a `validate` hook for the `/vN` module path rule; scope narrowing/forcing; standalone binary (SEA); `tallyrelease import release-please`.
+Linked groups; scope narrowing/forcing; standalone binary (SEA); `tallyrelease import release-please`.
+
+Resolved without a new core feature: `generic` (regex version files) is covered by config-only units with `versionFiles`, either `pattern` entries or version markers, so manifest-less units release with tags and a changelog and need no plugin. The built-in `go` plugin checks the `/vN` module path rule in its `validate` hook (`E_GO_MAJOR_PATH`, surfaced as `E_PLUGIN_HOOK`).
 
 ---
 
@@ -957,7 +959,7 @@ Built-in plugins in `packages/plugins/src/**` (`@tallyrelease/plugins`) use the 
 
 **Drivers.** Migration risk for existing consumer repos; determinism and testability; reaching PHP/Flutter without core changes.
 
-**Alternatives considered.** single package; full planner first; shadow first; `generic` as second plugin; cli-side hook invocation with precomputed git facts; green refs for build base; `before`-only build base; attributed-commit or reachable-base prerelease counter; commit trailers and input hash for merge detection; HEAD-only merge detection; strict first-parent stale check; label-driven publishing; absolute branch-pattern caps.
+**Alternatives considered.** single package; full planner first; shadow first; `generic` as second plugin (resolved by config-only units with `versionFiles`); cli-side hook invocation with precomputed git facts; green refs for build base; `before`-only build base; attributed-commit or reachable-base prerelease counter; commit trailers and input hash for merge detection; HEAD-only merge detection; strict first-parent stale check; label-driven publishing; absolute branch-pattern caps.
 
 **Why chosen.** Two packages give a hard purity boundary at minimal cost, backed by lint, `types: []` and a neutral bundle. `GitReader` injection makes `computePlan()` one call and lets scenarios describe real DAGs. `affected` first delivers build selection with zero versioning risk. `php` stresses tag-only versioning. Durable reconciliation (lastSuccess vs `before`, merged-pending PR lookup, `releaseCommit` and plan-equality checks, `plan.released` from tags) survives cancelled runs, merge queues, races and failed publishes. Line-base `N` stays monotonic across maintenance merge-backs; relative limits keep monorepo maintenance lines usable.
 
@@ -965,4 +967,4 @@ Built-in plugins in `packages/plugins/src/**` (`@tallyrelease/plugins`) use the 
 
 **v0.3 addendum.** Effects live in the cli over pure core pieces (changelog writer, release items, marker). Release commits are built on a temporary index without a checkout (identity from `GIT_AUTHOR_*`/`GIT_COMMITTER_*`, default `tallyrelease <tallyrelease@users.noreply.github.com>`; HEAD's committer date) and pushed with `--force-with-lease`. Release PR branches are always leaves (D9). Tags are the record of releases; `plan.released` comes from tags in `(build.base, HEAD]`. In app-stack, entries not built at HEAD are built at `releaseSha` by `release-build`, the list stays schema 1, and `latest` and dispatch follow the remote git tags (A.11). Rejected: schema 2 with per-publisher catch-up builds, catch-ups built from HEAD, a `--` branch separator, marker v2, reconcile in `configure` or on `pull_request: closed`, assembling the list in jq, a checked-out release branch, GraphQL `createCommitOnBranch`, registry lookups for `latest` or prerelease numbers.
 
-**Follow-ups.** Split cli when a second consumer appears (done for the built-in plugins, now in `@tallyrelease/plugins`); Tier 2/3 plugin loading; `generic`; linked groups; `go` with `validate` hook; SEA binary; release-please importer; SchemaStore registration for `tallyrelease.yaml` (the schema is already published).
+**Follow-ups.** Split cli when a second consumer appears (done for the built-in plugins, now in `@tallyrelease/plugins`); Tier 2/3 plugin loading; linked groups; SEA binary; release-please importer; SchemaStore registration for `tallyrelease.yaml` (the schema is already published).
