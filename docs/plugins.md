@@ -315,7 +315,7 @@ tallyrelease plans releases from a repository state, and the same state must giv
 - Return a result that depends only on `ctx` and the other arguments. Hooks are awaited sequentially in config order.
 - Report problems with `ctx.log.warn` when the run can continue, and throw an `Error` with a clear message when it cannot. A thrown error surfaces as `E_PLUGIN_HOOK` with the plugin and hook name.
 
-Core enforces its side with lint and a bundle check. The cli does not enforce the rule for loaded plugins. The built-ins in [`packages/cli/src/plugins`](../packages/cli/src/plugins) are worked examples that obey it: lint there forbids Node builtins and imports outside `@tallyrelease/core` and the plugin folder. Their `_kit/` folder holds shared helpers and is internal, not an API; copy what you need instead of importing it.
+Core enforces its side with lint and a bundle check. The cli does not enforce the rule for loaded plugins. The built-ins in [`packages/plugins/src`](../packages/plugins/src) (package `@tallyrelease/plugins`) are worked examples that obey it: lint there forbids Node builtins, `@tallyrelease/cli` and imports outside `@tallyrelease/core` and the package. Their `_kit/` folder holds shared helpers and is internal, not an API; copy what you need instead of importing it.
 
 ## Troubleshooting
 
