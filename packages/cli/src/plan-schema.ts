@@ -18,6 +18,10 @@ const changeSchema = z.strictObject({
 	/** Unit that owns the change when it is not this unit's: absorbed, or propagated in a release entry. */
 	via: z.string().exactOptional(),
 	releaseAs: z.string().exactOptional(),
+	/** Units the change names; set with `files`. */
+	units: z.array(z.string()).exactOptional(),
+	/** Files consumed once every unit named by the changes with them releases. */
+	files: z.array(z.string()).exactOptional(),
 });
 
 /** Null when not looked up (no forge, or a forge error in `plan`). */

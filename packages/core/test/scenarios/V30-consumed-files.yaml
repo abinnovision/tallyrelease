@@ -1,0 +1,47 @@
+description: >-
+  Changes with a file delete it in the release commit once every unit they
+  name releases; a missing file is not deleted.
+plugins:
+  - name: stub
+    units:
+      - { id: a, root: packages/a }
+      - { id: b, root: packages/b }
+    changes:
+      - units: [a]
+        type: feat
+        breaking: false
+        subject: from a changeset
+        files: [.changeset/x.md, .changeset/gone.md]
+      - units: [b]
+        type: fix
+        breaking: false
+        subject: from a changeset
+        files: [.changeset/x.md]
+config:
+  plugins: { stub: {} }
+  defaults: { release: true }
+  branches:
+    - { name: main, line: default }
+git:
+  commits:
+    - id: c0
+      files: { packages/a/i.ts: "0", packages/b/i.ts: "0" }
+    - id: c1
+      files: { .changeset/x.md: "---\na: minor\nb: patch\n---\n" }
+  tags:
+    - { name: a-v1.0.0, commit: c0 }
+    - { name: b-v1.0.0, commit: c0 }
+base: c0
+plan: { all: true }
+release:
+  files: { date: "2026-10-15" }
+expect:
+  plan:
+    units:
+      - id: a
+        next: 1.1.0
+        changes:
+          - units: [a]
+            files: [.changeset/x.md, .changeset/gone.md]
+      - { id: b, next: 1.0.1 }
+  deletes: [.changeset/x.md]

@@ -21,6 +21,10 @@ export interface PlanChange {
 	via?: string;
 	/** Release-As value of this commit for the unit. */
 	releaseAs?: string;
+	/** Units the change names; set with `files`. */
+	units?: string[];
+	/** Files consumed once every unit named by the changes with them releases. */
+	files?: string[];
 }
 
 export interface UnitPlan {

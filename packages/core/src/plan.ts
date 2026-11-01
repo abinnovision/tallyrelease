@@ -80,6 +80,9 @@ const planChanges = (intent: UnitIntent<unknown> | undefined): PlanChange[] =>
 			...(change.pr === undefined ? {} : { pr: change.pr }),
 			...(via === undefined ? {} : { via }),
 			...(releaseAs === undefined ? {} : { releaseAs }),
+			...(change.files === undefined
+				? {}
+				: { units: [...(change.units ?? [])], files: [...change.files] }),
 		};
 	});
 
