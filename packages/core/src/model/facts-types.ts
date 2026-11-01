@@ -72,6 +72,8 @@ export interface GroupFacts {
 /** Git and intent data of every released unit, collected before release math. */
 export interface PlanFacts {
 	readonly head: string;
+	/** Committer date of `head`; set when the git reader has `commitDate`. */
+	readonly date?: string;
 	/** Released units, sorted by id. */
 	readonly units: readonly UnitFacts[];
 	/** One entry per distinct base tag commit. */

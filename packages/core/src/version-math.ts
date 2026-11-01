@@ -48,7 +48,7 @@ export const bumpedOf = <V>(
 
 export const ctxOf = (
 	unit: Unit,
-	head: string,
+	{ head, date }: { head: string; date?: string },
 	at: {
 		baseTag: { name: string } | null;
 		tags: readonly string[];
@@ -58,6 +58,7 @@ export const ctxOf = (
 ): PreCtx => ({
 	unit,
 	head,
+	...(date === undefined ? {} : { date }),
 	baseTag: at.baseTag?.name ?? null,
 	tags: at.tags,
 	firstParent: { sinceLineBase: at.sinceLineBase, total: at.total },

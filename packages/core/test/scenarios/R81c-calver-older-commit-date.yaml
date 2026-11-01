@@ -1,0 +1,30 @@
+description: >-
+  A head dated before the base tag's month keeps the bumped calver version,
+  so a release is never lower than the current one.
+plugins:
+  - name: stub
+    units:
+      - { id: a, root: packages/a, scheme: calver }
+config:
+  plugins: { stub: {} }
+  defaults: { release: true }
+  branches:
+    - { name: main, line: default }
+git:
+  commits:
+    - id: c0
+      date: "2026-10-01T09:00:00Z"
+      files: { packages/a/index.ts: "0" }
+    - id: c1
+      message: "fix: a"
+      date: "2026-09-15T12:00:00Z"
+      files: { packages/a/index.ts: "1" }
+  tags:
+    - { name: a-v2026.10.4, commit: c0 }
+base: c0
+plan: {}
+expect:
+  plan:
+    units:
+      - { id: a, from: 2026.10.4, bump: patch, next: 2026.10.5 }
+    warnings: []

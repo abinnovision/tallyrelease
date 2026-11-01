@@ -284,6 +284,54 @@ describe("release", () => {
 		expect(remote.tags.get("a-v1.1.0")).toBe("merge-1");
 	});
 
+	/** Calver units planned in December 2024; `mergePr` dates merges in January 2025. */
+	const december = (): Dag => {
+		const dag = repo(config(`units: { "packages/*": { scheme: calver } }`), {
+			version: "2024.12.0",
+		});
+
+		return {
+			...dag,
+			commits: dag.commits.map((c) => ({ ...c, date: "2024-12-31T12:00:00Z" })),
+		};
+	};
+
+	it("tags a calver release merged in the next month at its planned version", async () => {
+		const dag = december();
+		const { remote, run, merge, release } = setup(dag);
+		await run("pr", dag);
+		const merged = merge(dag, 1);
+		expect(merged.commits.at(-1)?.date).toMatch(/^2025-01-/u);
+
+		expect((await release(merged)).stdout).toContain(
+			"PR #1: tagged a-v2024.12.1, b-v2024.12.1 at merge-1",
+		);
+		expect(remote.tags.get("a-v2024.12.1")).toBe("merge-1");
+	});
+
+	it("labels a calver release PR stale when main moves to the next month first", async () => {
+		const dag = december();
+		const { remote, run, merge, release } = setup(dag);
+		await run("pr", dag);
+		const moved: Dag = {
+			...dag,
+			commits: [
+				...dag.commits,
+				{
+					id: "c3",
+					message: "chore(c): tidy",
+					date: "2025-01-01T00:00:00Z",
+					files: { "packages/c/y.ts": "c3" },
+				},
+			],
+		};
+
+		expect((await release(merge(moved, 1))).stdout).toBe(
+			"PR #1: labelled stale: its releases differ from the plan at c3, the commit it was merged onto\n",
+		);
+		expect(remote.tags.size).toBe(0);
+	});
+
 	it("moves only the highest floating tags and keeps maintenance releases off latest (E07, E11)", async () => {
 		const yaml = config(`tags:
   floating: ["{id}-v{major}", "{id}-latest"]`);

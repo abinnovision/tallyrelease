@@ -57,6 +57,8 @@ export interface ReleaseInput<V> {
 	/** Unreleased units absorbed by the unit (`reach`). */
 	readonly absorbed: ReadonlySet<string>;
 	readonly head: string;
+	/** Committer date of `head`. */
+	readonly date?: string;
 	readonly channel: string | null;
 }
 
@@ -125,8 +127,14 @@ export const releaseUnit = <V>(
 	const from = fromOf(scheme, facts);
 	const initial = initialOf(unit, scheme);
 	const bumped = bumpedOf(scheme, bump, { from, initial });
+	const ctx = ctxOf(unit, input, {
+		...facts,
+		tags: facts.tags.map((t) => t.name),
+	});
 	if (from === undefined && releaseAs === undefined && bumped !== undefined) {
-		warnings.push(...initialBelowPrerelease(scheme, initial, facts));
+		warnings.push(
+			...initialBelowPrerelease(scheme, scheme.release(initial, ctx), facts),
+		);
 	}
 
 	const raw = releaseAs ?? bumped;
@@ -144,15 +152,7 @@ export const releaseUnit = <V>(
 					: from === undefined
 						? "initial"
 						: "bump",
-		...render({
-			scheme,
-			raw,
-			ctx: ctxOf(unit, input.head, {
-				...facts,
-				tags: facts.tags.map((t) => t.name),
-			}),
-			channel: input.channel,
-		}),
+		...render({ scheme, raw, ctx, channel: input.channel }),
 	};
 };
 
@@ -181,7 +181,7 @@ export const releaseGroup = <V>(
 		throw new TypeError("a group has at least one member");
 	}
 
-	const { scheme, facts, channel, head } = first.input;
+	const { scheme, facts, channel } = first.input;
 	const max = (a: V | undefined, b: V | undefined): V | undefined =>
 		a === undefined || (b !== undefined && scheme.compare(b, a) > 0) ? b : a;
 	const from = fromOf(scheme, facts);
@@ -198,12 +198,6 @@ export const releaseGroup = <V>(
 		initialOf(first.input.unit, scheme),
 	);
 	const bumped = bumpedOf(scheme, bump, { from, initial });
-	if (from === undefined && releaseAs === undefined && bumped !== undefined) {
-		for (const m of members) {
-			warnings.push(...initialBelowPrerelease(scheme, initial, m.input.facts));
-		}
-	}
-
 	const tags = members
 		.flatMap((m) => m.input.facts.tags)
 		.flatMap((t) => {
@@ -215,6 +209,19 @@ export const releaseGroup = <V>(
 			(a, b) => scheme.compare(a.version, b.version) || compare(a.name, b.name),
 		)
 		.map((t) => t.name);
+	const ctx = ctxOf(first.input.unit, first.input, {
+		baseTag: group.baseTag,
+		tags,
+		sinceLineBase: group.sinceLineBase,
+		total: Math.max(...members.map((m) => m.input.facts.total)),
+	});
+	if (from === undefined && releaseAs === undefined && bumped !== undefined) {
+		const released = scheme.release(initial, ctx);
+		for (const m of members) {
+			warnings.push(...initialBelowPrerelease(scheme, released, m.input.facts));
+		}
+	}
+
 	const raw = max(bumped, releaseAs);
 	const byReleaseAs =
 		releaseAs !== undefined &&
@@ -232,16 +239,6 @@ export const releaseGroup = <V>(
 					: from === undefined
 						? "initial"
 						: "bump",
-		...render({
-			scheme,
-			raw,
-			ctx: ctxOf(first.input.unit, head, {
-				baseTag: group.baseTag,
-				tags,
-				sinceLineBase: group.sinceLineBase,
-				total: Math.max(...members.map((m) => m.input.facts.total)),
-			}),
-			channel,
-		}),
+		...render({ scheme, raw, ctx, channel }),
 	};
 };
