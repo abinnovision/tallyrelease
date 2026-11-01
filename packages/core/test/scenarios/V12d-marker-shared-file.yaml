@@ -1,0 +1,32 @@
+description: >-
+  Markers carry no unit id, so a marker file of two units is
+  E_VERSION_FILE_CLAIM.
+plugins:
+  - name: stub
+    units:
+      - { id: app, root: apps/app }
+      - { id: worker, root: apps/worker }
+config:
+  plugins: { stub: {} }
+  defaults: { release: true }
+  units:
+    apps/app:
+      versionFiles: [{ file: values.yaml }]
+    apps/worker:
+      versionFiles: [{ file: values.yaml }]
+  branches:
+    - { name: main, line: default }
+git:
+  commits:
+    - id: c0
+      files:
+        apps/app/i.ts: "0"
+        apps/worker/i.ts: "0"
+        values.yaml: "app: 1.0.0 # x-tallyrelease-version\nworker: 1.0.0 # x-tallyrelease-version\n"
+base: null
+plan: { all: true }
+release:
+  files: { date: "2026-10-15" }
+error:
+  code: E_VERSION_FILE_CLAIM
+  details: { path: values.yaml, units: [app, worker] }

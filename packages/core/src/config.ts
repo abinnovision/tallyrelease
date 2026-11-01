@@ -32,10 +32,12 @@ export interface UnitOverlay {
 /**
  * A text file holding a unit's version. `file` is relative to the repository
  * root; `pattern` uses `{id}`, `{version}`, `{major}`, `{minor}` and `{patch}`.
+ * Without `pattern`, lines marked `# x-tallyrelease-version` or
+ * `<!-- x-tallyrelease-version -->` are rewritten.
  */
 export interface VersionTemplate {
 	file: string;
-	pattern: string;
+	pattern?: string;
 }
 
 /** A branch rule; the first rule whose `name` matches the branch wins. */

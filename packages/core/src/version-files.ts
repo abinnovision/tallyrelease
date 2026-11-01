@@ -31,6 +31,8 @@ const VERSION =
 	"\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?";
 
 const ALNUM = /[0-9A-Za-z]/u;
+const MARKERS = ["# x-tallyrelease-version", "<!-- x-tallyrelease-version -->"];
+const WORD = /[0-9A-Za-z](?:[0-9A-Za-z.+-]*[0-9A-Za-z])?/gu;
 
 const escape = (text: string) => text.replace(SPECIAL, "\\$&");
 
@@ -181,6 +183,41 @@ const applyTemplate = <V>(
 	return { content: replaced, hit };
 };
 
+/**
+ * Replaces, on each marker line, the first word the scheme parses (after an
+ * optional `v`) with `next`. `hit` is false when no marker line has one.
+ */
+const applyMarkers = (
+	content: string,
+	{ next, scheme }: { next: string; scheme: VersionScheme<unknown> },
+): { content: string; hit: boolean } => {
+	let hit = false;
+	const lines = content.split("\n").map((line) => {
+		if (!MARKERS.some((m) => line.includes(m))) {
+			return line;
+		}
+
+		for (const m of line.matchAll(WORD)) {
+			const [word] = m;
+			const start =
+				word.startsWith("v") && scheme.parse(word.slice(1)) !== undefined
+					? m.index + 1
+					: scheme.parse(word) !== undefined
+						? m.index
+						: undefined;
+			if (start !== undefined) {
+				hit = true;
+
+				return `${line.slice(0, start)}${next}${line.slice(m.index + word.length)}`;
+			}
+		}
+
+		return line;
+	});
+
+	return { content: lines.join("\n"), hit };
+};
+
 /** Repo-relative template file; `E_CONFIG` for `.`, absolute or `..` paths. */
 const templateFile = (file: string, unit: string): string => {
 	const invalid = () =>
@@ -261,19 +298,43 @@ const versionFileStep = async (
 	}
 };
 
-/** Rewrites the version templates of the unit; skips first releases. */
+/**
+ * Rewrites the version templates and markers of the unit; templates skip
+ * first releases.
+ */
 const templateStep = (staged: Staged, step: UnitStep): Warning[] => {
 	const { workspace, item, unit, scheme, from } = step;
 	const warnings: Warning[] = [];
-	const templates =
-		from === null ? [] : (workspace.release.templates.get(unit.id) ?? []);
-	for (const template of templates) {
+	for (const template of workspace.release.templates.get(unit.id) ?? []) {
 		const { pattern } = template;
 		const file = templateFile(template.file, unit.id);
+		if (pattern === undefined) {
+			const result = applyMarkers(required(staged, file, unit.id), {
+				next: item.version,
+				scheme,
+			});
+			staged.files.set(file, result.content);
+			if (!result.hit) {
+				warnings.push(
+					coreCodes.warning(
+						"W_MARKER_NO_MATCH",
+						`version file "${file}" of unit "${unit.id}" has no x-tallyrelease-version marker with a version`,
+						{ unit: unit.id },
+					),
+				);
+			}
+
+			continue;
+		}
+
+		if (from === null) {
+			continue;
+		}
+
 		const result = applyTemplate(required(staged, file, unit.id), {
 			pattern,
 			unit: unit.id,
-			from: from ?? "",
+			from,
 			next: item.version,
 			scheme,
 		});
@@ -369,15 +430,17 @@ export const validateTemplates = (workspace: Workspace): void => {
 	for (const [id, templates] of workspace.release.templates) {
 		for (const { file, pattern } of templates) {
 			templateFile(file, id);
-			compileTemplate(pattern, id);
+			if (pattern !== undefined) {
+				compileTemplate(pattern, id);
+			}
 		}
 	}
 };
 
 /**
  * Plugin version files by unit id. Throws `E_VERSION_FILE_CLAIM` when a path
- * is a plugin version file of two units or also a template. Templates may
- * share a file.
+ * is a plugin version file of two units or also a template, or a marker file
+ * of two units. Templates may share a file.
  */
 export const versionFileClaims = async (
 	workspace: Workspace,
@@ -399,8 +462,9 @@ export const versionFileClaims = async (
 		}
 	}
 
+	const markers = new Map<string, string>();
 	for (const [id, templates] of workspace.release.templates) {
-		for (const { file } of templates) {
+		for (const { file, pattern } of templates) {
 			const path = templateFile(file, id);
 			const owner = claims.get(path);
 			if (owner !== undefined) {
@@ -410,6 +474,19 @@ export const versionFileClaims = async (
 					{ path, units: [owner, id] },
 				);
 			}
+
+			if (pattern === undefined) {
+				const marked = markers.get(path);
+				if (marked !== undefined && marked !== id) {
+					throw coreCodes.error(
+						"E_VERSION_FILE_CLAIM",
+						`version file "${path}" holds markers of units "${marked}" and "${id}"`,
+						{ path, units: [marked, id] },
+					);
+				}
+
+				markers.set(path, id);
+			}
 		}
 	}
 
@@ -418,11 +495,12 @@ export const versionFileClaims = async (
 
 /**
  * Files of a release of `items` (stable `next`): plugin version files,
- * templates and `<root>/CHANGELOG.md` per unit, read through `fs`; the
+ * templates, markers and `<root>/CHANGELOG.md` per unit, read through `fs`; the
  * owning plugin's `changelog` hook may replace a unit's section. Returns
  * only files whose content changes, and each unit's changelog section;
  * checks claims first. Templates skip first releases and warn
- * `W_VERSION_FILE_NO_MATCH` without any match; a missing version file is
+ * `W_VERSION_FILE_NO_MATCH` without any match, markers warn
+ * `W_MARKER_NO_MATCH`; a missing version file is
  * `E_VERSION_FILE_MISSING`.
  */
 export const releaseFiles = async (

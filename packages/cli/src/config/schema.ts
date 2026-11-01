@@ -110,15 +110,18 @@ const unitOverlay = z.strictObject({
 				file: z
 					.string()
 					.meta({ description: "File relative to the repository root." }),
-				pattern: z.string().meta({
-					description:
-						"Text holding the version, with {id}, {version}, {major}, {minor} and {patch}; needs a version token and literal text.",
-				}),
+				pattern: z
+					.string()
+					.meta({
+						description:
+							"Text holding the version, with {id}, {version}, {major}, {minor} and {patch}; needs a version token and literal text. Without pattern, the file uses version markers.",
+					})
+					.exactOptional(),
 			}),
 		)
 		.meta({
 			description:
-				"Text files updated on release: matches of pattern rendering a version from the previous release up to the next are replaced with the next version.",
+				"Text files updated on release: matches of pattern rendering a version from the previous release up to the next are replaced with the next version. Without pattern, the first version on each line marked `# x-tallyrelease-version` or `<!-- x-tallyrelease-version -->` is replaced with the next version, also on a first release.",
 		})
 		.exactOptional(),
 });

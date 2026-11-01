@@ -205,7 +205,7 @@ export const coreCodes = defineCodes({
 	},
 	E_VERSION_FILE_CLAIM: {
 		cause:
-			"A file is the version file of two units, or is both a plugin version file and a `versionFiles` template target.",
+			"A file is the version file of two units, is both a plugin version file and a `versionFiles` template target, or is a `versionFiles` marker file of two units (markers carry no unit id).",
 		fix: "Remove the duplicate `versionFiles` entry, or set one file per unit.",
 	},
 	E_VERSION_FILE_MISSING: {
@@ -231,6 +231,11 @@ export const coreCodes = defineCodes({
 		cause:
 			"A unit's initial version does not exceed an existing prerelease tag of that unit.",
 		fix: "Raise `initialVersion` above the prerelease tag named in the message, or remove the stale tag.",
+	},
+	W_MARKER_NO_MATCH: {
+		cause:
+			"A `versionFiles` entry without `pattern` names a file with no line that carries an `x-tallyrelease-version` marker and a version of the unit's scheme, so the file is not updated for the release.",
+		fix: "Add `# x-tallyrelease-version` or `<!-- x-tallyrelease-version -->` to the line that holds the version, set a `pattern`, or remove the entry.",
 	},
 	W_NO_BRANCH_RULE: {
 		cause:

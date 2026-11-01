@@ -1,0 +1,38 @@
+description: >-
+  A marker file without a marked version is unchanged and warns
+  W_MARKER_NO_MATCH.
+plugins:
+  - name: stub
+    units:
+      - { id: a, root: packages/a }
+config:
+  plugins: { stub: {} }
+  defaults: { release: true }
+  units:
+    packages/a:
+      versionFiles: [{ file: README.md }]
+  branches:
+    - { name: main, line: default }
+git:
+  commits:
+    - id: c0
+      files:
+        packages/a/i.ts: "0"
+        README.md: "version 1.0.0\nlatest # x-tallyrelease-version\n"
+    - id: c1
+      message: "fix: a"
+      files: { packages/a/i.ts: "1" }
+  tags:
+    - { name: a-v1.0.0, commit: c0 }
+base: c0
+plan: { all: true }
+release:
+  files: { date: "2026-10-15" }
+expect:
+  paths: [packages/a/CHANGELOG.md]
+  fileWarnings:
+    - code: W_MARKER_NO_MATCH
+      message: >-
+        version file "README.md" of unit "a" has no x-tallyrelease-version
+        marker with a version
+      unit: a

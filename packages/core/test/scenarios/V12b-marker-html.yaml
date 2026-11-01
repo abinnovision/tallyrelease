@@ -1,0 +1,31 @@
+description: >-
+  An HTML comment marker rewrites its line, also on a first release; unmarked
+  lines keep their version.
+plugins:
+  - name: stub
+    units:
+      - { id: run, root: actions/run }
+config:
+  plugins: { stub: {} }
+  defaults: { release: true }
+  units:
+    actions/run:
+      versionFiles: [{ file: README.md }]
+  branches:
+    - { name: main, line: default }
+git:
+  commits:
+    - id: c0
+      message: "feat: first"
+      files:
+        actions/run/i.ts: "0"
+        README.md: "Install 0.0.0. <!-- x-tallyrelease-version -->\n\nOld: 0.0.0\n"
+base: null
+plan: { all: true }
+release:
+  files: { date: "2026-10-15" }
+expect:
+  paths: [README.md, actions/run/CHANGELOG.md]
+  files:
+    README.md: "Install 1.0.0. <!-- x-tallyrelease-version -->\n\nOld: 0.0.0\n"
+  fileWarnings: []
