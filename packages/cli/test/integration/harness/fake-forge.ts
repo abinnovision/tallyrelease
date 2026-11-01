@@ -1,6 +1,8 @@
 import { TallyError } from "@tallyrelease/core";
 import { createHash } from "node:crypto";
 
+import { ForgeConflictError, ForgeNotFoundError } from "../../../src/index.js";
+
 import type {
 	Forge,
 	GitWriter,
@@ -13,9 +15,7 @@ import type { Dag } from "@tallyrelease/core/testing";
 const pr = (remote: { prs: FakePr[] }, number: number): FakePr => {
 	const found = remote.prs.find((p) => p.number === number);
 	if (!found) {
-		throw Object.assign(new Error(`no PR #${String(number)}`), {
-			status: 404,
-		});
+		throw new ForgeNotFoundError(`no PR #${String(number)}`, 404);
 	}
 
 	return found;
@@ -109,9 +109,9 @@ export const fakeForge = (
 		createPr: async (_repo, { head, base, title, body }) => {
 			call("createPr", { head, base, title });
 			if (remote.prs.some((p) => p.head === head && p.state === "open")) {
-				throw Object.assign(
-					new Error(`A pull request already exists for ${head}`),
-					{ status: 422 },
+				throw new ForgeConflictError(
+					`A pull request already exists for ${head}`,
+					422,
 				);
 			}
 
@@ -176,6 +176,13 @@ export const fakeForge = (
 		},
 		createRelease: async (_repo, release) => {
 			call("createRelease", release);
+			if (remote.releases.some((r) => r.tag === release.tag)) {
+				throw new ForgeConflictError(
+					`A release already exists for ${release.tag}`,
+					422,
+				);
+			}
+
 			const id = remote.releases.length + 1;
 			remote.releases.push({ ...release, id });
 

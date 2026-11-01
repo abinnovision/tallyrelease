@@ -1,4 +1,5 @@
 import { cliCodes } from "../codes.js";
+import { ForgeError } from "../forge/errors.js";
 
 import type { Env, GithubContext } from "./github-env.js";
 import type { Forge } from "../forge/forge.js";
@@ -51,12 +52,12 @@ const noWorkflowContext: Warning = cliCodes.warning(
 );
 
 const forgeError = (error: unknown): Warning => {
-	const status = (error as { status?: unknown } | null)?.status;
+	const status = error instanceof ForgeError ? error.status : undefined;
 	const reason = error instanceof Error ? error.message : String(error);
 
 	return cliCodes.warning(
 		"W_FORGE_ERROR",
-		`forge request failed${typeof status === "number" ? ` (${String(status)})` : ""}: ${reason}; the last successful run is unknown`,
+		`forge request failed${status === undefined ? "" : ` (${String(status)})`}: ${reason}; the last successful run is unknown`,
 	);
 };
 

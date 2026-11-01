@@ -1,6 +1,11 @@
 export { version } from "./version.js";
 export { cliCodes } from "./codes.js";
 export { main } from "./main.js";
+export {
+	ForgeConflictError,
+	ForgeError,
+	ForgeNotFoundError,
+} from "./forge/errors.js";
 export type { Deps } from "./session.js";
 export type { Writer } from "./output/writer.js";
 export type {

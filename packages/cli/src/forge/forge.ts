@@ -65,7 +65,7 @@ export interface Forge {
 		repo: RepoRef,
 		query: { head: string; base: string },
 	) => Promise<ReleasePr | undefined>;
-	/** Returns the PR number. */
+	/** Returns the PR number; `ForgeConflictError` when the PR exists. */
 	createPr: (repo: RepoRef, pr: NewPr) => Promise<number>;
 	updatePr: (
 		repo: RepoRef,
@@ -91,7 +91,7 @@ export interface Forge {
 		repo: RepoRef,
 		tag: string,
 	) => Promise<{ id: number; url: string } | undefined>;
-	/** Release for an existing tag. */
+	/** Release for an existing tag; `ForgeConflictError` when the tag has a release. */
 	createRelease: (
 		repo: RepoRef,
 		release: NewRelease,

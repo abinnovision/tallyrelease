@@ -1,5 +1,10 @@
 import { Octokit } from "@octokit/rest";
 
+import {
+	ForgeConflictError,
+	ForgeError,
+	ForgeNotFoundError,
+} from "./errors.js";
 import { LABELS } from "./forge.js";
 
 import type { Forge, ReleasePr, RepoRef } from "./forge.js";
@@ -10,6 +15,16 @@ const LABEL_COLORS: Readonly<Record<string, string>> = {
 	[LABELS.stale]: "d93f0b",
 };
 
+/** `ForgeError` of a failed Octokit request; `ForgeNotFoundError` on 404. */
+const forgeError = (error: unknown): ForgeError => {
+	const raw = (error as { status?: unknown } | null)?.status;
+	const status = typeof raw === "number" ? raw : undefined;
+	const message = error instanceof Error ? error.message : String(error);
+	const Type = status === 404 ? ForgeNotFoundError : ForgeError;
+
+	return new Type(message, status, { cause: error });
+};
+
 /** Resolves `undefined` when the request fails with one of `statuses`. */
 const unless = async <T>(
 	request: Promise<T>,
@@ -18,8 +33,23 @@ const unless = async <T>(
 	try {
 		return await request;
 	} catch (error) {
-		if (statuses.includes((error as { status?: number }).status ?? 0)) {
+		if (error instanceof ForgeError && statuses.includes(error.status ?? 0)) {
 			return undefined;
+		}
+
+		throw error;
+	}
+};
+
+/** Rethrows a 422 as `ForgeConflictError`: the PR or release exists. */
+const conflict = async <T>(request: Promise<T>): Promise<T> => {
+	try {
+		return await request;
+	} catch (error) {
+		if (error instanceof ForgeError && error.status === 422) {
+			throw new ForgeConflictError(error.message, error.status, {
+				cause: error,
+			});
 		}
 
 		throw error;
@@ -67,6 +97,14 @@ export const githubForge = (opts: GithubForgeOptions): Forge => {
 			warn: console.warn,
 			error: () => undefined,
 		},
+	});
+	// Registered last, so Octokit's own hooks still see the original error.
+	octokit.hook.wrap("request", async (request, options) => {
+		try {
+			return await request(options);
+		} catch (error) {
+			throw forgeError(error);
+		}
 	});
 
 	const comment = async (repo: RepoRef, number: number, body: string) => {
@@ -171,7 +209,8 @@ export const githubForge = (opts: GithubForgeOptions): Forge => {
 			return data[0] && releasePr(data[0]);
 		},
 		createPr: async (repo, pr) =>
-			(await octokit.rest.pulls.create({ ...repo, ...pr })).data.number,
+			(await conflict(octokit.rest.pulls.create({ ...repo, ...pr }))).data
+				.number,
 		updatePr: async (repo, number, update) => {
 			await octokit.rest.pulls.update({
 				...repo,
@@ -254,13 +293,15 @@ export const githubForge = (opts: GithubForgeOptions): Forge => {
 			return release && { id: release.data.id, url: release.data.html_url };
 		},
 		createRelease: async (repo, { tag, name, body, makeLatest }) => {
-			const { data } = await octokit.rest.repos.createRelease({
-				...repo,
-				tag_name: tag,
-				name,
-				body,
-				make_latest: makeLatest ? "true" : "false",
-			});
+			const { data } = await conflict(
+				octokit.rest.repos.createRelease({
+					...repo,
+					tag_name: tag,
+					name,
+					body,
+					make_latest: makeLatest ? "true" : "false",
+				}),
+			);
 
 			return { id: data.id, url: data.html_url };
 		},
