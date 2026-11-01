@@ -1,3 +1,4 @@
+import { changesetsPlugin } from "./changesets/plugin.js";
 import { dartPlugin } from "./dart/plugin.js";
 import { kustomizePlugin } from "./kustomize/plugin.js";
 import { nodePlugin } from "./node/plugin.js";
@@ -10,4 +11,5 @@ export const builtinPlugins: Record<string, Plugin<any>> = {
 	php: phpPlugin,
 	kustomize: kustomizePlugin,
 	dart: dartPlugin,
+	changesets: changesetsPlugin,
 };

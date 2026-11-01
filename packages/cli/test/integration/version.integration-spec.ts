@@ -53,12 +53,12 @@ const dag: Dag = {
 };
 
 /** Runs `version` over a mutable working tree. */
-const setup = (opts: RunOptions = {}) => {
-	const files = memoryGit(dag).tree("HEAD");
+const setup = (opts: RunOptions = {}, repo: Dag = dag) => {
+	const files = memoryGit(repo).tree("HEAD");
 	const before = { ...files };
 	const version = async (args: string[] = []) =>
 		await runCli(["version", ...args], {
-			...memoryRepo(dag),
+			...memoryRepo(repo),
 			fs: memoryFs(files),
 			writeFile: (path, content) => {
 				files[path] = content;
@@ -161,5 +161,59 @@ describe("version", () => {
 				"warning[W_EFFECT_SKIPPED]: version does nothing on pull_request events\n",
 		});
 		expect(files).toEqual(before);
+	});
+
+	it("bumps from a changeset and deletes it", async () => {
+		const changeset = "---\n'@s/core': minor\n---\n\nAdd a flag\n";
+		const { files, version } = setup(
+			{},
+			{
+				commits: [
+					{
+						id: "c0",
+						files: {
+							"tallyrelease.yaml":
+								"plugins: { node: {}, changesets: {} }\ndefaults: { release: true }\nbranches:\n  - { name: main, line: default }\n",
+							"package.json": json({ workspaces: ["packages/*"] }),
+							"packages/core/package.json": json({
+								name: "@s/core",
+								version: "1.0.0",
+							}),
+						},
+					},
+					{
+						id: "c1",
+						message: "chore: add changeset",
+						files: { ".changeset/brave.md": changeset },
+					},
+				],
+				tags: [{ name: "core-v1.0.0", commit: "c0" }],
+			},
+		);
+		const updates = [
+			"packages/core/package.json",
+			"packages/core/CHANGELOG.md",
+		];
+
+		expect((await version(["--dry-run"])).stdout).toBe(
+			[
+				...updates.map((p) => `would update ${p}\n`),
+				"would delete .changeset/brave.md\n",
+			].join(""),
+		);
+		expect(await version()).toEqual({
+			code: 0,
+			stdout: [
+				...updates.map((p) => `updated ${p}\n`),
+				"deleted .changeset/brave.md\n",
+			].join(""),
+			stderr: "",
+		});
+		expect(files).not.toHaveProperty([".changeset/brave.md"]);
+		expect(JSON.parse(files["packages/core/package.json"] ?? "")).toEqual({
+			name: "@s/core",
+			version: "1.1.0",
+		});
+		expect(files["packages/core/CHANGELOG.md"]).toContain("* Add a flag");
 	});
 });
