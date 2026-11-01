@@ -134,6 +134,8 @@ export const releaseEntrySchema = z.strictObject({
 	group: z.string().nullable(),
 	/** Line of the planned branch. */
 	line: z.enum(["default", "maintenance"]),
+	/** First-parent commit count of `releaseSha` plus the unit's offset; null when the unit has no `buildNumber`. */
+	buildNumber: z.int().nullable(),
 });
 
 export type ReleaseEntry = z.infer<typeof releaseEntrySchema>;

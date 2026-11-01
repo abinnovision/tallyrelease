@@ -14,6 +14,11 @@ export const cliCodes = defineCodes({
 			"A base ref does not resolve to a commit, or the `pull_request` event has no merge base with HEAD. The ref comes from `--base`, `pull_request.base.sha` or `merge_group.base_sha` of the event payload.",
 		fix: "Check the ref passed to `--base` and make sure it exists locally (`git fetch origin <ref>`). In CI, check out the full history with `fetch-depth: 0`.",
 	},
+	E_BUILD_NUMBER_SHALLOW: {
+		cause:
+			"Build numbers count first-parent commits, which a shallow clone truncates. Raised by `run --github-output` when a unit sets `buildNumber`, before any effect.",
+		fix: "Fetch the full history, for example `fetch-depth: 0` in `actions/checkout` or `git fetch --unshallow`.",
+	},
 	E_CONFIG_MISSING: {
 		cause:
 			"The config file does not exist at the path given by `--config` (default `tallyrelease.yaml`) in the repository root.",

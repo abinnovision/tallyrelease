@@ -1,4 +1,5 @@
 import {
+	buildNumbers,
 	computePlan,
 	releasedFromTags,
 	withReleased,
@@ -34,6 +35,9 @@ export const run = async (session: Session, flags: RunFlags): Promise<void> => {
 
 	const branch = flags.branch === undefined ? {} : { branch: flags.branch };
 	const state: { setup?: PlanSetup } = {};
+	const numbered = async (): Promise<boolean> =>
+		flags.githubOutput === true &&
+		(await session.workspace()).units.some((u) => u.buildNumber);
 	const reconciled = await reconcile(
 		session,
 		{ ...branch, ...(flags.dryRun && { dryRun: true }) },
@@ -50,6 +54,13 @@ export const run = async (session: Session, flags: RunFlags): Promise<void> => {
 					throw cliCodes.error(
 						"E_BASE_REQUIRED",
 						`the build base is unknown because the forge failed (${warnings.map((w) => w.message).join("; ")}); re-run when the forge is healthy`,
+					);
+				}
+
+				if ((await numbered()) && (await session.git.isShallow())) {
+					throw cliCodes.error(
+						"E_BUILD_NUMBER_SHALLOW",
+						"build numbers count first-parent commits, which this shallow clone truncates; fetch the full history",
 					);
 				}
 
@@ -142,13 +153,24 @@ export const run = async (session: Session, flags: RunFlags): Promise<void> => {
 	}
 	/* eslint-enable no-await-in-loop */
 
+	const entries = flags.githubOutput
+		? releaseListEntries(doc, planned.workspace, atParent)
+		: undefined;
+	if (entries && (await numbered())) {
+		const { numbers, warnings } = await buildNumbers(
+			planned.workspace,
+			entries.map((e) => ({ id: e.id, sha: e.releaseSha })),
+			{ git, line: doc.line?.kind ?? "default" },
+		);
+		entries.forEach((e, i) => {
+			e.buildNumber = numbers[i] ?? null;
+		});
+		warn(warnings);
+	}
+
 	writePlan(
 		runSession,
-		{
-			doc,
-			base,
-			releases: releaseListEntries(doc, planned.workspace, atParent),
-		},
+		{ doc, base, ...(entries && { releases: entries }) },
 		flags,
 	);
 };
