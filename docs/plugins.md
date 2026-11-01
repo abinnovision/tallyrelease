@@ -17,6 +17,8 @@ A plugin is an object built with `definePlugin` from `@tallyrelease/core`. Every
 | `versionFiles` | `VersionFile[]`                 | Reads and rewrites the version of a released unit that lives in a file.   |
 | `schemes`      | `Record<string, VersionScheme>` | Adds version schemes next to the built-in `semver`.                       |
 | `intent`       | `IntentSource[]`                | Adds sources of changes next to the built-in Conventional Commits source. |
+| `validate`     | `string[]` or nothing           | Checks the computed plan; messages become warnings.                       |
+| `changelog`    | `string`                        | Replaces the changelog section of a unit the plugin owns.                 |
 
 Hooks run one at a time in config order and must return the same result for the same inputs. A hook that throws fails the command with `E_PLUGIN_HOOK`, which names the plugin and the hook.
 
@@ -164,6 +166,21 @@ renderTag({ id: "web", tagFormat: "{id}-v{version}" }, "1.2.0"); // "web-v1.2.0"
 ### Intent sources
 
 An `IntentSource` has a `name` and `collect(ctx, { from, to, commits })` that returns `Change[]`. Core always runs the Conventional Commits source (`parseCommit` is exported for plugins that read commit messages). A source can attribute a change through a commit (`sha`, by the files it touched) or explicitly (`units`).
+
+### Validation
+
+`validate?(ctx, plan)` runs once per plan, after versions are resolved, in `check`, `plan`, `explain`, `pr`, `version`, `release`, `run` and `shadow`. `plan` is a deep-frozen copy of the computed `Plan`, shared by all `validate` hooks of the run; changing it throws, which fails with `E_PLUGIN_HOOK`. It lists the build set and, except in `plan` without `--all` and in `run`, every released unit with a pending release, each with its `next` and its changes; `released` is still empty. Each returned string becomes a `W_PLUGIN` warning in `plan.warnings`, the same as `ctx.log.warn`; return nothing when the plan is fine. Throw to reject the plan: the command fails with `E_PLUGIN_HOOK`.
+
+```ts
+validate: (ctx, plan) =>
+	plan.units
+		.filter((u) => u.plugin === "go" && u.next?.startsWith("2."))
+		.map((u) => `${u.id}: a v2 module needs the /v2 module path`),
+```
+
+### Changelog sections
+
+`changelog?(ctx, { unit, plan, section })` is called for each unit the plugin owns that gets a changelog section, when the release files are built. `section` is the default section; the returned text replaces it in `<root>/CHANGELOG.md`, in the release PR body and in the forge release. Units of other plugins keep the default section. `plan` is a deep-frozen copy, as in `validate`, made once per run. The returned section must start with a version heading of the released version, such as `## 1.2.0 (2026-10-15)`, and contain no other version heading, so later releases and `releaseNotes` read it whole; otherwise the hook fails with `E_PLUGIN_HOOK`.
 
 ## Testing
 
@@ -330,4 +347,4 @@ Core enforces its side with lint and a bundle check. The cli does not enforce th
 | [`E_PLUGIN_HOOK`](errors.md#e_plugin_hook)       | A hook threw; the message names the plugin and the hook.            |
 | [`W_PLUGIN`](errors.md#w_plugin)                 | A plugin called `ctx.log.warn`.                                     |
 
-Run `tallyrelease check` to validate the config, plugins, units and graph, and add `--verbose` for debug output.
+Run `tallyrelease check` to validate the config, plugins, units and graph and to run `validate` hooks on the plan, and add `--verbose` for debug output.

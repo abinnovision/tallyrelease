@@ -52,7 +52,7 @@ Global flags: `--cwd <dir>` (repository root), `--config <file>` (default `tally
 
 Errors print as `error[E_*]` and warnings as `warning[W_*]`. The [error and warning reference](../../docs/errors.md) lists the cause and fix of each code.
 
-- `tallyrelease check` validates config, plugins, units, graph and release config; with released units it also checks the repository's tags.
+- `tallyrelease check` validates config, plugins, units, graph and release config; with released units it also checks the repository's tags. It then plans all units, which runs plugin `validate` hooks, so it needs git history like `plan`.
 - `tallyrelease graph [--format text|json|mermaid] [--json]` prints units and edges.
 - `tallyrelease affected [--base <ref>] [--format text|json|tsv] [--json] [--out <file>] [--github-output] [--tag <tag>]` computes the build set. `--out` writes the affected document as JSON, `--github-output` appends outputs to `$GITHUB_OUTPUT`. `--tag` (repeatable) keeps units with any of the given tags.
 - `tallyrelease plan [--branch <name>] [--base <ref>] [--head <ref>] [--all] [--format text|json] [--json] [--out <file>] [--github-output] [--summary]` computes the release plan without changing anything: kind, base version, bump, next version and prerelease version per unit. `--head` plans another commit with the current config, `--all` also lists released units with a pending release outside the build set. `--github-output` writes `plan`, the path of the written plan (`--out`, else `$RUNNER_TEMP/tallyrelease-plan.json`). `--summary` appends a markdown summary to `$GITHUB_STEP_SUMMARY`, or prints it instead of the table when unset (exit 2 with `--json` then). The JSON schema (the plan is schema 1) is exported as `@tallyrelease/cli/plan.schema.json`.
