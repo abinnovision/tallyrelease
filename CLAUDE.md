@@ -7,7 +7,8 @@ tallyrelease computes affected build units and release plans for monorepos and s
 Yarn 4 monorepo with Turbo orchestration. Names in parentheses are used for `turbo --filter`:
 
 - `packages/core` (`@tallyrelease/core`) - pure planning core and the plugin contract. Exports `.` and `./testing` (fakes: `memoryFs`, `memoryCtx`, `memoryGit`).
-- `packages/cli` (`@tallyrelease/cli`) - imperative shell, binary `tallyrelease`. Config loading, git, forge, CI integration, built-in plugins (`node`, `php`, `kustomize`).
+- `packages/cli` (`@tallyrelease/cli`) - imperative shell, binary `tallyrelease`. Config loading, git, forge, CI integration.
+- `packages/plugins` (`@tallyrelease/plugins`) - built-in plugins (`node`, `php`, `kustomize`). Exports only `builtinPlugins`.
 - `packages/tsconfig` (`@internal/tsconfig`) - shared TypeScript configs.
 - `packages/docs` (`@internal/docs`) - private generators for `docs/*.md`, run with Node type stripping.
 
@@ -31,7 +32,7 @@ Every `make` target runs `tools/<target>.sh`; ordering and flags live in the scr
 - Core does no I/O. It reads files and git only through injected `ReadonlyFs`, `Ctx` and `GitReader`.
 - Core `src/**` (except specs) must not import Node builtins or `@tallyrelease/cli`, and must not use `process`, `fetch`, `require` or `Buffer` (ESLint). Core `tsconfig.build.json` sets `"types": []`.
 - `yarn workspace @tallyrelease/core check:purity` runs `tools/check-purity.mjs`, which bundles `src/index.ts` with esbuild for the neutral platform and fails on any Node builtin, including transitive ones. It runs as part of `yarn check`. `test/purity/violation.ts` is a deliberate violation used by `test/purity.spec.ts`.
-- Built-in plugins (`packages/cli/src/plugins/**`) use only `@tallyrelease/core` public API and other plugin files; lint forbids Node builtins and relative imports out of the plugin folder, and `yarn workspace @tallyrelease/cli check:purity` bundles `src/plugins/index.ts` the same way.
+- Built-in plugins (`packages/plugins/src/**`) use only `@tallyrelease/core` public API and other files of the package; lint forbids Node builtins, `@tallyrelease/cli` and relative imports out of `src/`, and `yarn workspace @tallyrelease/plugins check:purity` bundles `src/index.ts` the same way.
 
 ## Testing
 
