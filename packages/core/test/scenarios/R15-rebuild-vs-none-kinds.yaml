@@ -17,7 +17,7 @@ config:
     packages/d: { release: false }
     packages/e: { release: false }
   branches:
-    - { name: main, line: default, channel: beta }
+    - { name: main, line: default, channels: { build: beta } }
 git:
   commits:
     - id: c0

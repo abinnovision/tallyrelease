@@ -1,0 +1,30 @@
+description: >-
+  A changelog hook section headed by next instead of the cut version is
+  rejected.
+plugins:
+  - name: stub
+    units:
+      - { id: a, root: packages/a }
+    changelog: "## 1.1.0 (2026-11-01)\n\nCustom notes.\n"
+config:
+  plugins: { stub: {} }
+  defaults: { release: true }
+  branches:
+    - { name: main, line: default, channels: { cut: beta } }
+git:
+  commits:
+    - id: c0
+      files: { packages/a/i.ts: "0" }
+    - id: c1
+      message: "feat: one"
+      files: { packages/a/i.ts: "1" }
+  tags:
+    - { name: a-v1.0.0, commit: c0 }
+base: c0
+plan: {}
+release:
+  cut: true
+  changelog: { date: "2026-11-01" }
+error:
+  code: E_PLUGIN_HOOK
+  details: { plugin: stub, hook: changelog }

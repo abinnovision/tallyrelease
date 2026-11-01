@@ -14,7 +14,7 @@ config:
   groups:
     app: { units: [b, c] }
   branches:
-    - { name: main, line: default, channel: rc }
+    - { name: main, line: default, channels: { build: rc } }
 git:
   commits:
     - id: c0

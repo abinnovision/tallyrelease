@@ -1,0 +1,45 @@
+description: >-
+  cutEquals with separate prerelease PRs: a complete group item passes, an
+  incomplete one fails, and a unit item alone passes.
+plugins:
+  - name: stub
+    units:
+      - { id: a, root: packages/a }
+      - { id: b, root: packages/b }
+      - { id: c, root: packages/c }
+config:
+  plugins: { stub: {} }
+  defaults: { release: true, releasePr: separate }
+  groups:
+    sdk: { units: [a, b] }
+  branches:
+    - { name: main, line: default, channels: { cut: beta } }
+git:
+  commits:
+    - id: c0
+      files:
+        { packages/a/i.ts: "0", packages/b/i.ts: "0", packages/c/i.ts: "0" }
+    - id: c1
+      message: "feat: a and c"
+      files: { packages/a/i.ts: "1", packages/c/i.ts: "1" }
+  tags:
+    - { name: a-v1.0.0, commit: c0 }
+    - { name: b-v1.0.0, commit: c0 }
+    - { name: c-v1.0.0, commit: c0 }
+base: c0
+plan: { all: true }
+release:
+  markerHead: c1
+  markers:
+    group:
+      - { id: a, version: 1.1.0-beta.2, tag: a-v1.1.0-beta.2 }
+      - { id: b, version: 1.1.0-beta.2, tag: b-v1.1.0-beta.2 }
+    group-incomplete:
+      - { id: b, version: 1.1.0-beta.2, tag: b-v1.1.0-beta.2 }
+    unit:
+      - { id: c, version: 1.1.0-beta.2, tag: c-v1.1.0-beta.2 }
+expect:
+  cutEquals:
+    group: true
+    group-incomplete: false
+    unit: true

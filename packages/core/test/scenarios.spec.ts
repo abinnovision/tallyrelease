@@ -8,9 +8,14 @@ import { collectPlanFacts } from "../src/facts.js";
 import {
 	computeAffected,
 	computePlan,
+	cutEquals,
+	cutNotes,
+	cutReleaseNotes,
+	cutWarnings,
 	flutter,
 	loadWorkspace,
 	planEquals,
+	previousCut,
 	releaseFiles,
 	releaseItems,
 	releaseNotes,
@@ -21,10 +26,15 @@ import { memoryFs, memoryGit } from "../src/testing/index.js";
 import type {
 	Change,
 	EdgeDraft,
+	GitReader,
 	MarkerRelease,
+	Plan,
 	Plugin,
+	ReadonlyFs,
+	ReleaseItem,
 	TallyConfig,
 	UnitDraft,
+	Workspace,
 } from "../src/index.js";
 import type { Dag } from "../src/testing/index.js";
 import type { StandardSchemaV1 } from "@standard-schema/spec";
@@ -80,6 +90,15 @@ interface Scenario {
 		markers?: Record<string, MarkerRelease[]>;
 		changelog?: { date: string; repoUrl?: string };
 		files?: { date: string; repoUrl?: string };
+		/**
+		 * Cut items, `cutWarnings` and `previousCut`; `changelog` renders
+		 * `cutReleaseNotes` and `files` runs `releaseFiles` with `{ cut }`.
+		 */
+		cut?: boolean;
+		/** Plans this commit too and evaluates `cutEquals` per marker, with `head` as P. */
+		markerHead?: string;
+		/** Cut channel of every branch rule at `markerHead`. */
+		markerCut?: string;
 	};
 	expect?: Record<string, unknown>;
 	error?: { code: string; details?: Record<string, unknown> };
@@ -141,20 +160,116 @@ const stubPlugin = (stub: Stub): Plugin => {
 	};
 };
 
+const prOf = (item: ReleaseItem) =>
+	item.mode === "shared" ? "shared" : item.name;
+
+/**
+ * Cut items with the `releaseFiles` cut input and the cut outputs; with
+ * `changelog`, `cutReleaseNotes` as `changelogs`.
+ */
+const cutRelease = async (
+	workspace: Workspace,
+	plan: Plan,
+	{
+		git,
+		fs,
+		changelog,
+	}: {
+		git: GitReader;
+		fs: ReadonlyFs;
+		changelog: { date: string; repoUrl?: string } | undefined;
+	},
+) => {
+	const items = releaseItems(workspace, plan, { cut: true });
+	const previous = await previousCut(workspace, plan, { git });
+	const versions = new Map(
+		items.flatMap((i) => i.units.map((id) => [id, i.version] as const)),
+	);
+	const changes = new Map(
+		await Promise.all(
+			items.flatMap((i) =>
+				i.units.map(async (id) => {
+					const tag = previous.get(id) ?? null;
+					const own = plan.units.find((u) => u.id === id)?.changes ?? [];
+
+					return [
+						id,
+						{
+							version: i.version,
+							previousCut: tag,
+							changes: await cutNotes(own, tag, { git }),
+						},
+					] as const;
+				}),
+			),
+		),
+	);
+	const notes =
+		changelog &&
+		(await Promise.all(
+			items.map(async (item) => {
+				const { notes: byUnit } = await cutReleaseNotes(workspace, plan, {
+					fs,
+					item,
+					prUnits: items
+						.filter((i) => prOf(i) === prOf(item))
+						.flatMap((i) => i.units),
+					versions,
+					date: changelog.date,
+					repoUrl: changelog.repoUrl ?? null,
+					git,
+				});
+
+				return [...byUnit];
+			}),
+		));
+
+	return {
+		items,
+		changes,
+		output: {
+			cutItems: items,
+			cutWarnings: cutWarnings(plan),
+			previousCut: Object.fromEntries(
+				[...previous].map(([id, t]) => [id, t?.name ?? null]),
+			),
+			...(notes && { changelogs: Object.fromEntries(notes.flat()) }),
+		},
+	};
+};
+
 const run = async (s: Scenario) => {
 	const stubs = (s.plugins ?? []).map((p) => ({ apiVersion: 1, ...p }));
 	const git = memoryGit(s.git);
 	const head = s.head ?? s.git.commits.at(-1)?.id ?? "HEAD";
-	const fs = memoryFs(git.tree(head));
-	const workspace = await loadWorkspace({
-		config: s.config ?? {
-			plugins: Object.fromEntries(stubs.map((p) => [p.name, {}])),
-		},
-		plugins: stubs.map(stubPlugin),
-		fs,
-		repo: { name: s.repo ?? "demo" },
-		...(s.configFile !== undefined && { configFile: s.configFile }),
-	});
+	const config: TallyConfig = s.config ?? {
+		plugins: Object.fromEntries(stubs.map((p) => [p.name, {}])),
+	};
+	const load = async (at: string, cut?: string) => {
+		const files = memoryFs(git.tree(at));
+
+		return {
+			fs: files,
+			workspace: await loadWorkspace({
+				config:
+					cut === undefined
+						? config
+						: {
+								...config,
+								branches: (config.branches ?? []).map((b) => ({
+									...b,
+									channels: { ...b.channels, cut },
+								})),
+							},
+				plugins: stubs.map(stubPlugin),
+				fs: files,
+				repo: { name: s.repo ?? "demo" },
+				...(s.configFile !== undefined && { configFile: s.configFile }),
+			}),
+		};
+	};
+
+	const { fs, workspace } = await load(head);
 	const opts = {
 		tool: "tallyrelease@test",
 		branch: s.branch ?? "main",
@@ -188,15 +303,39 @@ const run = async (s: Scenario) => {
 				})
 		: undefined;
 
-	const { markers = {}, changelog, files } = s.release ?? {};
-	const items = plan ? releaseItems(workspace, plan) : [];
-	const pr = (item: (typeof items)[number]) =>
-		item.mode === "shared" ? "shared" : item.name;
+	const {
+		markers = {},
+		changelog,
+		files,
+		cut,
+		markerHead,
+		markerCut,
+	} = s.release ?? {};
+	const stableItems = plan ? releaseItems(workspace, plan) : [];
+	const cutRun =
+		plan && cut
+			? await cutRelease(workspace, plan, { git, fs, changelog })
+			: undefined;
+	const items = cutRun?.items ?? stableItems;
+	let atH: { workspace: Workspace; plan: Plan } | undefined;
+	if (markerHead !== undefined) {
+		const { fs: fsH, workspace: wsH } = await load(markerHead, markerCut);
+		atH = {
+			workspace: wsH,
+			plan: await computePlan(wsH, git, {
+				...opts,
+				head: markerHead,
+				fs: fsH,
+				all: s.plan?.all ?? false,
+			}),
+		};
+	}
+
 	const prUnits = (id: string) => {
 		const own = items.find((i) => i.units.includes(id));
 
 		return items
-			.filter((i) => own && pr(i) === pr(own))
+			.filter((i) => own && prOf(i) === prOf(own))
 			.flatMap((i) => i.units);
 	};
 
@@ -207,12 +346,21 @@ const run = async (s: Scenario) => {
 					items,
 					repoUrl: files.repoUrl ?? null,
 					date: files.date,
+					...(cutRun && { cut: cutRun.changes }),
 				})
 			: undefined;
 
 	const release = plan &&
 		s.release && {
-			items,
+			items: stableItems,
+			...(atH && {
+				cutEquals: Object.fromEntries(
+					Object.entries(markers).map(([name, marker]) => [
+						name,
+						cutEquals(marker, atH, { workspace, plan }),
+					]),
+				),
+			}),
 			...(written && {
 				files: Object.fromEntries(written.files),
 				paths: [...written.files.keys()].sort(),
@@ -249,6 +397,8 @@ const run = async (s: Scenario) => {
 					return text === undefined ? [] : [[u.id, text]];
 				}),
 			),
+			// In cut mode `changelogs` holds the cut sections.
+			...cutRun?.output,
 		};
 
 	return {

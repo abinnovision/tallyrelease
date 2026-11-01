@@ -45,8 +45,13 @@ export interface BranchConfig {
 	/** Pattern with `*`, `{major}` and `{minor}`. */
 	name: string;
 	line: "default" | "maintenance";
-	/** Prerelease channel, may use the `{major}`/`{minor}` captures of `name`. */
+	/** @deprecated Alias of `channels.build`. */
 	channel?: string;
+	/**
+	 * Prerelease channels, may use the `{major}`/`{minor}` captures of `name`:
+	 * `build` labels every push, `cut` labels prerelease PRs and their tags.
+	 */
+	channels?: { build?: string; cut?: string };
 	/** Maintenance rules: the unit of the absolute check; excludes `group`. */
 	unit?: string;
 	/** Maintenance rules: the group of the absolute check; excludes `unit`. */

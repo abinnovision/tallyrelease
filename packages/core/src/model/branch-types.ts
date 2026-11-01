@@ -4,7 +4,12 @@ import type { BumpLevel } from "../plugin.js";
 export interface BranchRule {
 	readonly name: string;
 	readonly line: "default" | "maintenance";
+	/** Deprecated alias of `build`. */
 	readonly channel: string | null;
+	/** Build channel. */
+	readonly build: string | null;
+	/** Cut channel. */
+	readonly cut: string | null;
 	/** Release item of the absolute maintenance check. */
 	readonly unit: string | null;
 	readonly group: string | null;
@@ -14,8 +19,10 @@ export interface BranchRule {
 export interface Line {
 	rule: string;
 	kind: "default" | "maintenance";
-	/** Rendered with the rule's captures. */
+	/** Build channel, rendered with the rule's captures. */
 	channel: string | null;
+	/** Cut channel, rendered with the rule's captures. */
+	cut: string | null;
 	/** Maintenance rules: `minor` for `{major}`, `patch` with `{minor}`. */
 	maxBump: "minor" | "patch" | null;
 	absolute: {

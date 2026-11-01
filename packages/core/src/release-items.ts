@@ -3,6 +3,7 @@ import { releasedEdges } from "./propagate.js";
 import { renderTag } from "./tags.js";
 
 import type { ReleasePrMode } from "./config.js";
+import type { Warning } from "./errors.js";
 import type { MarkerRelease } from "./marker.js";
 import type { Plan } from "./model/plan-types.js";
 import type { Workspace } from "./workspace.js";
@@ -53,6 +54,29 @@ const itemNameProblem = (name: string): string | undefined => {
 		: undefined;
 };
 
+/** Marker releases equal the entries of `items` and touch only complete items. */
+const markerEquals = (
+	marker: readonly MarkerRelease[],
+	items: readonly ReleaseItem[],
+): boolean => {
+	const entries = new Map(releaseEntries(items).map((e) => [e.id, e]));
+	const ids = new Set(marker.map((r) => r.id));
+
+	return (
+		marker.length > 0 &&
+		marker.every((r) => {
+			const entry = entries.get(r.id);
+
+			return entry?.version === r.version && entry.tag === r.tag;
+		}) &&
+		items.every(
+			(item) =>
+				item.units.every((id) => ids.has(id)) ||
+				!item.units.some((id) => ids.has(id)),
+		)
+	);
+};
+
 /** A group or an ungrouped released unit; releases as one. */
 export interface ReleaseItem {
 	name: string;
@@ -61,37 +85,76 @@ export interface ReleaseItem {
 	/** Sorted member ids; the unit itself for kind `unit`. */
 	units: string[];
 	/** Stable `next`. */
+	next: string;
+	/** Released version: `next`, or the cut version. */
 	version: string;
 	/** Version tag of each member, in `units` order. */
 	tags: { id: string; tag: string }[];
 }
 
-/** Pending release items (stable `next`) in plan unit order. */
+/**
+ * Pending release items (stable `next`) in plan unit order. With `cut`, items
+ * at their cut version; items that cannot be cut are left out.
+ */
 export const releaseItems = (
 	workspace: Workspace,
 	plan: Plan,
+	{ cut = false }: { cut?: boolean } = {},
 ): ReleaseItem[] => {
 	const units = new Map(workspace.units.map((u) => [u.id, u]));
+	const groups = new Map(plan.groups.map((g) => [g.name, g]));
 	const byUnit = itemsByUnit(workspace);
 	const items = new Map<string, ReleaseItem>();
-	for (const { id, next } of plan.units) {
+	for (const entry of plan.units) {
+		const { id, next } = entry;
 		const item = byUnit.get(id);
 		if (next === null || !item || items.has(item.name)) {
 			continue;
 		}
 
+		let version: string | null = next;
+		if (cut) {
+			version =
+				item.kind === "group"
+					? (groups.get(item.name)?.cut ?? null)
+					: entry.cut;
+		}
+
+		if (version === null) {
+			continue;
+		}
+
 		items.set(item.name, {
 			...item,
-			version: next,
+			next,
+			version,
 			tags: item.units.flatMap((u) => {
 				const unit = units.get(u);
 
-				return unit ? [{ id: u, tag: renderTag(unit, next) }] : [];
+				return unit ? [{ id: u, tag: renderTag(unit, version) }] : [];
 			}),
 		});
 	}
 
 	return [...items.values()];
+};
+
+/** `W_CUT_SCHEME` for each unit with a pending release that cannot be cut on a line with a cut channel. */
+export const cutWarnings = (plan: Plan): Warning[] => {
+	const cut = plan.line?.cut ?? null;
+	if (cut === null) {
+		return [];
+	}
+
+	return plan.units
+		.filter((u) => u.next !== null && u.cut === null)
+		.map((u) =>
+			coreCodes.warning(
+				"W_CUT_SCHEME",
+				`unit "${u.id}" (scheme ${u.scheme}) cannot be cut on channel "${cut}"`,
+				{ unit: u.id },
+			),
+		);
 };
 
 /** One release per item member. */
@@ -111,23 +174,38 @@ export const planEquals = (
 	marker: readonly MarkerRelease[],
 	plan: Plan,
 	workspace: Workspace,
+): boolean => markerEquals(marker, releaseItems(workspace, plan));
+
+/**
+ * `planEquals` for a prerelease PR: the marker equals the cut releases at
+ * `atH` (the marker head), and each item it touches has the same `next` and
+ * members at `atP`, on a line with the same cut channel. Other items are
+ * ignored.
+ */
+export const cutEquals = (
+	marker: readonly MarkerRelease[],
+	atH: { workspace: Workspace; plan: Plan },
+	atP: { workspace: Workspace; plan: Plan },
 ): boolean => {
-	const items = releaseItems(workspace, plan);
-	const entries = new Map(releaseEntries(items).map((e) => [e.id, e]));
+	const items = releaseItems(atH.workspace, atH.plan, { cut: true });
+	const later = new Map(
+		releaseItems(atP.workspace, atP.plan).map((i) => [i.name, i]),
+	);
 	const ids = new Set(marker.map((r) => r.id));
 
 	return (
-		marker.length > 0 &&
-		marker.every((r) => {
-			const entry = entries.get(r.id);
+		markerEquals(marker, items) &&
+		(atH.plan.line?.cut ?? null) === (atP.plan.line?.cut ?? null) &&
+		items
+			.filter((item) => item.units.some((id) => ids.has(id)))
+			.every((item) => {
+				const other = later.get(item.name);
 
-			return entry?.version === r.version && entry.tag === r.tag;
-		}) &&
-		items.every(
-			(item) =>
-				item.units.every((id) => ids.has(id)) ||
-				!item.units.some((id) => ids.has(id)),
-		)
+				return (
+					other?.next === item.next &&
+					other.units.join("\0") === item.units.join("\0")
+				);
+			})
 	);
 };
 

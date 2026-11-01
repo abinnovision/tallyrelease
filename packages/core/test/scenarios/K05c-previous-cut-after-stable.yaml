@@ -1,0 +1,41 @@
+description: >-
+  After stable 1.3.0 on main, next 1.4.0 has no previous cut: 1.3.0-beta.7
+  lies before the line base, so the compare base falls back to the base tag.
+plugins:
+  - name: stub
+    units:
+      - { id: a, root: packages/a }
+config:
+  plugins: { stub: {} }
+  defaults: { release: true }
+  branches:
+    - { name: main, line: default, channels: { cut: beta } }
+git:
+  commits:
+    - id: c0
+      files: { packages/a/i.ts: "0" }
+    - id: c1
+      message: "feat: one"
+      files: { packages/a/i.ts: "1" }
+    - id: c2
+      message: "chore(release): 1.3.0"
+      files: { packages/a/CHANGELOG.md: "2" }
+    - id: c3
+      message: "feat: two"
+      files: { packages/a/i.ts: "3" }
+  tags:
+    - { name: a-v1.2.0, commit: c0 }
+    - { name: a-v1.3.0-beta.7, commit: c1 }
+    - { name: a-v1.3.0, commit: c2 }
+base: c2
+plan: {}
+release:
+  cut: true
+  changelog: { date: "2026-11-01", repoUrl: "https://github.com/o/r" }
+expect:
+  plan:
+    units:
+      - { id: a, baseTag: a-v1.3.0, next: 1.4.0, cut: 1.4.0-beta.2 }
+  previousCut: { a: null }
+  changelogs:
+    a: "## [1.4.0-beta.2](https://github.com/o/r/compare/a-v1.3.0...a-v1.4.0-beta.2) (2026-11-01)\n\n\n### Features\n\n* two ([c3](https://github.com/o/r/commit/c3))"

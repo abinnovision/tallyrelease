@@ -119,6 +119,16 @@ const dependencyLines = (deps: readonly ChangelogDependency[]): string => {
 	].join("\n");
 };
 
+/** True when a change gets a changelog entry: a listed type, or breaking or Release-As on a hidden one. */
+export const isListed = (change: PlanChange): boolean => {
+	const section = SECTIONS.find(([type]) => type === change.type.toLowerCase());
+
+	return (
+		section !== undefined &&
+		(!section[2] || change.breaking || change.releaseAs !== undefined)
+	);
+};
+
 /** Version of a version heading line, else undefined. */
 export const headingVersion = <V>(
 	line: string,
@@ -139,6 +149,17 @@ export interface ChangelogDependency {
 	field: string;
 	name: string;
 	version: string;
+}
+
+/** A cut section of a unit. */
+interface CutSection {
+	version: string;
+	/** Tag of the previous cut; null compares to the base tag. */
+	previousCut: string | null;
+	/** Changes since the previous cut, core commit order. */
+	changes: readonly PlanChange[];
+	/** Version of each unit in the prerelease PR. */
+	versions: ReadonlyMap<string, string>;
 }
 
 export interface ChangelogInput {
@@ -174,10 +195,7 @@ export const renderChangelogSection = (input: ChangelogInput): string => {
 		const section = SECTIONS.find(
 			([type]) => type === change.type.toLowerCase(),
 		);
-		const listed =
-			section !== undefined &&
-			(!section[2] || change.breaking || change.releaseAs !== undefined);
-		if (!section || !listed) {
+		if (!section || !isListed(change)) {
 			continue;
 		}
 
@@ -231,7 +249,9 @@ export const renderChangelogSection = (input: ChangelogInput): string => {
  * The changelog section of a unit with a stable `next` in `plan`, else
  * undefined. Dependencies are direct edges from units of the same release PR,
  * named after the edge reason (`<field>: <name>`, else `dependencies` and the
- * unit id).
+ * unit id). With `cut`, the section is the cut version with the changes since
+ * the previous cut, compared to it (else to the base tag), and dependencies
+ * at their versions in the prerelease PR.
  */
 export const changelogSection = (
 	workspace: Workspace,
@@ -242,9 +262,10 @@ export const changelogSection = (
 		date: string;
 		/** Units released in the same release PR; dependencies outside it are not listed. */
 		prUnits: readonly string[];
+		cut?: CutSection;
 	},
 ): string | undefined => {
-	const { id } = opts;
+	const { id, cut } = opts;
 	const inPr = new Set(opts.prUnits);
 	const units = new Map(workspace.units.map((u) => [u.id, u]));
 	const planned = new Map(plan.units.map((u) => [u.id, u]));
@@ -255,7 +276,9 @@ export const changelogSection = (
 	}
 
 	const dependencies = workspace.graph.edges.flatMap((edge) => {
-		const version = planned.get(edge.from)?.next;
+		const version = cut
+			? cut.versions.get(edge.from)
+			: planned.get(edge.from)?.next;
 		if (
 			edge.to !== id ||
 			!inPr.has(edge.from) ||
@@ -278,13 +301,15 @@ export const changelogSection = (
 			: [{ field: "dependencies", name: edge.from, version }];
 	});
 
+	const version = cut?.version ?? entry.next;
+
 	return renderChangelogSection({
-		version: entry.next,
+		version,
 		date: opts.date,
 		repoUrl: opts.repoUrl,
-		baseTag: entry.baseTag,
-		tag: renderTag(unit, entry.next),
-		changes: entry.changes,
+		baseTag: cut ? (cut.previousCut ?? entry.baseTag) : entry.baseTag,
+		tag: renderTag(unit, version),
+		changes: cut?.changes ?? entry.changes,
 		dependencies,
 		...(entry.group === null
 			? {}
@@ -296,9 +321,9 @@ export const changelogSection = (
  * Inserts `section` on top of the version sections of `content` (undefined or blank:
  * a new file with `# Changelog`). Version headings are `##` or `###` lines,
  * linked or plain. Sections above `baseVersion` are untagged leftovers and are
- * replaced; without a base version, sections not below the new version are.
- * Text before the first version heading and the other sections stay as they
- * are.
+ * replaced; without a base version, sections not below the new version are,
+ * and a stable section also replaces prerelease sections. Text before the
+ * first version heading and the other sections stay as they are.
  */
 export const updateChangelog = <V>(
 	content: string | undefined,
@@ -314,7 +339,9 @@ export const updateChangelog = <V>(
 	const stale = (v: V) =>
 		base !== undefined
 			? scheme.compare(v, base) > 0
-			: next !== undefined && scheme.compare(v, next) >= 0;
+			: next !== undefined &&
+				(scheme.compare(v, next) >= 0 ||
+					(!scheme.isPrerelease(next) && scheme.isPrerelease(v)));
 
 	const preamble: string[] = [];
 	const kept: string[] = [];

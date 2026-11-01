@@ -1,0 +1,43 @@
+description: >-
+  K03 with another cut channel at the marker head: the marker equals the cut
+  releases there, but the line's cut channel differs at head, so cutEquals
+  fails.
+plugins:
+  - name: stub
+    units:
+      - { id: a, root: packages/a }
+      - { id: b, root: packages/b }
+config:
+  plugins: { stub: {} }
+  defaults: { release: true }
+  groups:
+    sdk: { units: [a, b] }
+  branches:
+    - { name: main, line: default, channels: { cut: beta } }
+git:
+  commits:
+    - id: c0
+      files: { packages/a/i.ts: "0", packages/b/i.ts: "0" }
+    - id: c1
+      message: "feat: a"
+      files: { packages/a/i.ts: "1" }
+    - id: c2
+      message: "docs: readme"
+      files: { README.md: "2" }
+  tags:
+    - { name: a-v1.0.0, commit: c0 }
+    - { name: b-v1.0.0, commit: c0 }
+base: c0
+plan: { all: true }
+release:
+  markerHead: c1
+  markerCut: rc
+  markers:
+    cut-changed:
+      - { id: a, version: 1.1.0-rc.2, tag: a-v1.1.0-rc.2 }
+      - { id: b, version: 1.1.0-rc.2, tag: b-v1.1.0-rc.2 }
+expect:
+  plan:
+    line: { cut: beta }
+  cutEquals:
+    cut-changed: false

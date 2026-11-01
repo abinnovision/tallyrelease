@@ -246,7 +246,34 @@ const configObject = z.strictObject({
 					.string()
 					.meta({
 						description:
-							"Prerelease channel (letters, digits, dash); may use {major} and {minor} captured by name.",
+							"Deprecated alias of channels.build; cannot be set together with channels.build.",
+						deprecated: true,
+					})
+					.exactOptional(),
+				channels: z
+					.strictObject({
+						build: z
+							.string()
+							.meta({
+								description:
+									"Build channel: labels the untagged prerelease version of every push.",
+							})
+							.exactOptional(),
+						cut: z
+							.string()
+							.meta({
+								description:
+									"Cut channel: labels the tagged prereleases that prerelease PRs cut.",
+							})
+							.exactOptional(),
+					})
+					.refine((c) => Object.keys(c).length > 0, {
+						message: "channels needs build or cut",
+					})
+					.meta({
+						description:
+							"Prerelease channels (letters, digits, dash); may use {major} and {minor} captured by name. Set at least one.",
+						minProperties: 1,
 					})
 					.exactOptional(),
 				unit: z

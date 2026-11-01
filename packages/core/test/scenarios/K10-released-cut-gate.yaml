@@ -1,0 +1,32 @@
+description: >-
+  A cut tag is not a stable release: with a build channel the released list
+  stays empty and a null base does not warn W_RELEASED_NO_BASE for it.
+plugins:
+  - name: stub
+    units:
+      - { id: a, root: packages/a }
+config:
+  plugins: { stub: {} }
+  defaults: { release: true }
+  branches:
+    - { name: main, line: default, channels: { build: alpha, cut: beta } }
+git:
+  commits:
+    - id: c0
+      files: { packages/a/i.ts: "0" }
+    - id: c1
+      message: "feat: one"
+      files: { packages/a/i.ts: "1" }
+    - id: c2
+      message: "fix: two"
+      files: { packages/a/i.ts: "2" }
+  tags:
+    - { name: a-v1.0.0-beta.2, commit: c1 }
+base: null
+plan: { released: true }
+expect:
+  plan:
+    units:
+      - { id: a, kind: prerelease, version: 1.0.0-alpha.3, cut: 1.0.0-beta.4 }
+    released: []
+    warnings: []
