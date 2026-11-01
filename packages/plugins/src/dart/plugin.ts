@@ -21,7 +21,12 @@ const DEP_FIELDS = [
 	"dev_dependencies",
 	"dependency_overrides",
 ] as const;
-const EXACT = new RegExp(`^${NUMBERS}${PRERELEASE}${BUILD}$`);
+const VERSION = `${NUMBERS}${PRERELEASE}${BUILD}`;
+const EXACT = new RegExp(`^${VERSION}$`);
+/** An exact `name: version` entry; the groups are the indent, name, colon, quote and trailing text. */
+const PIN_LINE = new RegExp(
+	`^([ \\t]+)([\\w.-]+)(:[ \\t]*)(["']?)${VERSION}\\4(?=\\s|$)(.*)$`,
+);
 /** The top-level `version:` line; group 3 is the value without quotes. */
 const VERSION_LINE = /^(version:[ \t]*)(["']?)([^\s"'#]+)\2/m;
 
@@ -94,6 +99,44 @@ const pinnedLink = (field: string, spec: unknown): boolean | undefined => {
 		: undefined;
 };
 
+/** Sets the exact version entries under top-level `dependencies:` that name a released package. */
+const rewritePins = (
+	content: string,
+	released: ReadonlyMap<string, string>,
+): string => {
+	let inDeps = false;
+	let indent: string | undefined;
+
+	return content.replace(/^.*$/gm, (line) => {
+		if (/^dependencies:\s*(#.*)?$/.test(line)) {
+			inDeps = true;
+			indent = undefined;
+
+			return line;
+		}
+
+		if (!inDeps || /^\s*(#.*)?$/.test(line)) {
+			return line;
+		}
+
+		if (!/^\s/.test(line)) {
+			inDeps = false;
+
+			return line;
+		}
+
+		const [, lead = "", name = "", colon = "", quote = "", rest = ""] =
+			PIN_LINE.exec(line) ?? [];
+		const version = released.get(name);
+		indent ??= /^[ \t]*/.exec(line)?.[0];
+		if (version === undefined || lead !== indent) {
+			return line;
+		}
+
+		return `${lead}${name}${colon}${quote}${version}${quote}${rest}`;
+	});
+};
+
 export const dartPlugin = definePlugin<Options>({
 	apiVersion: 1,
 	name: "dart",
@@ -141,9 +184,18 @@ export const dartPlugin = definePlugin<Options>({
 		{
 			path: joinRoot(unit.root, PUBSPEC),
 			read: (content) => VERSION_LINE.exec(content)?.[3],
-			// A pubspec without a version line gets one after `name:`.
-			write: (content, next) =>
-				VERSION_LINE.test(content)
+			write: (content, next, { units, versions }) => {
+				const released = new Map<string, string>();
+				for (const u of units) {
+					const name = u.meta["dart"]?.["packageName"];
+					const version = versions.get(u.id);
+					if (typeof name === "string" && version !== undefined) {
+						released.set(name, version);
+					}
+				}
+
+				// A pubspec without a version line gets one after `name:`.
+				const versioned = VERSION_LINE.test(content)
 					? content.replace(
 							VERSION_LINE,
 							(_, key: string, quote: string) =>
@@ -153,7 +205,10 @@ export const dartPlugin = definePlugin<Options>({
 							/^name:.*$/m,
 							(line) =>
 								`${line}${content.includes("\r\n") ? "\r\n" : "\n"}version: ${next}`,
-						),
+						);
+
+				return rewritePins(versioned, released);
+			},
 		},
 	],
 	inputs: (ctx) => ({
