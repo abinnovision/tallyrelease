@@ -25,6 +25,15 @@ export interface Plugin<O = unknown> {
 	/** Checks the computed plan; returned messages become `W_PLUGIN` warnings. */
 	// eslint-disable-next-line @typescript-eslint/no-invalid-void-type -- a hook without warnings returns nothing
 	validate?: (ctx: Ctx<O>, plan: Plan) => MaybePromise<string[] | void>;
+	/**
+	 * Called only for units owned by this plugin with a changelog section.
+	 * Returns the section that replaces the default `section`; it must start
+	 * with a version heading of the released version and have no other.
+	 */
+	changelog?: (
+		ctx: Ctx<O>,
+		input: { unit: Unit; plan: Plan; section: string },
+	) => MaybePromise<string>;
 }
 
 export interface Ctx<O = unknown> {
