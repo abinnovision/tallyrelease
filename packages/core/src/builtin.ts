@@ -1,3 +1,4 @@
+import { calver } from "./calver.js";
 import { conventionalCommits } from "./conventional.js";
 import { PLUGIN_API_VERSION } from "./plugin.js";
 import { semver } from "./semver.js";
@@ -11,6 +12,6 @@ export const CORE_PLUGIN = "core";
 export const corePlugin: Plugin = {
 	apiVersion: PLUGIN_API_VERSION,
 	name: CORE_PLUGIN,
-	schemes: { semver },
+	schemes: { semver, calver },
 	intent: [conventionalCommits],
 };

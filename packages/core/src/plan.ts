@@ -113,6 +113,7 @@ const releaseInputs = (
 				range,
 				absorbed: reach(unit.id, workspace.graph.dependencies, released),
 				head: facts.head,
+				...(facts.date === undefined ? {} : { date: facts.date }),
 				channel,
 			},
 		]),

@@ -1,0 +1,69 @@
+description: >-
+  A head dated in a newer month releases Y.M.0 of that month for a unit, a
+  fixed group and an older-month Release-As.
+plugins:
+  - name: stub
+    units:
+      - { id: a, root: packages/a, scheme: calver }
+      - { id: b, root: packages/b, scheme: calver }
+      - { id: c, root: packages/c, scheme: calver }
+      - { id: d, root: packages/d, scheme: calver }
+config:
+  plugins: { stub: {} }
+  defaults: { release: true }
+  groups:
+    app: { units: [b, c] }
+  branches:
+    - { name: main, line: default, channel: rc }
+git:
+  commits:
+    - id: c0
+      date: "2026-10-01T09:00:00Z"
+      files:
+        packages/a/index.ts: "0"
+        packages/b/index.ts: "0"
+        packages/c/index.ts: "0"
+        packages/d/index.ts: "0"
+    - id: c1
+      message: "fix: a b"
+      date: "2026-10-31T23:00:00Z"
+      files: { packages/a/index.ts: "1", packages/b/index.ts: "1" }
+    - id: c2
+      message: "chore: d\n\nRelease-As: 2026.10.7"
+      date: "2026-11-02T08:00:00Z"
+      files: { packages/d/index.ts: "2" }
+  tags:
+    - { name: a-v2026.10.3, commit: c0 }
+    - { name: b-v2026.10.1, commit: c0 }
+    - { name: c-v2026.10.1, commit: c0 }
+    - { name: d-v2026.10.3, commit: c0 }
+base: c0
+plan: {}
+expect:
+  plan:
+    units:
+      - { id: a, from: 2026.10.3, next: 2026.11.0, version: 2026.11.0-rc.2 }
+      - {
+          id: b,
+          group: app,
+          from: 2026.10.1,
+          next: 2026.11.0,
+          version: 2026.11.0-rc.2,
+        }
+      - {
+          id: c,
+          group: app,
+          from: 2026.10.1,
+          next: 2026.11.0,
+          version: 2026.11.0-rc.2,
+        }
+      - {
+          id: d,
+          from: 2026.10.3,
+          releaseAs: 2026.10.7,
+          next: 2026.11.0,
+          version: 2026.11.0-rc.2,
+        }
+    groups:
+      - { name: app, from: 2026.10.1, next: 2026.11.0, version: 2026.11.0-rc.2 }
+    warnings: []

@@ -75,6 +75,8 @@ export interface GitReader {
 	 * `path`; null if none.
 	 */
 	introduced: (path: string, to: string) => MaybePromise<string | null>;
+	/** Committer date of `ref`, ISO 8601. */
+	commitDate?: (ref: string) => MaybePromise<string>;
 }
 
 export interface TagRef {
@@ -183,6 +185,8 @@ export interface PreCtx {
 	/** Full sha of the planned commit. */
 	head: string;
 	baseTag: string | null;
+	/** Committer date of `head`, ISO 8601; set when the git reader has `commitDate`. */
+	date?: string;
 	/** All tags of this unit, reachable or not, scheme-sorted. */
 	tags: readonly string[];
 	firstParent: {

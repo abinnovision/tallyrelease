@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { flutter } from "./fixtures/flutter.js";
 import { corePlugin } from "../src/builtin.js";
+import { calver } from "../src/calver.js";
 import { loadWorkspace } from "../src/index.js";
 import { PLUGIN_API_VERSION } from "../src/plugin.js";
 import { assertSchemes, schemeRegistry } from "../src/schemes.js";
@@ -20,6 +21,10 @@ describe("semver", () => {
 	schemeConformance(semver);
 });
 
+describe("calver", () => {
+	schemeConformance(calver, { dateDriven: true });
+});
+
 describe("flutter", () => {
 	schemeConformance(flutter);
 });
@@ -29,6 +34,7 @@ describe("schemes", () => {
 		const registry = schemeRegistry([corePlugin, plugin("dart", { flutter })]);
 		expect([...registry]).toEqual([
 			["semver", semver],
+			["calver", calver],
 			["flutter", flutter],
 		]);
 		expect(() => {
@@ -86,7 +92,11 @@ describe("loadWorkspace", () => {
 		const source = { name: "changesets", collect: () => [] };
 		const dart = { ...plugin("dart", { flutter }), intent: [source] };
 		const workspace = await load([dart]);
-		expect([...workspace.schemes.keys()]).toEqual(["semver", "flutter"]);
+		expect([...workspace.schemes.keys()]).toEqual([
+			"semver",
+			"calver",
+			"flutter",
+		]);
 		expect(workspace.intents.map((i) => [i.plugin, i.source.name])).toEqual([
 			["core", "conventional-commits"],
 			["dart", "changesets"],

@@ -240,6 +240,7 @@ export const memoryGit = (dag: Dag): MemoryGit => {
 
 			return intro?.id ?? null;
 		},
+		commitDate: (ref) => node(ref).date,
 		tree: (ref) => Object.fromEntries(node(ref).tree),
 		parents: (ref) => [...node(ref).parents],
 	};

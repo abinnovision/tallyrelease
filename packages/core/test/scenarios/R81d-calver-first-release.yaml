@@ -1,0 +1,30 @@
+description: >-
+  A calver first release starts at Y.M.0 of the commit date, above an
+  existing prerelease tag of that month without a warning.
+plugins:
+  - name: stub
+    units:
+      - { id: a, root: packages/a, scheme: calver }
+config:
+  plugins: { stub: {} }
+  defaults: { release: true }
+  branches:
+    - { name: main, line: default }
+git:
+  commits:
+    - id: c0
+      date: "2026-11-01T09:00:00Z"
+      files: { packages/a/index.ts: "0" }
+    - id: c1
+      message: "feat: a"
+      date: "2026-11-03T12:00:00Z"
+      files: { packages/a/index.ts: "1" }
+  tags:
+    - { name: a-v2026.11.0-rc.1, commit: c0 }
+base: null
+plan: {}
+expect:
+  plan:
+    units:
+      - { id: a, from: null, next: 2026.11.0 }
+    warnings: []

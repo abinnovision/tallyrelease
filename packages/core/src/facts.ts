@@ -355,6 +355,7 @@ export const collectPlanFacts = async (
 	opts: FactsOptions,
 ): Promise<PlanFacts> => {
 	const { head } = opts;
+	const date = await git.commitDate?.(head);
 	const line = await lineFacts(git, head);
 	const { tags, bases, groups, isAncestor, tagNames } = await tagFacts(
 		workspace,
@@ -412,5 +413,13 @@ export const collectPlanFacts = async (
 		});
 	}
 
-	return { head, units, ranges: all(), groups, tagNames, warnings };
+	return {
+		head,
+		...(date === undefined ? {} : { date }),
+		units,
+		ranges: all(),
+		groups,
+		tagNames,
+		warnings,
+	};
 };

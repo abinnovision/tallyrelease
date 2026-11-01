@@ -170,6 +170,20 @@ export const gitReaderConformance = (makeReader: ReaderFactory): void => {
 			);
 		});
 
+		it("reads the committer date of a commit when supported", async () => {
+			if (git.commitDate === undefined) {
+				return;
+			}
+
+			const commits = await git.log(null, sha("e"));
+			for (const id of ["a", "e"]) {
+				// eslint-disable-next-line no-await-in-loop -- one commit at a time
+				const date = await git.commitDate(sha(id));
+				expect(date).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/u);
+				expect(date).toBe(commits.find((c) => c.sha === sha(id))?.date);
+			}
+		});
+
 		it("lists every commit before its parents", async () => {
 			const commits = await git.log(null, sha("e"));
 			const index = new Map(commits.map((c, i) => [c.sha, i]));
@@ -272,6 +286,7 @@ const PRE_CTX: PreCtx & { channel: string } = {
 		meta: {},
 	},
 	head: "0".repeat(40),
+	date: "2024-01-01T00:00:00Z",
 	baseTag: null,
 	tags: [],
 	firstParent: { sinceLineBase: 3, total: 7 },
@@ -281,9 +296,13 @@ const PRE_CTX: PreCtx & { channel: string } = {
 /**
  * Shared `VersionScheme` spec. Versions are derived from `initial()`:
  * `parse`/`format` round-trip, `compare` order, `bump` monotonicity per level,
- * and `release`/`prerelease` keeping the core triple.
+ * and `release`/`prerelease` keeping the core triple. With `dateDriven` the
+ * level order, the core reset and the core-keeping checks are skipped.
  */
-export const schemeConformance = <V>(scheme: VersionScheme<V>): void => {
+export const schemeConformance = <V>(
+	scheme: VersionScheme<V>,
+	{ dateDriven = false }: { dateDriven?: boolean } = {},
+): void => {
 	describe("VersionScheme conformance", () => {
 		const initial = scheme.initial();
 		const bumped = (level: BumpLevel) => scheme.bump(initial, level);
@@ -317,37 +336,48 @@ export const schemeConformance = <V>(scheme: VersionScheme<V>): void => {
 			expect(scheme.isPrerelease(next)).toBe(false);
 		});
 
-		it("orders bump levels major > minor > patch", () => {
-			const [major, minor, patch] = LEVELS.map(bumped) as [V, V, V];
-			expect(scheme.compare(major, minor)).toBeGreaterThan(0);
-			expect(scheme.compare(minor, patch)).toBeGreaterThan(0);
-		});
+		// A date-driven scheme takes the core from the commit date.
+		if (!dateDriven) {
+			it("orders bump levels major > minor > patch", () => {
+				const [major, minor, patch] = LEVELS.map(bumped) as [V, V, V];
+				expect(scheme.compare(major, minor)).toBeGreaterThan(0);
+				expect(scheme.compare(minor, patch)).toBeGreaterThan(0);
+			});
 
-		it("resets lower core parts on a bump", () => {
-			const { major, minor, patch } = scheme.core(initial);
-			expect(scheme.core(bumped("major"))).toEqual({
-				major: major + 1,
-				minor: 0,
-				patch: 0,
+			it("resets lower core parts on a bump", () => {
+				const { major, minor, patch } = scheme.core(initial);
+				expect(scheme.core(bumped("major"))).toEqual({
+					major: major + 1,
+					minor: 0,
+					patch: 0,
+				});
+				expect(scheme.core(bumped("minor"))).toEqual({
+					major,
+					minor: minor + 1,
+					patch: 0,
+				});
+				expect(scheme.core(bumped("patch"))).toEqual({
+					major,
+					minor,
+					patch: patch + 1,
+				});
 			});
-			expect(scheme.core(bumped("minor"))).toEqual({
-				major,
-				minor: minor + 1,
-				patch: 0,
-			});
-			expect(scheme.core(bumped("patch"))).toEqual({
-				major,
-				minor,
-				patch: patch + 1,
-			});
-		});
 
-		it("keeps the core when releasing or prereleasing", () => {
+			it("keeps the core when releasing or prereleasing", () => {
+				const next = bumped("minor");
+				expect(scheme.core(scheme.release(next, PRE_CTX))).toEqual(
+					scheme.core(next),
+				);
+				expect(scheme.core(scheme.prerelease(next, PRE_CTX))).toEqual(
+					scheme.core(next),
+				);
+			});
+		}
+
+		it("orders a prerelease at or below its release", () => {
 			const next = bumped("minor");
 			const release = scheme.release(next, PRE_CTX);
 			const pre = scheme.prerelease(next, PRE_CTX);
-			expect(scheme.core(release)).toEqual(scheme.core(next));
-			expect(scheme.core(pre)).toEqual(scheme.core(next));
 			expect(scheme.isPrerelease(release)).toBe(false);
 			expect(scheme.compare(pre, release)).toBeLessThanOrEqual(0);
 			expect(scheme.parse(scheme.format(pre))).toBeDefined();

@@ -1,0 +1,31 @@
+description: >-
+  A calver feat within the base tag's month increments N; the date is the
+  planned commit's UTC committer date.
+plugins:
+  - name: stub
+    units:
+      - { id: a, root: packages/a, scheme: calver }
+config:
+  plugins: { stub: {} }
+  defaults: { release: true }
+  branches:
+    - { name: main, line: default }
+git:
+  commits:
+    - id: c0
+      date: "2026-10-01T09:00:00Z"
+      files: { packages/a/index.ts: "0" }
+    - id: c1
+      message: "feat: a"
+      date: "2026-11-01T01:00:00+02:00"
+      files: { packages/a/index.ts: "1" }
+  tags:
+    - { name: a-v2026.10.0, commit: c0 }
+base: c0
+plan: {}
+expect:
+  facts: { head: c1, date: "2026-11-01T01:00:00+02:00" }
+  plan:
+    units:
+      - { id: a, from: 2026.10.0, bump: minor, next: 2026.10.1 }
+    warnings: []
