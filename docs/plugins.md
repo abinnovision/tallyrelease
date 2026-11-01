@@ -200,7 +200,7 @@ validate: (ctx, plan) =>
 
 ### Changelog sections
 
-`changelog?(ctx, { unit, plan, section })` is called for each unit the plugin owns that gets a changelog section, when the release files are built. `section` is the default section; the returned text replaces it in `<root>/CHANGELOG.md`, in the release PR body and in the forge release. Units of other plugins keep the default section. `plan` is a deep-frozen copy, as in `validate`, made once per run. The returned section must start with a version heading of the released version, such as `## 1.2.0 (2026-10-15)`, and contain no other version heading, so later releases and `releaseNotes` read it whole; otherwise the hook fails with `E_PLUGIN_HOOK`.
+`changelog?(ctx, { unit, plan, section, cut })` is called for each unit the plugin owns that gets a changelog section, when the release files are built. `section` is the default section; the returned text replaces it in `<root>/CHANGELOG.md`, in the release PR body and in the forge release. Units of other plugins keep the default section. `plan` is a deep-frozen copy, as in `validate`, made once per run. `cut` is `{ version }` for the section of a prerelease cut (a prerelease PR or its GitHub prerelease) and `null` otherwise; the heading of a cut section carries `cut.version`, not a version of `plan`. The returned section must start with a version heading of the released version, such as `## 1.2.0 (2026-10-15)`, and contain no other version heading, so later releases and `releaseNotes` read it whole; otherwise the hook fails with `E_PLUGIN_HOOK`.
 
 ## Testing
 

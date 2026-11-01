@@ -27,7 +27,7 @@ tallyrelease reads git history, Conventional Commits and a dependency graph supp
 
 - **One graph for builds and releases.** The same units and edges decide what CI builds and what gets a new version, so both come from one model of the repo.
 - **Build-only units.** Units are built but not released unless you opt them in. A change in an unreleased internal package is absorbed into the released units that depend on it (as a patch by default), so internal libraries need no version of their own.
-- **Prereleases without committed state.** Prerelease versions are `{next}-{channel}.{N}`, where `N` counts first-parent commits since the last stable release on the line. Nothing is written to the repo and no registry is queried.
+- **Prereleases without committed state.** Build prereleases are `{next}-{build}.{N}`, where `N` counts first-parent commits since the last stable release on the line. Nothing is written to the repo and no registry is queried. A branch can also cut prereleases by hand: a prerelease PR whose merge tags the commit and creates a GitHub prerelease.
 - **Maintenance lines.** Branch rules such as `release/{major}.x` cap bumps at minor (and `release/{major}.{minor}.x` at patch), and fail with the offending commits when a change would leave the line.
 - **See before you write.** `plan`, `explain` and `--dry-run` show versions, bumps and the commits behind them before anything changes. The planning core does no I/O and is deterministic for a given repository state.
 - **Ecosystem plugins.** `node`, `php`, `go`, `kustomize`, `dart` and `changesets` are built in, see the [plugin reference](docs/plugins.md#built-in-plugins). Anything else can be declared as a [config-only unit](docs/plugins/config-only.md) that versions through git tags and `versionFiles`, or added with your own plugin (see the [plugin authoring guide](docs/plugins.md)).
@@ -143,7 +143,7 @@ As of release-please 17.11 and Changesets 3.0, October 2026. Corrections welcome
 | Affected build detection      | Yes (`affected`)                                                                   | No                                                         | No (left to turbo, Nx and similar)                         |
 | Build-only units              | Yes; changes are absorbed into released dependents                                 | No                                                         | No                                                         |
 | Version groups                | Fixed                                                                              | Linked versions plugin                                     | Fixed and linked                                           |
-| Prereleases                   | Per branch channel, `{next}-{channel}.{N}`, no committed state                     | `prerelease: true` with a prerelease versioning strategy   | `pre enter` / `pre exit` mode for all packages; snapshots  |
+| Prereleases                   | Per branch: builds `{next}-{build}.{N}`, cuts by prerelease PR                     | `prerelease: true` with a prerelease versioning strategy   | `pre enter` / `pre exit` mode for all packages; snapshots  |
 | Maintenance branches          | Branch rules cap bumps (`release/{major}.x`)                                       | No bump caps                                               | No bump caps                                               |
 | Release PRs                   | Shared or separate per item, plan rechecked on merge                               | One PR or separate PRs, updated as commits land            | "Version Packages" PR via `changesets/action`              |
 | Forge                         | GitHub for effects; `affected` in any CI with `--base`                             | GitHub (Action or App)                                     | CLI forge-agnostic; PR automation on GitHub via the action |
@@ -161,7 +161,7 @@ As of release-please 17.11 and Changesets 3.0, October 2026. Corrections welcome
 - Commits are matched to units by path, as in release-please, but releases also follow a dependency graph from plugins, with a propagation policy per unit.
 - Build-only units are absorbed into released dependents; release-please has no equivalent.
 - It computes the affected build set, so one tool drives CI builds and releases.
-- Prerelease numbers come from git history, so there is no committed prerelease state.
+- Build prerelease numbers come from git history, so there is no committed prerelease state; cut prereleases are merged prerelease PRs that change only changelogs.
 - Branch rules for maintenance lines cap bumps and report the commits that would break the line.
 - The plan is recomputed on merge before tagging, and floating tags (such as `v1`) are moved for you.
 - Before 1.0, a breaking change bumps minor by default (`preMajor.breaking: minor`); release-please bumps major unless `bump-minor-pre-major` is set.
