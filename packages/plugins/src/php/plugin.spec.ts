@@ -1,7 +1,7 @@
 import { memoryCtx } from "@tallyrelease/core/testing";
 import { describe, expect, it } from "vitest";
 
-import { phpPlugin } from "./index.js";
+import { phpPlugin } from "./plugin.js";
 
 import type { Unit } from "@tallyrelease/core";
 

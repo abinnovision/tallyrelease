@@ -8,8 +8,9 @@ defaults:
 units:
   packages/core: { id: core, release: true }
   packages/cli: { id: cli, release: true }
-# core and cli always release with one version.
+  packages/plugins: { id: plugins, release: true }
+# core, cli and plugins always release with one version.
 groups:
-  tallyrelease: { units: [core, cli] }
+  tallyrelease: { units: [core, cli, plugins] }
 branches:
   - { name: main, line: default, channel: beta }

@@ -1,9 +1,9 @@
+import { builtinPlugins } from "@tallyrelease/plugins";
 import { createJiti } from "jiti";
 import { join, posix } from "node:path";
 
 import { PR_EVENTS } from "../ci/github-env.js";
 import { cliCodes } from "../codes.js";
-import { builtinPlugins } from "../plugins/index.js";
 
 import type { CliConfig, PluginEntry } from "./schema.js";
 import type { Env } from "../ci/github-env.js";
