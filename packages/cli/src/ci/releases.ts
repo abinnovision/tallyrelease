@@ -47,6 +47,7 @@ export const releaseListEntries = (
 	const group = new Map(
 		groups.flatMap((g) => g.members.map((id) => [id, g.name])),
 	);
+	const line = plan.line?.kind ?? "default";
 	const atHead = new Set(
 		plan.released.filter((r) => r.releaseSha === plan.head).map((r) => r.id),
 	);
@@ -66,6 +67,7 @@ export const releaseListEntries = (
 			changes: propagatedChanges(atParent.get(r.releaseSha) ?? [], r.id),
 			tags: tags.get(r.id) ?? [],
 			group: group.get(r.id) ?? null,
+			line: r.line,
 		})),
 		...plan.units.flatMap((u): ReleaseEntry[] =>
 			u.kind === "prerelease" && u.version !== null && !atHead.has(u.id)
@@ -84,6 +86,7 @@ export const releaseListEntries = (
 							changes: propagatedChanges(plan.units, u.id),
 							tags: u.tags,
 							group: u.group,
+							line,
 						},
 					]
 				: [],

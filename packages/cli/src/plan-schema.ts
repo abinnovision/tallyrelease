@@ -132,6 +132,8 @@ export const releaseEntrySchema = z.strictObject({
 	tags: z.array(z.string()),
 	/** Fixed group of the unit. */
 	group: z.string().nullable(),
+	/** Line of the planned branch. */
+	line: z.enum(["default", "maintenance"]),
 });
 
 export type ReleaseEntry = z.infer<typeof releaseEntrySchema>;

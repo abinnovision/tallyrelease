@@ -392,13 +392,21 @@ describe("run --github-output", () => {
 					pr: { number: 1, url: "pull/1" },
 					release: { url: "release/a-v1.1.0" },
 				},
+				line: "default",
 			},
-			{ id: "b", kind: "release", tag: "b-v1.1.0", catchUp: true },
+			{
+				id: "b",
+				kind: "release",
+				tag: "b-v1.1.0",
+				catchUp: true,
+				line: "default",
+			},
 			{
 				id: "a",
 				kind: "prerelease",
 				tag: null,
 				catchUp: false,
+				line: "default",
 			},
 		]);
 		expect(releases[2]?.releaseSha).toBe(tip(later));
