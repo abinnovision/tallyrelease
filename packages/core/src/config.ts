@@ -27,6 +27,11 @@ export interface UnitOverlay {
 	releasePr?: ReleasePrMode;
 	/** Templated text replacements written on release. */
 	versionFiles?: VersionTemplate[];
+	/**
+	 * CI build number of the release list, never part of the version. Allowed
+	 * on glob keys; an exact key replaces the whole value.
+	 */
+	buildNumber?: { offset?: number };
 }
 
 /**

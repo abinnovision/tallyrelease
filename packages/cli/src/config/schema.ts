@@ -124,6 +124,21 @@ const unitOverlay = z.strictObject({
 				"Text files updated on release: matches of pattern rendering a version from the previous release up to the next are replaced with the next version. Without pattern, the first version on each line marked `# x-tallyrelease-version` or `<!-- x-tallyrelease-version -->` is replaced with the next version, also on a first release.",
 		})
 		.exactOptional(),
+	buildNumber: z
+		.strictObject({
+			offset: z
+				.int()
+				.nonnegative()
+				.meta({
+					description: "Added to the first-parent commit count. Default 0.",
+				})
+				.exactOptional(),
+		})
+		.meta({
+			description:
+				"Emits buildNumber in the release list of run --github-output: the first-parent commit count of the release sha plus offset. Never part of the version. An exact key replaces the whole value of a glob key.",
+		})
+		.exactOptional(),
 });
 
 // `path` and `package` are owned by the cli, which strips them before core sees the entry.
