@@ -1,4 +1,4 @@
-import { writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterAll, describe, expect, it, vi } from "vitest";
 
@@ -76,6 +76,100 @@ describe("e2e", () => {
 		expect(JSON.parse(graph.stdout)).toMatchObject({
 			edges: [{ from: "ui", to: "web", pinned: false }],
 		});
+	});
+
+	it("dart pub workspace (G40)", async () => {
+		const app = (name: string, eol: string) =>
+			[
+				`name: ${name}`,
+				"publish_to: none",
+				"version: 1.0.0+7",
+				"resolution: workspace",
+				"dependencies:",
+				"  shared: ^1.0.0",
+				"",
+			].join(eol);
+		const { dir, sha } = createRepo({
+			commits: [
+				{
+					id: "c0",
+					files: {
+						"tallyrelease.yaml": [
+							"plugins: { dart: {} }",
+							"units:",
+							"  apps/a: { release: true }",
+							"  apps/b: { release: true }",
+							"branches:",
+							"  - { name: main, line: default }",
+							"",
+						].join("\n"),
+						"pubspec.yaml":
+							"name: _workspace\npublish_to: none\nenvironment:\n  sdk: ^3.6.0\nworkspace:\n  - apps/a\n  - apps/b\n  - packages/shared\n",
+						"packages/shared/pubspec.yaml":
+							"name: shared\nversion: 1.0.0\nresolution: workspace\n",
+						"packages/shared/lib/shared.dart": "0",
+						"apps/a/pubspec.yaml": app("a", "\n"),
+						"apps/b/pubspec.yaml": app("b", "\r\n"),
+						"analysis_options.yaml": "0",
+						"melos.yaml": "0",
+					},
+				},
+				{
+					id: "c1",
+					message: "fix: shared bug",
+					files: { "packages/shared/lib/shared.dart": "1" },
+				},
+				{
+					id: "c2",
+					message: "chore: lint",
+					files: { "analysis_options.yaml": "2" },
+				},
+				{ id: "c3", message: "chore: melos", files: { "melos.yaml": "3" } },
+			],
+			tags: [
+				{ name: "a-v1.0.0", commit: "c0" },
+				{ name: "b-v1.0.0", commit: "c0" },
+			],
+		});
+
+		const all = [
+			["apps/a", "global"],
+			["apps/b", "global"],
+			["packages/shared", "global"],
+		];
+		git(dir, "checkout", "--quiet", sha("c2"));
+		expect(await affectedAt(dir, sha("c1"))).toEqual(all);
+		// main is at c3; version needs a branch.
+		git(dir, "checkout", "--quiet", "main");
+		expect(await affectedAt(dir, sha("c2"))).toEqual(all);
+
+		const graph = await runCli(["graph", "--json"], { cwd: dir });
+		const doc = JSON.parse(graph.stdout) as { units: { id: string }[] };
+		expect(doc.units.map((u) => u.id).sort()).toEqual(["a", "b", "shared"]);
+		expect(doc).toMatchObject({
+			edges: [
+				{ from: "shared", to: "a", pinned: false },
+				{ from: "shared", to: "b", pinned: false },
+			],
+		});
+
+		const plan = await runCli(["plan", "--json", "--base", sha("c0")], {
+			cwd: dir,
+		});
+		expect(planSchema.parse(JSON.parse(plan.stdout)).units).toMatchObject([
+			{ id: "shared", bump: null, next: null },
+			{ id: "a", bump: "patch", next: "1.0.1", absorbedFrom: ["shared"] },
+			{ id: "b", bump: "patch", next: "1.0.1", absorbedFrom: ["shared"] },
+		]);
+
+		const version = await runCli(["version"], { cwd: dir });
+		expect(version).toMatchObject({ code: 0 });
+		expect(readFileSync(join(dir, "apps/a/pubspec.yaml"), "utf8")).toBe(
+			app("a", "\n").replace("1.0.0+7", "1.0.1"),
+		);
+		expect(readFileSync(join(dir, "apps/b/pubspec.yaml"), "utf8")).toBe(
+			app("b", "\r\n").replace("1.0.0+7", "1.0.1"),
+		);
 	});
 
 	it("php single repo (G11)", async () => {
