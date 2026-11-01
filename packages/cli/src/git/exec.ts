@@ -1,6 +1,6 @@
 import { execFile, execFileSync } from "node:child_process";
 
-import type { Env } from "../ci/github-env.js";
+import type { Env } from "../ci/env.js";
 
 // Set by a surrounding git hook; they would point git at another repository.
 const REPO_VARS = new Set(["GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE"]);

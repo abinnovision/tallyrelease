@@ -15,7 +15,7 @@ import {
 	sep,
 } from "node:path";
 
-import { githubContext } from "./ci/github-env.js";
+import { detectCi } from "./ci/provider.js";
 import { cliCodes } from "./codes.js";
 import { loadConfig } from "./config/load.js";
 import {
@@ -23,14 +23,15 @@ import {
 	localPluginsDenied,
 	resolvePlugins,
 } from "./config/plugins.js";
-import { githubForge } from "./forge/github.js";
+import { defaultForge, forgeToken } from "./forge/github.js";
 import { gitBlob, gitTreeFs, nodeFs } from "./fs-ctx.js";
 import { git as runGit } from "./git/exec.js";
 import { gitReader } from "./git/reader.js";
 import { gitWriter, identityFromEnv } from "./git/writer.js";
 import { painter } from "./output/paint.js";
 
-import type { Env, GithubContext } from "./ci/github-env.js";
+import type { Env } from "./ci/env.js";
+import type { CiProvider } from "./ci/provider.js";
 import type { ImportPlugin } from "./config/plugins.js";
 import type { Forge } from "./forge/forge.js";
 import type { RepoGit } from "./git/reader.js";
@@ -95,7 +96,7 @@ export interface Session {
 	readonly stdout: Writer;
 	readonly fs: ReadonlyFs;
 	readonly git: RepoGit;
-	readonly github: GithubContext | undefined;
+	readonly ci: CiProvider;
 	/** Undefined without a token. */
 	readonly forge: Forge | undefined;
 	/** `--token`, else `GITHUB_TOKEN`. */
@@ -173,8 +174,8 @@ export const createSession = (deps: Deps, opts: GlobalOptions): Session => {
 		? (message: string) => deps.stderr.write(`debug: ${message}\n`)
 		: undefined;
 	const fs = deps.fs ?? nodeFs(root);
-	const github = githubContext(deps.env);
-	const token = opts.token ?? deps.env["GITHUB_TOKEN"];
+	const ci = detectCi(deps.env);
+	const token = opts.token ?? forgeToken(deps.env);
 	const remote = opts.remote ?? "origin";
 	const configPath = relative(root, resolve(root, opts.config))
 		.split(sep)
@@ -234,9 +235,9 @@ export const createSession = (deps: Deps, opts: GlobalOptions): Session => {
 		}
 	};
 
-	// GITHUB_REPOSITORY, else the remote url, else the directory name.
+	// The CI repository, else the remote url, else the directory name.
 	const repoName = async () => {
-		const fromEnv = deps.env["GITHUB_REPOSITORY"]?.split("/")[1];
+		const fromEnv = ci.repository?.split("/")[1];
 		if (fromEnv) {
 			return fromEnv;
 		}
@@ -258,12 +259,10 @@ export const createSession = (deps: Deps, opts: GlobalOptions): Session => {
 		return basename(root);
 	};
 
-	// GITHUB_SERVER_URL and GITHUB_REPOSITORY, else the remote url as https.
+	// The CI repository URL, else the remote url as https.
 	const repoUrl = async () => {
-		const server = deps.env["GITHUB_SERVER_URL"];
-		const repository = deps.env["GITHUB_REPOSITORY"];
-		if (server && repository) {
-			return `${server.replace(/\/+$/, "")}/${repository}`;
+		if (ci.repoUrl !== undefined) {
+			return ci.repoUrl;
 		}
 
 		if (!onDisk) {
@@ -281,7 +280,7 @@ export const createSession = (deps: Deps, opts: GlobalOptions): Session => {
 	const repoGit = deps.git ?? gitReader(root, debug, { env: deps.env, remote });
 	const importPlugin = deps.importPlugin ?? jitiImport(root);
 	const localDenied = opts.privileged
-		? localPluginsDenied(deps.env, opts.allowLocalPlugins === true)
+		? localPluginsDenied(ci.onPrHead, deps.env, opts.allowLocalPlugins === true)
 		: undefined;
 	const blobAt = gitBlob(root, deps.env);
 
@@ -330,10 +329,8 @@ export const createSession = (deps: Deps, opts: GlobalOptions): Session => {
 		stdout: deps.stdout,
 		fs,
 		git: repoGit,
-		github,
-		forge: token
-			? (deps.forge ?? githubForge({ token, baseUrl: github?.apiUrl }))
-			: undefined,
+		ci,
+		forge: token ? (deps.forge ?? defaultForge(deps.env, token)) : undefined,
 		token,
 		remote,
 		gitWriter:
@@ -395,11 +392,8 @@ export const createSession = (deps: Deps, opts: GlobalOptions): Session => {
 	};
 };
 
-/** PR head branch, else the GitHub ref name, else the checked-out branch, else `HEAD`. */
+/** The CI branch, else the checked-out branch, else `HEAD`. */
 export const branchName = async (
-	session: Pick<Session, "git" | "github">,
+	session: Pick<Session, "git" | "ci">,
 ): Promise<string> =>
-	session.github?.headRef ??
-	session.github?.refName ??
-	(await session.git.branch()) ??
-	"HEAD";
+	session.ci.branch ?? (await session.git.branch()) ?? "HEAD";

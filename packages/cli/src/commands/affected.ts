@@ -25,7 +25,7 @@ export const affected = async (
 	session: Session,
 	flags: AffectedFlags,
 ): Promise<void> => {
-	const { git, github } = session;
+	const { git, ci } = session;
 	const workspace = await session.workspace();
 	const head = await git.resolve("HEAD");
 	if (head === undefined) {
@@ -40,7 +40,8 @@ export const affected = async (
 		head,
 		env: session.env,
 		cliBase: flags.base,
-		github,
+		event: ci.event,
+		baseInputs: ci.baseInputs,
 		forge: session.forge,
 		remote: session.remote,
 	});

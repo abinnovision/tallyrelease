@@ -64,7 +64,8 @@ export const planOptions = async (
 		head,
 		env: replay ? {} : session.env,
 		cliBase: flags.base,
-		github: replay ? undefined : session.github,
+		event: replay ? undefined : session.ci.event,
+		baseInputs: replay ? undefined : session.ci.baseInputs,
 		forge: replay ? undefined : session.forge,
 		remote: session.remote,
 	});

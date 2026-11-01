@@ -1,7 +1,8 @@
 import { cliCodes } from "../codes.js";
 import { ForgeError } from "../forge/errors.js";
 
-import type { Env, GithubContext } from "./github-env.js";
+import type { Env } from "./env.js";
+import type { BaseInputs, CiEvent } from "./provider.js";
 import type { Forge } from "../forge/forge.js";
 import type { RepoGit } from "../git/reader.js";
 import type { Paint } from "../output/paint.js";
@@ -32,14 +33,6 @@ const isCi = (env: Env): boolean => {
 		CI_VARS.some((name) => env[name] !== undefined)
 	);
 };
-
-const str = (value: unknown): string | undefined =>
-	typeof value === "string" && value !== "" ? value : undefined;
-
-const field = (value: unknown, key: string): unknown =>
-	typeof value === "object" && value !== null
-		? (value as Record<string, unknown>)[key]
-		: undefined;
 
 const noForge: Warning = cliCodes.warning(
 	"W_NO_FORGE",
@@ -81,7 +74,8 @@ export interface BuildBaseInput {
 	head: string;
 	/** `--base`. */
 	cliBase?: string | undefined;
-	github?: GithubContext | undefined;
+	event?: CiEvent | undefined;
+	baseInputs?: BaseInputs | undefined;
 	/** Present only when a token is available. */
 	forge?: Forge | undefined;
 	/** Remote of the default branch candidates; defaults to `origin`. */
@@ -92,7 +86,7 @@ export interface BuildBaseInput {
 export const resolveBuildBase = async (
 	input: BuildBaseInput,
 ): Promise<BuildBase> => {
-	const { git, head, github, forge } = input;
+	const { git, head, event, baseInputs, forge } = input;
 
 	// A named sha missing from a shallow clone must not silently become "everything".
 	const local = async (ref: string, what: string) => {
@@ -134,7 +128,7 @@ export const resolveBuildBase = async (
 
 	/** The newest usable successful run, or the warning why there is none. */
 	const lastSuccess = async (from: Forge): Promise<string | Warning> => {
-		if (!github?.repository || !github.workflow || !github.refName) {
+		if (!baseInputs?.repository || !baseInputs.workflow || !baseInputs.ref) {
 			return noWorkflowContext;
 		}
 
@@ -143,9 +137,9 @@ export const resolveBuildBase = async (
 			try {
 				// eslint-disable-next-line no-await-in-loop -- older pages only while no run is usable
 				shas = await from.lastSuccessfulPushRuns({
-					...github.repository,
-					workflow: github.workflow,
-					branch: github.refName,
+					...baseInputs.repository,
+					workflow: baseInputs.workflow,
+					branch: baseInputs.ref,
 					page,
 				});
 			} catch (error) {
@@ -216,7 +210,7 @@ export const resolveBuildBase = async (
 		};
 	}
 
-	if (github === undefined && !isCi(input.env)) {
+	if (event === undefined && !isCi(input.env)) {
 		const ref = await defaultRef();
 		const base = ref === undefined ? undefined : await git.mergeBase(head, ref);
 
@@ -225,12 +219,9 @@ export const resolveBuildBase = async (
 			: { ...result(base, "local-merge-base"), ref };
 	}
 
-	switch (github?.eventName) {
+	switch (event?.kind) {
 		case "pull_request": {
-			const target = await required(
-				str(field(field(github.payload()["pull_request"], "base"), "sha")),
-				"pull_request.base.sha",
-			);
+			const target = await required(event.baseSha(), "pull_request.base.sha");
 			const base = await git.mergeBase(head, target);
 			if (base === undefined) {
 				await shallowBase(target, "pull_request.base.sha");
@@ -246,14 +237,11 @@ export const resolveBuildBase = async (
 
 		case "merge_group":
 			return result(
-				await required(
-					str(field(github.payload()["merge_group"], "base_sha")),
-					"merge_group.base_sha",
-				),
+				await required(event.baseSha(), "merge_group.base_sha"),
 				"merge-group",
 			);
 		case "push": {
-			const ref = str(github.payload()["before"]);
+			const ref = event.before();
 			const before =
 				ref === undefined || ZERO_SHA.test(ref)
 					? undefined
@@ -280,8 +268,7 @@ export const resolveBuildBase = async (
 			return await fromLastSuccess();
 		}
 
-		case "workflow_dispatch":
-		case "schedule":
+		case "dispatch":
 			return await fromLastSuccess();
 		default:
 			return result(null, "none");

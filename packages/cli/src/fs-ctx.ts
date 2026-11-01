@@ -6,7 +6,7 @@ import { globSync } from "tinyglobby";
 import { cliCodes } from "./codes.js";
 import { gitSync } from "./git/exec.js";
 
-import type { Env } from "./ci/github-env.js";
+import type { Env } from "./ci/env.js";
 import type { ReadonlyFs } from "@tallyrelease/core";
 
 const IGNORED = ["**/.git/**", "**/node_modules/**", "vendor/**"];

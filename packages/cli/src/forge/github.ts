@@ -8,6 +8,7 @@ import {
 import { LABELS } from "./forge.js";
 
 import type { Forge, ReleasePr, RepoRef } from "./forge.js";
+import type { Env } from "../ci/env.js";
 
 const LABEL_COLORS: Readonly<Record<string, string>> = {
 	[LABELS.pending]: "fbca04",
@@ -306,4 +307,17 @@ export const githubForge = (opts: GithubForgeOptions): Forge => {
 			return { id: data.id, url: data.html_url };
 		},
 	};
+};
+
+/** Forge token from the environment: `GITHUB_TOKEN`. */
+export const forgeToken = (env: Env): string | undefined => env["GITHUB_TOKEN"];
+
+/** GitHub forge; `GITHUB_API_URL` applies only within a GitHub Actions event. */
+export const defaultForge = (env: Env, token: string): Forge => {
+	const apiUrl = env["GITHUB_API_URL"];
+
+	return githubForge({
+		token,
+		baseUrl: env["GITHUB_EVENT_NAME"] && apiUrl ? apiUrl : undefined,
+	});
 };
