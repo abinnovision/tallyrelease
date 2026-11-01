@@ -30,7 +30,7 @@ tallyrelease reads git history, Conventional Commits and a dependency graph supp
 - **Prereleases without committed state.** Prerelease versions are `{next}-{channel}.{N}`, where `N` counts first-parent commits since the last stable release on the line. Nothing is written to the repo and no registry is queried.
 - **Maintenance lines.** Branch rules such as `release/{major}.x` cap bumps at minor (and `release/{major}.{minor}.x` at patch), and fail with the offending commits when a change would leave the line.
 - **See before you write.** `plan`, `explain` and `--dry-run` show versions, bumps and the commits behind them before anything changes. The planning core does no I/O and is deterministic for a given repository state.
-- **Ecosystem plugins.** `node`, `php`, `go`, `kustomize` and `dart` are built in, see the [plugin reference](docs/plugins.md#built-in-plugins). Anything else can be declared as a [config-only unit](docs/plugins/config-only.md) that versions through git tags and `versionFiles`, or added with your own plugin (see the [plugin authoring guide](docs/plugins.md)).
+- **Ecosystem plugins.** `node`, `php`, `go`, `kustomize`, `dart` and `changesets` are built in, see the [plugin reference](docs/plugins.md#built-in-plugins). Anything else can be declared as a [config-only unit](docs/plugins/config-only.md) that versions through git tags and `versionFiles`, or added with your own plugin (see the [plugin authoring guide](docs/plugins.md)).
 
 ## How it works
 
@@ -102,8 +102,7 @@ In GitHub Actions, `tallyrelease run` is the single entry point: it tags merged 
 | `graph`    | Prints units and edges as text, JSON or Mermaid.                             |
 | `check`    | Validates config, plugins, units, graph, release config and tags.            |
 | `plan`     | Computes the release plan (bump, next version, prerelease) without writing.  |
-| `explain`  | Shows why a unit is affected and which commits bump it.                      |
-| `shadow`   | Compares tallyrelease with a release-please release, for a gated migration.  |
+| `explain`  | Shows why a unit is affected and which commits bump it, as text or JSON.     |
 | `version`  | Writes version files and changelogs of pending releases to the working tree. |
 | `pr`       | Opens or updates the release PRs.                                            |
 | `release`  | Tags merged release PRs, moves floating tags and creates forge releases.     |
@@ -136,20 +135,20 @@ Use the `node_modules` path when the cli is installed, since it always matches t
 
 As of release-please 17.11 and Changesets 3.0, October 2026. Corrections welcome.
 
-|                               | tallyrelease                                                    | release-please                                             | Changesets                                                 |
-| :---------------------------- | :-------------------------------------------------------------- | :--------------------------------------------------------- | :--------------------------------------------------------- |
-| Version source                | Conventional Commits, `Release-As` footer                       | Conventional Commits, `Release-As` footer                  | Hand-written `.changeset/*.md` intent files                |
-| Ecosystems                    | `node`, `php`, `kustomize`, `dart`; config-only units via tags  | About 20 release types (node, java, python, rust, go, ...) | `package.json`-based packages                              |
-| Monorepo dependency awareness | Plugin graph; per-unit propagation (`auto`, `patch`, `rebuild`) | Paths only; workspace plugins patch internal dependents    | Workspace graph; `updateInternalDependencies`              |
-| Affected build detection      | Yes (`affected`)                                                | No                                                         | No (left to turbo, Nx and similar)                         |
-| Build-only units              | Yes; changes are absorbed into released dependents              | No                                                         | No                                                         |
-| Version groups                | Fixed                                                           | Linked versions plugin                                     | Fixed and linked                                           |
-| Prereleases                   | Per branch channel, `{next}-{channel}.{N}`, no committed state  | `prerelease: true` with a prerelease versioning strategy   | `pre enter` / `pre exit` mode for all packages; snapshots  |
-| Maintenance branches          | Branch rules cap bumps (`release/{major}.x`)                    | No bump caps                                               | No bump caps                                               |
-| Release PRs                   | Shared or separate per item, plan rechecked on merge            | One PR or separate PRs, updated as commits land            | "Version Packages" PR via `changesets/action`              |
-| Forge                         | GitHub for effects; `affected` in any CI with `--base`          | GitHub (Action or App)                                     | CLI forge-agnostic; PR automation on GitHub via the action |
-| Publishing to registries      | No; hands a `releases` list to your publishers                  | No; gate publishing on action outputs                      | Yes, npm (`changeset publish`)                             |
-| Preview/explain               | `plan`, `explain`, `--dry-run`                                  | CLI `--dry-run`; release PR content                        | `changeset status`, publish plan                           |
+|                               | tallyrelease                                                                       | release-please                                             | Changesets                                                 |
+| :---------------------------- | :--------------------------------------------------------------------------------- | :--------------------------------------------------------- | :--------------------------------------------------------- |
+| Version source                | Conventional Commits, `Release-As` footer                                          | Conventional Commits, `Release-As` footer                  | Hand-written `.changeset/*.md` intent files                |
+| Ecosystems                    | `node`, `php`, `go`, `kustomize`, `dart`, `changesets`; config-only units via tags | About 20 release types (node, java, python, rust, go, ...) | `package.json`-based packages                              |
+| Monorepo dependency awareness | Plugin graph; per-unit propagation (`auto`, `patch`, `rebuild`)                    | Paths only; workspace plugins patch internal dependents    | Workspace graph; `updateInternalDependencies`              |
+| Affected build detection      | Yes (`affected`)                                                                   | No                                                         | No (left to turbo, Nx and similar)                         |
+| Build-only units              | Yes; changes are absorbed into released dependents                                 | No                                                         | No                                                         |
+| Version groups                | Fixed                                                                              | Linked versions plugin                                     | Fixed and linked                                           |
+| Prereleases                   | Per branch channel, `{next}-{channel}.{N}`, no committed state                     | `prerelease: true` with a prerelease versioning strategy   | `pre enter` / `pre exit` mode for all packages; snapshots  |
+| Maintenance branches          | Branch rules cap bumps (`release/{major}.x`)                                       | No bump caps                                               | No bump caps                                               |
+| Release PRs                   | Shared or separate per item, plan rechecked on merge                               | One PR or separate PRs, updated as commits land            | "Version Packages" PR via `changesets/action`              |
+| Forge                         | GitHub for effects; `affected` in any CI with `--base`                             | GitHub (Action or App)                                     | CLI forge-agnostic; PR automation on GitHub via the action |
+| Publishing to registries      | No; hands a `releases` list to your publishers                                     | No; gate publishing on action outputs                      | Yes, npm (`changeset publish`)                             |
+| Preview/explain               | `plan`, `explain`, `--dry-run`                                                     | CLI `--dry-run`; release PR content                        | `changeset status`, publish plan                           |
 
 ### vs. release-please
 
@@ -167,7 +166,7 @@ As of release-please 17.11 and Changesets 3.0, October 2026. Corrections welcome
 - The plan is recomputed on merge before tagging, and floating tags (such as `v1`) are moved for you.
 - Before 1.0, a breaking change bumps minor by default (`preMajor.breaking: minor`); release-please bumps major unless `bump-minor-pre-major` is set.
 - Configuration is a single `tallyrelease.yaml`; release-please uses `release-please-config.json` plus `.release-please-manifest.json`.
-- `shadow` runs next to release-please and reports where the two would release different versions, so a migration can be gated on evidence.
+- To compare versions with release-please before switching, pin `@tallyrelease/cli` 0.4.x; the switch checklist is in [docs/design.md](docs/design.md#v03-effects--switch).
 
 **Choose release-please if** you need one of its many release types (Java, Python, Rust, Go, Helm, Terraform and more), want a mature tool with a long track record, or need linked versions, which tallyrelease does not support yet.
 
@@ -188,7 +187,7 @@ As of release-please 17.11 and Changesets 3.0, October 2026. Corrections welcome
 
 tallyrelease does not replace turbo, Nx or moon. It answers "what changed and what releases"; task runners still run the builds, and the two can be used together.
 
-Planned: a `changesets` intent source and `tallyrelease import release-please` (see "Later" in [docs/design.md](docs/design.md)).
+Planned: `tallyrelease import release-please` (see "Later" in [docs/design.md](docs/design.md)).
 
 ## Status
 

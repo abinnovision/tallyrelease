@@ -19,7 +19,6 @@ body:
         - affected
         - plan
         - explain
-        - shadow
         - version
         - pr
         - release

@@ -189,7 +189,7 @@ A change with explicit `units` can consume files with `files`. A file is deleted
 
 ### Validation
 
-`validate?(ctx, plan)` runs once per plan, after versions are resolved, in `check`, `plan`, `explain`, `pr`, `version`, `release`, `run` and `shadow`. `plan` is a deep-frozen copy of the computed `Plan`, shared by all `validate` hooks of the run; changing it throws, which fails with `E_PLUGIN_HOOK`. It lists the build set and, except in `plan` without `--all` and in `run`, every released unit with a pending release, each with its `next` and its changes; `released` is still empty. Each returned string becomes a `W_PLUGIN` warning in `plan.warnings`, the same as `ctx.log.warn`; return nothing when the plan is fine. Throw to reject the plan: the command fails with `E_PLUGIN_HOOK`.
+`validate?(ctx, plan)` runs once per plan, after versions are resolved, in `check`, `plan`, `explain`, `pr`, `version`, `release` and `run`. `plan` is a deep-frozen copy of the computed `Plan`, shared by all `validate` hooks of the run; changing it throws, which fails with `E_PLUGIN_HOOK`. It lists the build set and, except in `plan` without `--all` and in `run`, every released unit with a pending release, each with its `next` and its changes; `released` is still empty. Each returned string becomes a `W_PLUGIN` warning in `plan.warnings`, the same as `ctx.log.warn`; return nothing when the plan is fine. Throw to reject the plan: the command fails with `E_PLUGIN_HOOK`.
 
 ```ts
 validate: (ctx, plan) =>
@@ -322,7 +322,7 @@ A plugin is code that runs inside the cli with the permissions of the job. A loc
 
 - `pr`, `release`, `run` and `version` hold write tokens and push, tag and create releases. They load local plugins only when you opt in with `--allow-local-plugins` or `TALLYRELEASE_ALLOW_LOCAL_PLUGINS=true`. Without it they fail with `E_PLUGIN_LOCAL`.
 - Even with the opt-in, they never load local plugins on a pull request head: on `pull_request`, `pull_request_target` and `merge_group` events, or with a `GITHUB_REF` under `refs/pull/`.
-- `check`, `graph`, `affected`, `plan`, `explain` and `shadow` do load local plugins on any ref. Run them without secrets and write tokens on code you do not trust, and in particular do not run them from a `pull_request_target` job that checked out the pull request head.
+- `check`, `graph`, `affected`, `plan` and `explain` do load local plugins on any ref. Run them without secrets and write tokens on code you do not trust, and in particular do not run them from a `pull_request_target` job that checked out the pull request head.
 - `plugins.<name>.package` is not gated. For untrusted contexts, such as release jobs on repositories that accept outside contributions, publish the plugin as a package and pin it in the lockfile, so that the code that runs is not editable from a pull request.
 
 Allow local plugins only in jobs that run on trusted branches:
