@@ -69,7 +69,10 @@ export const releaseSettings = (
 		branches: (config.branches ?? []).map((b) => ({
 			name: b.name,
 			line: b.line,
+			// eslint-disable-next-line @typescript-eslint/no-deprecated -- normalizes the alias
 			channel: b.channel ?? null,
+			build: b.channels?.build ?? null,
+			cut: b.channels?.cut ?? null,
 			unit: b.unit ?? null,
 			group: b.group ?? null,
 		})),

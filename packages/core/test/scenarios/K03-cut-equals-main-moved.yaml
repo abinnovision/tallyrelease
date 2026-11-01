@@ -1,0 +1,64 @@
+description: >-
+  cutEquals with the marker head behind head: the marker equals the cut
+  releases at its head and each item it touches keeps next and members at
+  head; other items are ignored. A changed next or a marker missing a group
+  member fails.
+plugins:
+  - name: stub
+    units:
+      - { id: a, root: packages/a }
+      - { id: b, root: packages/b }
+      - { id: c, root: packages/c }
+config:
+  plugins: { stub: {} }
+  defaults: { release: true }
+  groups:
+    sdk: { units: [a, b] }
+  branches:
+    - { name: main, line: default, channels: { cut: beta } }
+git:
+  commits:
+    - id: c0
+      files:
+        { packages/a/i.ts: "0", packages/b/i.ts: "0", packages/c/i.ts: "0" }
+    - id: c1
+      message: "feat: a and c"
+      files: { packages/a/i.ts: "1", packages/c/i.ts: "1" }
+    - id: c2
+      message: "docs: readme"
+      files: { README.md: "2" }
+    - id: c3
+      message: "feat!: break c"
+      files: { packages/c/i.ts: "3" }
+  tags:
+    - { name: a-v1.0.0, commit: c0 }
+    - { name: b-v1.0.0, commit: c0 }
+    - { name: c-v1.0.0, commit: c0 }
+base: c0
+plan: { all: true }
+release:
+  markerHead: c1
+  markers:
+    group:
+      - { id: a, version: 1.1.0-beta.2, tag: a-v1.1.0-beta.2 }
+      - { id: b, version: 1.1.0-beta.2, tag: b-v1.1.0-beta.2 }
+    next-changed:
+      - { id: c, version: 1.1.0-beta.2, tag: c-v1.1.0-beta.2 }
+    head-version:
+      - { id: a, version: 1.1.0-beta.4, tag: a-v1.1.0-beta.4 }
+      - { id: b, version: 1.1.0-beta.4, tag: b-v1.1.0-beta.4 }
+    member-missing:
+      - { id: a, version: 1.1.0-beta.2, tag: a-v1.1.0-beta.2 }
+    empty: []
+expect:
+  plan:
+    units:
+      - { id: a, next: 1.1.0, cut: 1.1.0-beta.4 }
+      - { id: b, next: 1.1.0, cut: 1.1.0-beta.4 }
+      - { id: c, next: 2.0.0, cut: 2.0.0-beta.4 }
+  cutEquals:
+    group: true
+    next-changed: false
+    head-version: false
+    member-missing: false
+    empty: false

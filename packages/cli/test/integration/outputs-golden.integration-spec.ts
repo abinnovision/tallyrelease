@@ -30,7 +30,7 @@ const config = `
 plugins: { node: {} }
 defaults: { release: true }
 branches:
-  - { name: main, line: default, channel: beta }
+  - { name: main, line: default, channels: { build: beta } }
 `;
 
 /** Units a and b at 1.0.0 (tagged at c0), a feat on b; b-v1.0.5 at c1 was never published. */

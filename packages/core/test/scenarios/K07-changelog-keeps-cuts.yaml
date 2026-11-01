@@ -1,0 +1,40 @@
+description: >-
+  A cut changelog replaces only the sections above the previous cut, so older
+  cut sections stay; releaseFiles with cut writes changelogs only.
+plugins:
+  - name: stub
+    units:
+      - { id: a, root: packages/a }
+    versionFiles: { a: [packages/a/VERSION] }
+config:
+  plugins: { stub: {} }
+  defaults: { release: true }
+  branches:
+    - { name: main, line: default, channels: { cut: beta } }
+git:
+  commits:
+    - id: c0
+      files: { packages/a/i.ts: "0", packages/a/VERSION: "1.0.0\n" }
+    - id: c1
+      message: "feat: first"
+      files:
+        packages/a/i.ts: "1"
+        packages/a/CHANGELOG.md: "# Changelog\n\n## 1.1.0-beta.3 (2026-10-02)\n\n* abandoned\n\n## 1.1.0-beta.2 (2026-10-01)\n\n* first\n\n## 1.0.0 (2026-09-01)\n\n* initial\n"
+    - id: c2
+      message: "fix: second"
+      files: { packages/a/i.ts: "2" }
+  tags:
+    - { name: a-v1.0.0, commit: c0 }
+    - { name: a-v1.1.0-beta.2, commit: c1 }
+base: c0
+plan: {}
+release:
+  cut: true
+  files: { date: "2026-11-01" }
+expect:
+  previousCut: { a: a-v1.1.0-beta.2 }
+  paths: [packages/a/CHANGELOG.md]
+  deletes: []
+  files:
+    packages/a/CHANGELOG.md: "# Changelog\n\n## 1.1.0-beta.3 (2026-11-01)\n\n\n### Bug Fixes\n\n* second\n\n## 1.1.0-beta.2 (2026-10-01)\n\n* first\n\n## 1.0.0 (2026-09-01)\n\n* initial\n"
+  fileWarnings: []

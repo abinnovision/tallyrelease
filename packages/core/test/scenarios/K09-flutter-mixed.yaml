@@ -1,0 +1,40 @@
+description: >-
+  A flutter unit cannot be cut: its cut is null, it has no cut item and
+  cutWarnings reports W_CUT_SCHEME; a semver unit is cut.
+plugins:
+  - name: stub
+    schemes: [flutter]
+    units:
+      - { id: a, root: packages/a }
+      - { id: f, root: apps/f, scheme: flutter }
+config:
+  plugins: { stub: {} }
+  defaults: { release: true }
+  branches:
+    - { name: main, line: default, channels: { cut: beta } }
+git:
+  commits:
+    - id: c0
+      files: { packages/a/i.ts: "0", apps/f/i.ts: "0" }
+    - id: c1
+      message: "feat: both"
+      files: { packages/a/i.ts: "1", apps/f/i.ts: "1" }
+  tags:
+    - { name: a-v1.0.0, commit: c0 }
+    - { name: f-v1.0.0+1, commit: c0 }
+base: c0
+plan: {}
+release:
+  cut: true
+expect:
+  plan:
+    units:
+      - { id: a, next: 1.1.0, cut: 1.1.0-beta.2 }
+      - { id: f, next: 1.1.0+2, cut: null }
+    warnings: []
+  cutItems:
+    - { name: a, version: 1.1.0-beta.2 }
+  cutWarnings:
+    - code: W_CUT_SCHEME
+      message: unit "f" (scheme flutter) cannot be cut on channel "beta"
+      unit: f

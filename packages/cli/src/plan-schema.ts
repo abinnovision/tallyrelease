@@ -42,6 +42,7 @@ export const planSchema = z.strictObject({
 			rule: z.string(),
 			kind: z.enum(["default", "maintenance"]),
 			channel: z.string().nullable(),
+			cut: z.string().nullable(),
 			maxBump: z.enum(["minor", "patch"]).nullable(),
 			absolute: z
 				.strictObject({
@@ -77,6 +78,7 @@ export const planSchema = z.strictObject({
 			absorbedFrom: z.array(z.string()),
 			next: z.string().nullable(),
 			version: z.string().nullable(),
+			cut: z.string().nullable(),
 			sha: z.string(),
 			changes: z.array(changeSchema),
 		}),
@@ -90,6 +92,7 @@ export const planSchema = z.strictObject({
 			bump: bump.nullable(),
 			next: z.string().nullable(),
 			version: z.string().nullable(),
+			cut: z.string().nullable(),
 		}),
 	),
 	released: z.array(

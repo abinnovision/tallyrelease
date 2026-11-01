@@ -12,6 +12,7 @@ export type {
 	ErrorCode,
 	WarningCode,
 } from "./codes.js";
+export type { CutChanges } from "./changelog.js";
 export type { ParsedCommit } from "./conventional.js";
 export type {
 	ExplainedChange,
@@ -74,16 +75,23 @@ export { computeAffected } from "./affected.js";
 export { buildNumbers } from "./build-numbers.js";
 export { calver } from "./calver.js";
 export { maintenanceCut } from "./branches.js";
-export { releaseNotes } from "./changelog.js";
+export { isListed, releaseNotes } from "./changelog.js";
 export { coreCodes, defineCodes } from "./codes.js";
 export { CONFIG_FILE } from "./config.js";
+export { cutChanges, previousCut } from "./cut.js";
 export { parseCommit } from "./conventional.js";
 export { TallyError } from "./errors.js";
 export { explainUnit } from "./explain.js";
 export { definePlugin, defaultUnitId, PLUGIN_API_VERSION } from "./plugin.js";
 export { computePlan } from "./plan.js";
 export { decodeMarker, encodeMarker } from "./marker.js";
-export { planEquals, releaseEntries, releaseItems } from "./release-items.js";
+export {
+	cutEquals,
+	cutWarnings,
+	planEquals,
+	releaseEntries,
+	releaseItems,
+} from "./release-items.js";
 export { releasedFromTags, withReleased } from "./released.js";
 export { semver } from "./semver.js";
 export { compileTagFormat, renderTag } from "./tags.js";
