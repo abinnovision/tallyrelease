@@ -3,12 +3,12 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { parse } from "yaml";
 
-import { flutter } from "./fixtures/flutter.js";
 import { changelogSection } from "../src/changelog.js";
 import { collectPlanFacts } from "../src/facts.js";
 import {
 	computeAffected,
 	computePlan,
+	flutter,
 	loadWorkspace,
 	planEquals,
 	releaseFiles,
