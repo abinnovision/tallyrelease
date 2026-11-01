@@ -1,6 +1,6 @@
 # @tallyrelease/cli
 
-tallyrelease computes the affected build units of a monorepo or single repo from git history and a dependency graph supplied by ecosystem plugins (`node`, `php` and `kustomize` are built in). It also plans releases and runs the release effects (version files, release PRs, tags, forge releases); release-please still owns versions in this repo until the switch.
+tallyrelease computes the affected build units of a monorepo or single repo from git history and a dependency graph supplied by ecosystem plugins (`node`, `php`, `kustomize` and `dart` are built in). It also plans releases and runs the release effects (version files, release PRs, tags, forge releases); release-please still owns versions in this repo until the switch.
 
 ## Install
 

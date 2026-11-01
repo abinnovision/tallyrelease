@@ -1,6 +1,6 @@
 # Plugin authoring guide
 
-A plugin teaches tallyrelease about an ecosystem: where its units live, how they depend on each other, where their versions are written and, optionally, how versions are numbered or where release intent comes from. `node`, `php` and `kustomize` are built in. Anything else is a plugin you write, either as a file in your repository or as an npm package.
+A plugin teaches tallyrelease about an ecosystem: where its units live, how they depend on each other, where their versions are written and, optionally, how versions are numbered or where release intent comes from. `node`, `php`, `kustomize` and `dart` are built in. Anything else is a plugin you write, either as a file in your repository or as an npm package.
 
 This guide covers the contract, testing, distribution, the trust model and purity. [configuration.md](configuration.md) lists every config key and [errors.md](errors.md) every error code. Plugin API version 1 is in beta like the rest of tallyrelease: until 1.0, a minor release may change it.
 
@@ -15,7 +15,7 @@ A plugin is an object built with `definePlugin` from `@tallyrelease/core`. Every
 | `edges`        | `EdgeDraft[]`                   | Declares which unit depends on which.                                     |
 | `inputs`       | `{ global?: string[] }`         | Globs of files that affect every unit.                                    |
 | `versionFiles` | `VersionFile[]`                 | Reads and rewrites the version of a released unit that lives in a file.   |
-| `schemes`      | `Record<string, VersionScheme>` | Adds version schemes next to the built-in `semver`.                       |
+| `schemes`      | `Record<string, VersionScheme>` | Adds version schemes next to the built-in `semver` and `calver`.          |
 | `intent`       | `IntentSource[]`                | Adds sources of changes next to the built-in Conventional Commits source. |
 | `validate`     | `string[]` or nothing           | Checks the computed plan; messages become warnings.                       |
 | `changelog`    | `string`                        | Replaces the changelog section of a unit the plugin owns.                 |
@@ -150,7 +150,13 @@ Every hook receives a frozen `Ctx`:
 
 ### Schemes
 
-A `VersionScheme<V>` parses, formats, compares and bumps versions. A plugin registers schemes by name and units opt in with `scheme`. `semver` is built in and reserved. `release` and `prerelease` receive a `PreCtx` with git-derived data (`head`, `baseTag`, `tags`, `firstParent`), for example to derive a build number. Duplicate scheme names fail with `E_SCHEME_CLASH`. [`packages/core/test/fixtures/flutter.ts`](../packages/core/test/fixtures/flutter.ts) is a complete example.
+A `VersionScheme<V>` parses, formats, compares and bumps versions. A plugin registers schemes by name and units opt in with `scheme`. `semver` and `calver` are built in and reserved. `release` and `prerelease` receive a `PreCtx` with git-derived data (`head`, `date`, `baseTag`, `tags`, `firstParent`), for example to derive a build number. `date` is the committer date of the planned commit and is set only when the git reader implements the optional `commitDate`, which the cli reader does. Duplicate scheme names fail with `E_SCHEME_CLASH`. Core exports the `flutter` scheme ([`packages/core/src/flutter.ts`](../packages/core/src/flutter.ts)) as a complete example; the built-in `dart` plugin registers it.
+
+| Scheme    | Registered by | Versions                                                                                                                                                                                                                                                                                                    |
+| :-------- | :------------ | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `semver`  | core          | SemVer 2.0; bumps follow the commit types. Default for every unit.                                                                                                                                                                                                                                          |
+| `calver`  | core          | `Y.M.N` such as `2026.11.0`. Every bump increments `N`; a release in a newer month than `next` (by the planned commit's UTC committer date) starts at `Y.M.0`. `Release-As` values move the same way. A `{major}` maintenance line means a year, so its releases stay within that year (`E_CAP` otherwise). |
+| `flutter` | `dart`        | `x.y.z+build`. The build number is the larger of the first-parent commit count plus the owning plugin's `buildOffset` meta and the highest tagged build plus one.                                                                                                                                           |
 
 ### Tag helpers
 
@@ -252,26 +258,47 @@ const changes = await source.collect(memoryCtx(), {
 });
 ```
 
-`@tallyrelease/core/testing/conformance` ships shared specs and requires vitest. `schemeConformance(scheme)` checks that a `VersionScheme` round-trips, orders and bumps consistently; run it on every scheme you add:
+`@tallyrelease/core/testing/conformance` ships shared specs and requires vitest. `schemeConformance(scheme)` checks that a `VersionScheme` round-trips, orders and bumps consistently; run it on every scheme you add. For a scheme whose versions follow the commit date rather than the bump level, such as `calver`, pass `{ dateDriven: true }` to skip the level order, core reset and core-keeping release checks:
 
 ```ts
 import { schemeConformance } from "@tallyrelease/core/testing/conformance";
 import { describe } from "vitest";
 
-import { flutter } from "./flutter.ts";
+import { myScheme } from "./scheme.ts";
 
-describe("flutter", () => {
-  schemeConformance(flutter);
+describe("myScheme", () => {
+  schemeConformance(myScheme);
 });
 ```
 
 `gitReaderConformance(makeReader)` is for implementations of `GitReader` and is not needed for plugins.
 
+## The `dart` plugin
+
+The built-in `dart` plugin finds one unit per `pubspec.yaml`, skipping dot directories (such as `.dart_tool`), `build` and `example` directories. A root `pubspec.yaml` is the unit `.`, named after the repository.
+
+- **Versions.** Units are released with `version: file`; the top-level `version:` line of `pubspec.yaml` is the version file, rewritten in place with its quotes and comment kept, or added after `name:` when missing.
+- **Scheme.** A pubspec with `publish_to: none` that uses the Flutter SDK (`dependencies.flutter.sdk: flutter` or `environment.flutter`) defaults to `flutter`; every other unit defaults to `semver`. `units.<root>.scheme` overrides it.
+- **Edges.** A `path:` dependency on another `dart` unit in `dependencies`, `dev_dependencies` or `dependency_overrides` is an unpinned edge. Dependencies resolved by version, as between pub workspace members, and `pubspec_overrides.yaml` add no edges; declare them with `deps` in the config.
+- **Inputs.** `pubspec.lock` is a global input.
+- **Changelog.** The plugin has no `changelog` hook, so units get the default section.
+
+| Option        | Type                 | Default | Meaning                                                                                                                                |
+| :------------ | :------------------- | :------ | :------------------------------------------------------------------------------------------------------------------------------------- |
+| `buildOffset` | non-negative integer | `0`     | Added to the first-parent commit count for `flutter` build numbers, for example to continue above builds uploaded before tallyrelease. |
+
+```yaml
+plugins:
+  dart: { buildOffset: 1000 }
+```
+
+With `buildOffset: 1000`, a fix on a flutter app tagged `v1.2.0+5` after 40 first-parent commits releases `1.2.1+1040`; a tagged build of `1.2.0+2000` would give `1.2.1+2001` instead.
+
 ## Distribution
 
 A plugin is loaded from the config, by the key under `plugins`. The cli resolves each key in this order:
 
-1. A built-in plugin of that name (`node`, `php`, `kustomize`). Built-ins cannot be replaced: setting `path` or `package` on one fails with `E_PLUGIN_LOAD`.
+1. A built-in plugin of that name (`node`, `php`, `kustomize`, `dart`). Built-ins cannot be replaced: setting `path` or `package` on one fails with `E_PLUGIN_LOAD`.
 2. `plugins.<name>.path`, a local plugin.
 3. `plugins.<name>.package`, an npm package. `path` and `package` exclude each other.
 

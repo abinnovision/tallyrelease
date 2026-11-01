@@ -26,7 +26,7 @@ Run `yarn check`, `yarn test-unit` and `yarn turbo test-integration` before open
 ## Layout
 
 - `packages/core` is the pure planning core and the plugin contract. It does no I/O; files and git are read only through injected `ReadonlyFs`, `Ctx` and `GitReader`. `yarn check` enforces this.
-- `packages/cli` is the `tallyrelease` binary with config loading, git, forge, CI integration and the built-in plugins (`node`, `php`, `kustomize`). Plugins use only the public API of `@tallyrelease/core`.
+- `packages/cli` is the `tallyrelease` binary with config loading, git, forge, CI integration and the built-in plugins (`node`, `php`, `kustomize`, `dart`). Plugins use only the public API of `@tallyrelease/core`.
 
 The full design is in [`docs/design.md`](docs/design.md).
 

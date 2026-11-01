@@ -30,7 +30,7 @@ tallyrelease reads git history, Conventional Commits and a dependency graph supp
 - **Prereleases without committed state.** Prerelease versions are `{next}-{channel}.{N}`, where `N` counts first-parent commits since the last stable release on the line. Nothing is written to the repo and no registry is queried.
 - **Maintenance lines.** Branch rules such as `release/{major}.x` cap bumps at minor (and `release/{major}.{minor}.x` at patch), and fail with the offending commits when a change would leave the line.
 - **See before you write.** `plan`, `explain` and `--dry-run` show versions, bumps and the commits behind them before anything changes. The planning core does no I/O and is deterministic for a given repository state.
-- **Ecosystem plugins.** `node`, `php` and `kustomize` are built in. Anything else can be declared as a config-only unit that versions through git tags, or added with your own plugin (see the [plugin authoring guide](docs/plugins.md)).
+- **Ecosystem plugins.** `node`, `php`, `kustomize` and `dart` are built in. Anything else can be declared as a config-only unit that versions through git tags, or added with your own plugin (see the [plugin authoring guide](docs/plugins.md)).
 
 ## How it works
 
@@ -139,7 +139,7 @@ As of release-please 17.11 and Changesets 3.0, October 2026. Corrections welcome
 |                               | tallyrelease                                                    | release-please                                             | Changesets                                                 |
 | :---------------------------- | :-------------------------------------------------------------- | :--------------------------------------------------------- | :--------------------------------------------------------- |
 | Version source                | Conventional Commits, `Release-As` footer                       | Conventional Commits, `Release-As` footer                  | Hand-written `.changeset/*.md` intent files                |
-| Ecosystems                    | `node`, `php`, `kustomize` plugins; config-only units via tags  | About 20 release types (node, java, python, rust, go, ...) | `package.json`-based packages                              |
+| Ecosystems                    | `node`, `php`, `kustomize`, `dart`; config-only units via tags  | About 20 release types (node, java, python, rust, go, ...) | `package.json`-based packages                              |
 | Monorepo dependency awareness | Plugin graph; per-unit propagation (`auto`, `patch`, `rebuild`) | Paths only; workspace plugins patch internal dependents    | Workspace graph; `updateInternalDependencies`              |
 | Affected build detection      | Yes (`affected`)                                                | No                                                         | No (left to turbo, Nx and similar)                         |
 | Build-only units              | Yes; changes are absorbed into released dependents              | No                                                         | No                                                         |

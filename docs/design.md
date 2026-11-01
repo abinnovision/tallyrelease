@@ -120,6 +120,7 @@ export interface GitReader {
   countFirstParent(from: string | null, to: string): MaybePromise<number>;
   diffFiles(from: string, to: string): MaybePromise<readonly string[]>; // --name-only --no-renames
   introduced(path: string, to: string): MaybePromise<string | null>; // oldest first-parent commit touching path: log --first-parent --reverse -- :(top,literal)<path>
+  commitDate?(ref: string): MaybePromise<string>; // committer date, ISO 8601 (log -1 --format=%cI); optional for third-party readers
 }
 export interface TagRef {
   name: string;
@@ -206,6 +207,7 @@ export interface VersionScheme<V> {
 export interface PreCtx {
   unit: Unit;
   head: string; // full sha of the planned commit
+  date?: string; // committer date of head, ISO 8601; absent when the reader has no commitDate
   baseTag: string | null;
   tags: readonly string[]; // ALL tags of this unit (matching tagFormat), reachable or not, scheme-sorted
   firstParent: {
@@ -236,13 +238,17 @@ export interface Change {
 }
 ```
 
-Core built-ins (expressed through the contract, registered as internal plugin `core`): scheme `semver` (v0.2), intent source `conventional-commits` (v0.2, a small in-core parser exported as `parseCommit(message)`: header `type(scope)!: subject`, trailing `(#123)` as `pr` (also for non-conventional headers, which yield `type: ""`). Footers follow Conventional Commits: the footer block starts at the first paragraph whose first line is `Token: value` or `Token #value`, and a value runs, possibly over several lines, until the next such line. They are kept as `footers: Record<lowercased token, string[]>`; uppercase `BREAKING CHANGE`/`BREAKING-CHANGE` set `breaking`. Each commit maps to exactly one Change; the first line of each `Release-As` value becomes a `Change.releaseAs` entry (`<unit>@<version>` names a unit, a plain value applies to the units the Change is attributed to); no synthetic Changes. The plugin name `core` is reserved. No `conventional-commits-parser`, whose v7 imports `stream` and fails `check:purity`), default global input `tallyrelease.yaml`.
+Core built-ins (expressed through the contract, registered as internal plugin `core`): schemes `semver` (v0.2) and `calver`, intent source `conventional-commits` (v0.2, a small in-core parser exported as `parseCommit(message)`: header `type(scope)!: subject`, trailing `(#123)` as `pr` (also for non-conventional headers, which yield `type: ""`). Footers follow Conventional Commits: the footer block starts at the first paragraph whose first line is `Token: value` or `Token #value`, and a value runs, possibly over several lines, until the next such line. They are kept as `footers: Record<lowercased token, string[]>`; uppercase `BREAKING CHANGE`/`BREAKING-CHANGE` set `breaking`. Each commit maps to exactly one Change; the first line of each `Release-As` value becomes a `Change.releaseAs` entry (`<unit>@<version>` names a unit, a plain value applies to the units the Change is attributed to); no synthetic Changes. The plugin name `core` is reserved. No `conventional-commits-parser`, whose v7 imports `stream` and fails `check:purity`), default global input `tallyrelease.yaml`.
+
+**Commit date.** Core calls `GitReader.commitDate` once per plan, for the planned commit (`opts.head`), and passes the result to every unit and group `PreCtx` as `date`. This is the only source of `PreCtx.date`: core reads no clock and takes no date option, so the same commit always plans the same versions. Planning a merge's first parent (A.12) or a shadow commit uses that commit's date. A reader without `commitDate` leaves `date` unset, and `calver` then throws ("calver needs the commit date; the git reader does not provide commitDate").
+
+**`calver`.** Versions are `Y.M.N` with plain integers (`2026.11.0`, no leading zeros) and SemVer syntax; `core()` is `{ major: Y, minor: M, patch: N }`, and `initial()` is `0.0.0`. `parse` checks no month range. `bump` gives `Y.M.(N+1)` for every level, so the level only decides that a release is pending. `release(next, ctx)` takes `Y.M` from `ctx.date` in UTC: when `next` is in that month it is kept, when the date's month is newer the result is `Y.M.0` of the date, and when it is older `next` is kept, so a release is never lower than the current version. `Release-As` values go through `release` as well, so a value in an older month moves to `Y.M.0` of the date. `prerelease` appends `-<channel>.<n>` to that same `Y.M.N`, as `semver` does. Bump limits and floating tags read the core, so a `{major}` maintenance line (`release/{major}.x`) means a year. A month rollover counts as a minor change and a year rollover as a major one, so a commit dated in the next year fails `release/{major}.x` with `E_CAP`, and one dated in the next month fails `release/{major}.{minor}.x`; calver maintenance lines only hold releases within their year or month. A release PR opened on the last day of a month and merged in the next is still tagged with its version, because reconcile plans the merge's first parent, whose date did not change; if `main` moves into the next month before the merge, the plan at the new parent differs and the PR is labelled stale (A.12). The changelog heading date is the cli clock on the day the release PR is generated (A.12), so near a month boundary it can differ from the version's month.
 
 Commit order: `log` returns commits in any order (the cli reader uses `--topo-order`, `memoryGit` reverse declaration order; conformance checks that every commit is listed before its parents). Core never relies on it: every order-dependent rule sorts commits by committer date descending, compared as instants (`Date.parse`, since `%cI` carries offsets), then by sha ascending.
 
-Other pure exports (v0.3, A.12): `releaseFiles(workspace, plan, { fs, items, repoUrl, date })`, which also returns the changelog sections; `releasedFromTags(workspace, plan, { git, tags })`, whose entries carry `floatingTags`; `encodeMarker(marker)` and `decodeMarker(body)`; `releaseItems(workspace, plan)`, `releaseEntries(items)` and `planEquals(marker, plan, workspace)`; `maintenanceCut(workspace, plan, item)`; `compileTagFormat(format, unitId)` and `renderTag(unit, version)`, for plugins that emit tag formats. `./testing` exports `memoryFs`, `memoryCtx` and `memoryGit`. `./testing/conformance` (requires vitest) exports the shared spec suites `gitReaderConformance(makeReader)`, run against `memoryGit` (core unit tests) and the real cli reader (cli integration), and `schemeConformance(scheme)`, run against `semver` and the flutter sketch. Both `GitReader` implementations agree on ancestry, first-parent counts, tag peeling and rename handling.
+Other pure exports (v0.3, A.12): `releaseFiles(workspace, plan, { fs, items, repoUrl, date })`, which also returns the changelog sections; `releasedFromTags(workspace, plan, { git, tags })`, whose entries carry `floatingTags`; `encodeMarker(marker)` and `decodeMarker(body)`; `releaseItems(workspace, plan)`, `releaseEntries(items)` and `planEquals(marker, plan, workspace)`; `maintenanceCut(workspace, plan, item)`; `compileTagFormat(format, unitId)` and `renderTag(unit, version)`, for plugins that emit tag formats. `./testing` exports `memoryFs`, `memoryCtx` and `memoryGit`. `./testing/conformance` (requires vitest) exports the shared spec suites `gitReaderConformance(makeReader)`, run against `memoryGit` (core unit tests) and the real cli reader (cli integration), and `schemeConformance(scheme, { dateDriven? })`, run against `semver`, `flutter` and `calver` (`dateDriven: true` skips the bump level order, the core reset and the core-keeping release checks, and the shared `PreCtx` carries a `date`). Both `GitReader` implementations agree on ancestry, first-parent counts, tag peeling and rename handling, and on `commitDate`, which conformance checks against `log` when the reader has it.
 
-**Flutter scheme sketch (paper only, validates the interface):**
+**Flutter scheme** (`flutter`, exported by core as `src/flutter.ts`, registered by the `dart` plugin):
 
 ```ts
 type FV = { major: number; minor: number; patch: number; build: number };
@@ -265,14 +271,18 @@ const flutter: VersionScheme<FV> = {
 };
 const highestTaggedBuild = (tags: readonly string[]) =>
   Math.max(0, ...tags.map((t) => flutter.parse(stripPrefix(t))?.build ?? 0));
+const buildOffset = (unit: Unit) =>
+  Number(unit.meta[unit.plugin]?.["buildOffset"] ?? 0); // the owning plugin's meta
 const buildNo = (ctx: PreCtx) =>
   Math.max(
-    ctx.firstParent.total + Number(ctx.unit.meta["dart"]?.["buildOffset"] ?? 0),
+    ctx.firstParent.total + buildOffset(ctx.unit),
     highestTaggedBuild(ctx.tags) + 1,
   );
 ```
 
-Findings folded into the contract: stable versions also need git data (`release(next, ctx)`); limits and pre-1.0 rules need a numeric core (`core()`); prerelease detection is scheme-specific (`isPrerelease`); build numbers must stay above every **tagged** build including tags not reachable from HEAD, because `firstParent.total` on a maintenance branch can be lower than on `main` (`PreCtx.tags`). Known limitation: untagged prerelease builds are invisible to every other line, so teams uploading prereleases from `main` to Play need a CI-run-number build source; that belongs to the `dart` plugin and is deferred.
+Findings folded into the contract: stable versions also need git data (`release(next, ctx)`); limits and pre-1.0 rules need a numeric core (`core()`); prerelease detection is scheme-specific (`isPrerelease`); build numbers must stay above every **tagged** build including tags not reachable from HEAD, because `firstParent.total` on a maintenance branch can be lower than on `main` (`PreCtx.tags`). Known limitation: untagged prerelease builds are invisible to every other line, so teams uploading prereleases from `main` to Play need a CI-run-number build source, which the `dart` plugin does not provide yet.
+
+**`dart` plugin** (`@tallyrelease/plugins`): one unit per `pubspec.yaml` outside dot, `build` and `example` directories, `version: file` with the top-level `version:` line as the version file (added after `name:` when missing), unpinned edges for `path:` dependencies in `dependencies`, `dev_dependencies` and `dependency_overrides` (pub workspace members resolved by version and melos `pubspec_overrides.yaml` give no edges), and global input `pubspec.lock`. Units default to `flutter` when the pubspec has `publish_to: none` and uses the Flutter SDK, else `semver`. The option `buildOffset` is stored in each unit's meta. The plugin registers `flutter` and has no `changelog` hook.
 
 ### A.6 Hook conflict rules
 
@@ -811,6 +821,8 @@ Cli integration: `E01-version-files-written`, `E02-release-pr-create-then-update
 
 0.4 (release list for publishers): core scenarios `C33-glob-overlay-basic`, `C33b-glob-overlay-order`, `C33c-glob-overlay-field-rejected`, `C33d-glob-overlay-double-star`, `C33e-glob-overlay-unmatched`, `A16-released-changelog-not-ignored`, `R80-release-at-head-in-build-set` and `R80b-release-at-head-outside-build-set`; cli integration `E37` (a tag-only unit released at HEAD under `ignore: ["**/*.md"]` is `catchUp: false` and in the build set).
 
+Calver, flutter and dart: core scenarios `R81-calver`, `R81b-calver-month-rollover` and `R81c-calver-older-commit-date`; `schemeConformance` runs against `calver` (`dateDriven`) and the core `flutter` scheme, which `R21`, `R21b` and `R61` use; `gitReaderConformance` covers `commitDate`; cli integration covers a calver release PR merged in the next month (tagged) and one whose `main` moved into the next month first (stale), and a `dart` plan of a flutter app (`1.2.1+N`).
+
 **Rollout order**
 
 1. tallyrelease tasks 1 to 5 and the dry-run canary; release 0.3.0 by release-please.
@@ -835,7 +847,7 @@ Cli integration: `E01-version-files-written`, `E02-release-pr-create-then-update
 
 ### Later (no committed order)
 
-`dart` plugin + `flutter` scheme; `generic` (regex version files); linked groups; `calver`; `changesets` intent source; `go` with a `validate` hook for the `/vN` module path rule; scope narrowing/forcing; standalone binary (SEA); `tallyrelease import release-please`.
+`generic` (regex version files); linked groups; `changesets` intent source; `go` with a `validate` hook for the `/vN` module path rule; scope narrowing/forcing; standalone binary (SEA); `tallyrelease import release-please`.
 
 ---
 
@@ -941,4 +953,4 @@ Built-in plugins in `packages/plugins/src/**` (`@tallyrelease/plugins`) use the 
 
 **v0.3 addendum.** Effects live in the cli over pure core pieces (changelog writer, release items, marker). Release commits are built on a temporary index without a checkout (identity from `GIT_AUTHOR_*`/`GIT_COMMITTER_*`, default `tallyrelease <tallyrelease@users.noreply.github.com>`; HEAD's committer date) and pushed with `--force-with-lease`. Release PR branches are always leaves (D9). Tags are the record of releases; `plan.released` comes from tags in `(build.base, HEAD]`. In app-stack, entries not built at HEAD are built at `releaseSha` by `release-build`, the list stays schema 1, and `latest` and dispatch follow the remote git tags (A.11). Rejected: schema 2 with per-publisher catch-up builds, catch-ups built from HEAD, a `--` branch separator, marker v2, reconcile in `configure` or on `pull_request: closed`, assembling the list in jq, a checked-out release branch, GraphQL `createCommitOnBranch`, registry lookups for `latest` or prerelease numbers.
 
-**Follow-ups.** Split cli when a second consumer appears (done for the built-in plugins, now in `@tallyrelease/plugins`); Tier 2/3 plugin loading; `dart`/`flutter`; `generic`; linked groups; `calver`; `changesets`; `go` with `validate` hook; SEA binary; release-please importer; SchemaStore registration for `tallyrelease.yaml` (the schema is already published).
+**Follow-ups.** Split cli when a second consumer appears (done for the built-in plugins, now in `@tallyrelease/plugins`); Tier 2/3 plugin loading; `generic`; linked groups; `changesets`; `go` with `validate` hook; SEA binary; release-please importer; SchemaStore registration for `tallyrelease.yaml` (the schema is already published).
