@@ -1,13 +1,18 @@
 import { explainUnit } from "@tallyrelease/core";
 
+import { toJson } from "../app/outputs.js";
 import { planOptions } from "../app/setup.js";
 import { painter } from "../output/paint.js";
 import { explainText } from "../render/explain.js";
 
 import type { PlanFlags } from "../app/setup.js";
+import type { ExplainDoc } from "../explain-schema.js";
 import type { Session } from "../session.js";
 
-export type ExplainFlags = Pick<PlanFlags, "branch" | "base">;
+export type ExplainFlags = Pick<
+	PlanFlags,
+	"branch" | "base" | "format" | "json"
+>;
 
 /** Explains why a unit is affected and how its version is computed. */
 export const explain = async (
@@ -28,6 +33,14 @@ export const explain = async (
 		}),
 	);
 	session.warn([...explanation.warnings, ...warnings]);
+
+	const format = flags.format ?? (flags.json ? "json" : "text");
+	if (format === "json") {
+		const { plan: _plan, ...rest } = explanation;
+		session.stdout.write(toJson({ schema: 1, ...rest } satisfies ExplainDoc));
+
+		return;
+	}
 
 	session.stdout.write(
 		explainText({ id, unit, explanation, base }, painter(session.stdout)),
