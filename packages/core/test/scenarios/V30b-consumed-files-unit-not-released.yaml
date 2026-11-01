@@ -1,0 +1,38 @@
+description: >-
+  A change with files keeps them while a unit it names is not released.
+plugins:
+  - name: stub
+    units:
+      - { id: a, root: packages/a }
+      - { id: b, root: packages/b }
+    changes:
+      - units: [a, b]
+        type: feat
+        breaking: false
+        subject: from a changeset
+        files: [.changeset/x.md]
+config:
+  plugins: { stub: {} }
+  defaults: { release: true }
+  units:
+    packages/b: { release: false }
+  branches:
+    - { name: main, line: default }
+git:
+  commits:
+    - id: c0
+      files: { packages/a/i.ts: "0", packages/b/i.ts: "0" }
+    - id: c1
+      files: { .changeset/x.md: "---\nb: minor\n---\n" }
+  tags:
+    - { name: a-v1.0.0, commit: c0 }
+base: c0
+plan: { all: true }
+release:
+  files: { date: "2026-10-15" }
+expect:
+  plan:
+    units:
+      - { id: a, next: 1.1.0, changes: [{ units: [a, b] }] }
+  paths: [packages/a/CHANGELOG.md]
+  deletes: []

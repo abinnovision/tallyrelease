@@ -199,7 +199,13 @@ export interface IntentSource<O = unknown> {
 	name: string;
 	collect: (
 		ctx: Ctx<O>,
-		input: { from: string | null; to: string; commits: readonly RawCommit[] },
+		input: {
+			from: string | null;
+			to: string;
+			commits: readonly RawCommit[];
+			/** All units of the workspace. */
+			units: readonly Unit[];
+		},
 	) => MaybePromise<Change[]>;
 }
 
@@ -224,6 +230,11 @@ export interface Change {
 	releaseAs?: ReleaseAsValue[];
 	pr?: number;
 	date?: string;
+	/**
+	 * Files consumed when the change is released: deleted in the release
+	 * commit that releases every unit named by the changes with the file.
+	 */
+	files?: string[];
 }
 
 /** Throws `E_PLUGIN_API` or `E_PLUGIN_NAME` for an unsupported plugin. */

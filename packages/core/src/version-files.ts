@@ -425,6 +425,37 @@ const changelogStep = async (
 	return section;
 };
 
+/**
+ * Readable files of the plan's changes where every unit named by a change
+ * with the file is in `released`; `written` files are kept.
+ */
+const consumedFiles = (
+	plan: Plan,
+	released: ReadonlySet<string>,
+	{ fs, written }: { fs: ReadonlyFs; written: ReadonlyMap<string, string> },
+): Set<string> => {
+	const named = new Map<string, string[]>();
+	for (const { files = [], units = [] } of plan.units.flatMap(
+		(u) => u.changes,
+	)) {
+		for (const path of files) {
+			named.set(path, [...(named.get(path) ?? []), ...units]);
+		}
+	}
+
+	return new Set(
+		[...named]
+			.filter(
+				([path, units]) =>
+					units.length > 0 &&
+					units.every((id) => released.has(id)) &&
+					!written.has(path) &&
+					fs.read(path) !== undefined,
+			)
+			.map(([path]) => path),
+	);
+};
+
 /** Checks template files and patterns (`E_CONFIG`); runs no plugin hook. */
 export const validateTemplates = (workspace: Workspace): void => {
 	for (const [id, templates] of workspace.release.templates) {
@@ -497,7 +528,8 @@ export const versionFileClaims = async (
  * Files of a release of `items` (stable `next`): plugin version files,
  * templates, markers and `<root>/CHANGELOG.md` per unit, read through `fs`; the
  * owning plugin's `changelog` hook may replace a unit's section. Returns
- * only files whose content changes, and each unit's changelog section;
+ * only files whose content changes, the consumed files of changes whose
+ * named units all release in `items`, and each unit's changelog section;
  * checks claims first. Templates skip first releases and warn
  * `W_VERSION_FILE_NO_MATCH` without any match, markers warn
  * `W_MARKER_NO_MATCH`; a missing version file is
@@ -516,7 +548,7 @@ export const releaseFiles = async (
 	},
 ): Promise<{
 	files: Map<string, string>;
-	/** Paths the release removes. */
+	/** Files consumed by released changes, deleted by the release. */
 	deletes: Set<string>;
 	/** Changelog section of each unit, by unit id. */
 	sections: Map<string, string>;
@@ -582,7 +614,10 @@ export const releaseFiles = async (
 
 	return {
 		files: new Map([...files].filter(([path, c]) => fs.read(path) !== c)),
-		deletes: new Set(),
+		deletes: consumedFiles(plan, new Set(versions.keys()), {
+			fs,
+			written: files,
+		}),
 		sections,
 		warnings,
 	};

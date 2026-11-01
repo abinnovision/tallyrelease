@@ -129,7 +129,12 @@ describe("parseCommit", () => {
 
 describe("conventionalCommits", () => {
 	const collect = (commits: RawCommit[]) =>
-		conventionalCommits.collect(memoryCtx(), { from: null, to: "b", commits });
+		conventionalCommits.collect(memoryCtx(), {
+			from: null,
+			to: "b",
+			commits,
+			units: [],
+		});
 
 	it("maps each commit to exactly one Change", async () => {
 		expect(

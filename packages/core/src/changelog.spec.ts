@@ -23,6 +23,7 @@ const change = (sha: string, message: string): PlanChange => {
 		from: null,
 		to: sha,
 		commits,
+		units: [],
 	}) as Change[];
 	const { type, breaking, scope, subject, notes, pr } = c ?? {
 		type: "",

@@ -74,7 +74,7 @@ interface Scenario {
 	/**
 	 * With `plan`: release items, `planEquals` per marker, the changelog
 	 * section of each unit with a stable `next` and `releaseFiles` of all items
-	 * with the `releaseNotes` of each unit.
+	 * (`files`, `paths`, `deletes`) with the `releaseNotes` of each unit.
 	 */
 	release?: {
 		markers?: Record<string, MarkerRelease[]>;
@@ -216,6 +216,7 @@ const run = async (s: Scenario) => {
 			...(written && {
 				files: Object.fromEntries(written.files),
 				paths: [...written.files.keys()].sort(),
+				deletes: [...written.deletes].sort(),
 				fileWarnings: written.warnings,
 				notes: Object.fromEntries(
 					plan.units.map((u) => [

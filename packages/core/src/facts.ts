@@ -320,7 +320,12 @@ export const rangeFacts = (
 		for (const { plugin, source, ctx: sourceCtx } of intents) {
 			// eslint-disable-next-line no-await-in-loop -- hooks run sequentially in config order
 			const collected = await runHook(plugin, "intent", () =>
-				source.collect(sourceCtx, { from, to: head, commits }),
+				source.collect(sourceCtx, {
+					from,
+					to: head,
+					commits,
+					units: workspace.units,
+				}),
 			);
 			warnUnknown(plugin, collected);
 			changes.push(...collected);
