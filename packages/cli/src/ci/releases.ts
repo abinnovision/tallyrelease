@@ -68,6 +68,7 @@ export const releaseListEntries = (
 			tags: tags.get(r.id) ?? [],
 			group: group.get(r.id) ?? null,
 			line: r.line,
+			buildNumber: null,
 		})),
 		...plan.units.flatMap((u): ReleaseEntry[] =>
 			u.kind === "prerelease" && u.version !== null && !atHead.has(u.id)
@@ -87,6 +88,7 @@ export const releaseListEntries = (
 							tags: u.tags,
 							group: u.group,
 							line,
+							buildNumber: null,
 						},
 					]
 				: [],

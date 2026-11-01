@@ -26,6 +26,12 @@ Cause: An entry of `branches` is invalid. The `name` is empty, uses a token othe
 
 Fix: Correct the rule named in the message. Use either `unit` (ungrouped released unit) or `group`, only on `line: maintenance` rules whose `name` contains `{major}`, and name a unit or group that exists in the config.
 
+### E_BUILD_NUMBER_SHALLOW
+
+Cause: Build numbers count first-parent commits, which a shallow clone truncates. Raised by `run --github-output` when a unit sets `buildNumber`, before any effect.
+
+Fix: Fetch the full history, for example `fetch-depth: 0` in `actions/checkout` or `git fetch --unshallow`.
+
 ### E_CAP
 
 Cause: On a maintenance branch, a release item would leave the line of its current version, for example a breaking change or `Release-As` on a `release/1.x` branch. The message lists the offending commits.
