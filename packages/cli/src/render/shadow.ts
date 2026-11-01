@@ -5,10 +5,6 @@ import { unlabelled } from "../shadow/compare.js";
 
 import type { ShadowReport, ShadowRow } from "../shadow/compare.js";
 
-// Workflow command data escaping.
-const escapeData = (value: string) =>
-	value.replace(/%/g, "%25").replace(/\r/g, "%0D").replace(/\n/g, "%0A");
-
 /** Text of `shadow`: header, then the row table and a summary. */
 export const shadowText = (report: ShadowReport): string => {
 	const header = `shadow  ${short(report.head)} (planned ${short(report.planned)}, branch ${report.branch})`;
@@ -64,6 +60,6 @@ export const shadowMarkdown = (report: ShadowReport): string => {
 	return `${lines.join("\n")}\n`;
 };
 
-/** Workflow warning annotation of an unlabelled row. */
+/** Warning annotation message of an unlabelled row. */
 export const shadowAnnotation = (r: ShadowRow): string =>
-	`::warning title=tallyrelease shadow::${escapeData(`${r.path}: ${r.status} (release-please ${r.after ?? "-"}, tallyrelease ${r.next ?? "-"})`)}\n`;
+	`${r.path}: ${r.status} (release-please ${r.after ?? "-"}, tallyrelease ${r.next ?? "-"})`;

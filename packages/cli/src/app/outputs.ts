@@ -1,11 +1,10 @@
 import { join, resolve } from "node:path";
 
 import {
-	affectedGithubOutput,
-	planGithubOutput,
-	releasesGithubOutput,
+	affectedOutputs,
+	planOutputs,
+	releasesOutputs,
 } from "../ci/outputs.js";
-import { appendStepSummary } from "../ci/summary.js";
 import { cliCodes } from "../codes.js";
 import { painter } from "../output/paint.js";
 import { planMarkdown, planText } from "../render/plan.js";
@@ -16,19 +15,6 @@ import type { ReleaseEntry } from "../plan-schema.js";
 import type { Session } from "../session.js";
 import type { AffectedDoc, Plan } from "@tallyrelease/core";
 
-/** `$GITHUB_OUTPUT`; `E_GITHUB_OUTPUT` when it is not set. */
-const githubOutputPath = (session: Session): string => {
-	const path = session.env["GITHUB_OUTPUT"];
-	if (!path) {
-		throw cliCodes.error(
-			"E_GITHUB_OUTPUT",
-			"--github-output requires GITHUB_OUTPUT to be set",
-		);
-	}
-
-	return path;
-};
-
 /** `--out` resolved against the working directory. */
 export const outPath = (session: Session, out: string | undefined) =>
 	out === undefined ? undefined : resolve(session.cwd, out);
@@ -37,7 +23,7 @@ export const outPath = (session: Session, out: string | undefined) =>
 export const toJson = (doc: unknown): string =>
 	`${JSON.stringify(doc, null, 2)}\n`;
 
-/** Writes the affected `doc` to `--out` and `$GITHUB_OUTPUT`. */
+/** Writes the affected `doc` to `--out` and the step outputs. */
 export const writeAffected = (
 	session: Session,
 	doc: AffectedDoc,
@@ -49,11 +35,11 @@ export const writeAffected = (
 	}
 
 	if (flags.githubOutput) {
-		session.appendFile(githubOutputPath(session), affectedGithubOutput(doc));
+		session.ci.writeOutput(affectedOutputs(doc));
 	}
 };
 
-/** Writes `doc` to `--out`, `$GITHUB_OUTPUT`, the step summary and stdout. */
+/** Writes `doc` to `--out`, the step outputs, the step summary and stdout. */
 export const writePlan = (
 	session: Session,
 	{
@@ -73,30 +59,34 @@ export const writePlan = (
 	}
 
 	if (flags.githubOutput) {
-		const outputPath = githubOutputPath(session);
+		const { ci } = session;
+		if (!ci.hasOutput) {
+			throw cliCodes.error(
+				"E_GITHUB_OUTPUT",
+				"--github-output requires GITHUB_OUTPUT to be set",
+			);
+		}
 
-		const temp = session.env["RUNNER_TEMP"];
-		if (out === undefined && !temp) {
+		if (out === undefined && ci.outputDir === undefined) {
 			throw cliCodes.error(
 				"E_GITHUB_OUTPUT",
 				"--github-output requires --out or RUNNER_TEMP to be set",
 			);
 		}
 
-		const path = out ?? join(temp ?? "", "tallyrelease-plan.json");
+		const path = out ?? join(ci.outputDir ?? "", "tallyrelease-plan.json");
 		if (out === undefined) {
 			session.writeOutFile(path, json);
 		}
 
-		session.appendFile(
-			outputPath,
-			planGithubOutput(path) +
-				(releases === undefined ? "" : releasesGithubOutput(releases)),
-		);
+		ci.writeOutput([
+			...planOutputs(path),
+			...(releases === undefined ? [] : releasesOutputs(releases)),
+		]);
 	}
 
 	const appended =
-		flags.summary && appendStepSummary(session, planMarkdown(doc, base));
+		flags.summary && session.ci.writeSummary(planMarkdown(doc, base));
 
 	const format = flags.format ?? (flags.json ? "json" : "text");
 	session.stdout.write(

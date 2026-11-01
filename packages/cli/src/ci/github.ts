@@ -1,9 +1,10 @@
-import { readFileSync } from "node:fs";
+import { randomUUID } from "node:crypto";
+import { appendFileSync, readFileSync } from "node:fs";
 
 import { cliCodes } from "../codes.js";
 
 import type { Env } from "./env.js";
-import type { CiEvent, CiProvider } from "./provider.js";
+import type { CiEvent, CiProvider, OutputEntry } from "./provider.js";
 
 const nonEmpty = (value: string | undefined) =>
 	value === "" ? undefined : value;
@@ -35,6 +36,21 @@ const PR_EVENTS: ReadonlySet<string> = new Set([
 	"merge_group",
 ]);
 
+/** `$GITHUB_OUTPUT` line of `entry`. */
+const outputLine = ({ key, value, multiline }: OutputEntry): string => {
+	if (!multiline) {
+		return `${key}=${value}\n`;
+	}
+
+	const delimiter = `ghadelimiter_${randomUUID()}`;
+
+	return `${key}<<${delimiter}\n${value}\n${delimiter}\n`;
+};
+
+// Workflow command data escaping.
+const escapeData = (value: string) =>
+	value.replace(/%/g, "%25").replace(/\r/g, "%0D").replace(/\n/g, "%0A");
+
 /** `CiEvent` of `name`; `payload` is the parsed `GITHUB_EVENT_PATH`. */
 const ciEvent = (
 	name: string,
@@ -65,7 +81,10 @@ const ciEvent = (
 };
 
 /** GitHub Actions run context from `GITHUB_*` variables. */
-export const githubCi = (env: Env): CiProvider => {
+export const githubCi = (
+	env: Env,
+	appendFile: (path: string, content: string) => void = appendFileSync,
+): CiProvider => {
 	const eventName = nonEmpty(env["GITHUB_EVENT_NAME"]);
 	const eventPath = env["GITHUB_EVENT_PATH"];
 	let payload: Record<string, unknown> | undefined;
@@ -77,6 +96,8 @@ export const githubCi = (env: Env): CiProvider => {
 	const refName = nonEmpty(env["GITHUB_REF_NAME"]);
 	const server = env["GITHUB_SERVER_URL"];
 	const prEvent = eventName !== undefined && PR_EVENTS.has(eventName);
+	const output = env["GITHUB_OUTPUT"];
+	const summary = env["GITHUB_STEP_SUMMARY"];
 
 	return {
 		event:
@@ -104,6 +125,34 @@ export const githubCi = (env: Env): CiProvider => {
 		repoUrl:
 			server && repository
 				? `${server.replace(/\/+$/, "")}/${repository}`
+				: undefined,
+		hasOutput: Boolean(output),
+		writeOutput: (entries) => {
+			if (!output) {
+				throw cliCodes.error(
+					"E_GITHUB_OUTPUT",
+					"--github-output requires GITHUB_OUTPUT to be set",
+				);
+			}
+
+			appendFile(output, entries.map(outputLine).join(""));
+		},
+		outputDir: nonEmpty(env["RUNNER_TEMP"]),
+		hasSummary: Boolean(summary),
+		writeSummary: (markdown) => {
+			if (!summary) {
+				return false;
+			}
+
+			appendFile(summary, markdown);
+
+			return true;
+		},
+		sha: env["GITHUB_SHA"],
+		annotate:
+			env["GITHUB_ACTIONS"] === "true"
+				? (title, message) =>
+						`::warning title=${title}::${escapeData(message)}\n`
 				: undefined,
 	};
 };

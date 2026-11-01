@@ -1,11 +1,5 @@
 import { computePlan, loadWorkspace, withReleased } from "@tallyrelease/core";
-import {
-	appendFileSync,
-	existsSync,
-	mkdirSync,
-	rmSync,
-	writeFileSync,
-} from "node:fs";
+import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import {
 	basename,
 	dirname,
@@ -107,7 +101,6 @@ export interface Session {
 	readonly writeFile: (path: string, content: string) => void;
 	readonly deleteFile: (path: string) => void;
 	readonly writeOutFile: (path: string, content: string) => void;
-	readonly appendFile: (path: string, content: string) => void;
 	readonly clock: () => Date;
 	/** Web URL of the repository for changelog links, null when unknown. */
 	readonly repoUrl: () => Promise<string | null>;
@@ -174,7 +167,7 @@ export const createSession = (deps: Deps, opts: GlobalOptions): Session => {
 		? (message: string) => deps.stderr.write(`debug: ${message}\n`)
 		: undefined;
 	const fs = deps.fs ?? nodeFs(root);
-	const ci = detectCi(deps.env);
+	const ci = detectCi(deps.env, deps.appendFile);
 	const token = opts.token ?? forgeToken(deps.env);
 	const remote = opts.remote ?? "origin";
 	const configPath = relative(root, resolve(root, opts.config))
@@ -356,11 +349,6 @@ export const createSession = (deps: Deps, opts: GlobalOptions): Session => {
 			deps.writeOutFile ??
 			((path, content) => {
 				writeFileSync(path, content);
-			}),
-		appendFile:
-			deps.appendFile ??
-			((path, content) => {
-				appendFileSync(path, content);
 			}),
 		clock: deps.clock ?? (() => new Date()),
 		repoUrl,
