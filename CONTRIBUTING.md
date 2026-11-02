@@ -35,7 +35,7 @@ The full design is in [`docs/design.md`](docs/design.md).
 
 ## Docs
 
-`docs/cli.md`, `docs/configuration.md`, `docs/release-list.md` and `docs/errors.md` are generated from the code. `yarn fix` regenerates them, and `yarn check` fails when they are stale. Complete config examples in the docs start with `# tallyrelease.yaml` (or the `# yaml-language-server:` modeline) and are validated against the config schema by a test in `packages/docs`. Snippets that are not complete configs do not carry the line.
+`docs/cli.md`, `docs/configuration.md`, `docs/release-list.md` and `docs/errors.md` are generated from the code, and the git history drawings in `docs/assets/` from `docs/assets/histories/*.json`. `yarn fix` regenerates them, and `yarn check` fails when they are stale. Complete config examples in the docs start with `# tallyrelease.yaml` (or the `# yaml-language-server:` modeline) and are validated against the config schema by a test in `packages/docs`. Snippets that are not complete configs do not carry the line.
 
 ## Tests
 
