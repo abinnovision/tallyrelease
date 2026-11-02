@@ -237,6 +237,76 @@ describe("dart version file", () => {
 		);
 	});
 
+	describe("exact pins", () => {
+		const released = {
+			units: [unit("core", "packages/core", "core"), app],
+			versions: new Map([
+				["core", "0.4.0"],
+				["app", "1.2.1"],
+			]),
+		};
+		const pubspec = (eol: string) =>
+			[
+				"name: app",
+				"version: 1.2.0",
+				"dependencies:",
+				"  core: 0.3.0",
+				"  quoted: '0.3.0' # keep",
+				"  ranged: ^0.3.0",
+				"  nested:",
+				"    version: 0.3.0",
+				"dev_dependencies:",
+				"  core: 0.3.0",
+				"",
+			].join(eol);
+
+		it("rewrites exact pins of released units and keeps quotes", async () => {
+			const file = await versionFile();
+			const units = [
+				...released.units,
+				unit("quoted", "packages/quoted", "quoted"),
+			];
+			const versions = new Map([...released.versions, ["quoted", "0.4.0"]]);
+			expect(
+				file.write(pubspec("\n"), "1.2.1", { unit: app, units, versions }),
+			).toBe(
+				[
+					"name: app",
+					"version: 1.2.1",
+					"dependencies:",
+					"  core: 0.4.0",
+					"  quoted: '0.4.0' # keep",
+					"  ranged: ^0.3.0",
+					"  nested:",
+					"    version: 0.3.0",
+					"dev_dependencies:",
+					"  core: 0.3.0",
+					"",
+				].join("\n"),
+			);
+		});
+
+		it("keeps CRLF", async () => {
+			const file = await versionFile();
+			const out = file.write(pubspec("\r\n"), "1.2.1", {
+				unit: app,
+				...released,
+			});
+			expect(out).toContain("  core: 0.4.0\r\n");
+			expect(out.replaceAll("\r\n", "")).not.toContain("\n");
+		});
+
+		it("leaves pins of unreleased units", async () => {
+			const file = await versionFile();
+			const out = file.write(pubspec("\n"), "1.2.1", {
+				unit: app,
+				units: [app],
+				versions: new Map([["app", "1.2.1"]]),
+			});
+			expect(out).toContain("  core: 0.3.0\n  quoted");
+		});
+	});
+
 	it("keeps quotes and comments", async () => {
 		const file = await versionFile();
 		const quoted = "name: a\nversion: '1.0.0' # app\n";
