@@ -3,6 +3,7 @@
 The `kustomize` plugin turns every directory with a kustomization into a unit. A unit is affected by its own directory and by the local files it references outside it, and the units it builds on are its dependencies.
 
 ```yaml
+# tallyrelease.yaml
 plugins:
   kustomize: {}
 ```
@@ -69,6 +70,7 @@ Unknown keys fail with [`E_PLUGIN_OPTIONS`](../errors.md#e_plugin_options). The 
 ## Example
 
 ```yaml
+# tallyrelease.yaml
 plugins:
   kustomize: { paths: ["deploy/**"] }
 units:

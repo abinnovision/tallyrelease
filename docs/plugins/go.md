@@ -3,6 +3,7 @@
 The `go` plugin turns every Go module of a repository into a unit and checks the major version path rule before a release. Units version through tags and have no version file.
 
 ```yaml
+# tallyrelease.yaml
 plugins:
   go: {}
 ```
@@ -70,6 +71,7 @@ plugin "go" failed in validate: E_GO_MAJOR_PATH: unit "mathx" releases 2.0.0 but
 ## Example
 
 ```yaml
+# tallyrelease.yaml
 plugins:
   go: {}
 units:

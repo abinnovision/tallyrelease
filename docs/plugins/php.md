@@ -3,6 +3,7 @@
 The `php` plugin turns a Composer project and its local path repositories into units. It has no version file: units version through tags.
 
 ```yaml
+# tallyrelease.yaml
 plugins:
   php: {}
 ```
@@ -53,6 +54,7 @@ The plugin has no options. Only the core-owned `globalInputs: false` is accepted
 ## Example
 
 ```yaml
+# tallyrelease.yaml
 plugins:
   php: {}
 units:

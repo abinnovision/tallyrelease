@@ -94,6 +94,7 @@ export default definePlugin({
 `tallyrelease.yaml`:
 
 ```yaml
+# tallyrelease.yaml
 plugins:
   apps: { path: tools/apps-plugin.ts, dir: apps }
 units:
@@ -300,6 +301,7 @@ A key that matches none of these fails with `E_PLUGIN_UNKNOWN`. Only listed plug
 ### Local plugins
 
 ```yaml
+# tallyrelease.yaml
 plugins:
   apps: { path: tools/apps-plugin.ts }
 ```
@@ -309,6 +311,7 @@ plugins:
 ### npm packages
 
 ```yaml
+# tallyrelease.yaml
 plugins:
   apps: { package: "@acme/tallyrelease-apps" }
 ```

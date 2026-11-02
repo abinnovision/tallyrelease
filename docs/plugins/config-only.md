@@ -7,6 +7,7 @@ Not every releasable thing has a manifest. A config-only unit is a `units` entry
 Add the root under `units` in `tallyrelease.yaml`. The directory must exist, else the command fails with [`E_ROOT_MISSING`](../errors.md#e_root_missing).
 
 ```yaml
+# tallyrelease.yaml
 units:
   tools/setup:
     release: true
@@ -27,6 +28,7 @@ units:
 None are derived, because no plugin reads a manifest. Declare dependencies with `deps`:
 
 ```yaml
+# tallyrelease.yaml
 deps:
   - { from: setup, to: docs-site, pinned: false }
 ```
