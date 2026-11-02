@@ -20,7 +20,7 @@ It replaces `run-release-please` in `abinnovision/actions`. Building and publish
 
 Goals: ecosystem-agnostic core; commit-driven intent; path-based attribution; separate build and release sets; deterministic prereleases with no committed state; maintenance lines; versioned plan output; runs locally and in any CI (GitHub first); pure, fixture-tested core; correctness under cancelled or reordered CI runs.
 
-Non-goals: building, packaging, publishing; forward-porting hotfixes; AI or heuristic release notes; replacing turbo/Nx/moon; scope-based attribution in v1; plugin distribution (local `.ts` plugins, npm plugin packages) in v1; effects as plugin hooks in v1.
+Non-goals: building, packaging, publishing; forward-porting hotfixes; AI or heuristic release notes; replacing turbo/Nx/moon; plugin distribution (local `.ts` plugins, npm plugin packages) in v1; effects as plugin hooks in v1.
 
 ### A.3 Concepts
 
@@ -317,7 +317,20 @@ A `units` key containing `*` is a glob over unit roots. `*` matches exactly one 
 
 **A.7.2 Graph.** As in A.6. Reverse adjacency precomputed; closure is BFS with a visited set. Topological order (used for propagation and the release list): Tarjan SCCs in dependency order, members of a cycle ordered by id.
 
-**A.7.3 Attribution (path-based only).** A path belongs to every unit whose `include` matches and `exclude` does not (`picomatch/posix` v4, `dot: true`). Commit file lists use `--no-renames`, so renames count for both old and new path. In the release set (A.7.6) a commit without files (`git commit --allow-empty`) is attributed to every released unit, as release-please does; the build set is unchanged, since such a commit changes no files. Scope narrowing/forcing is deferred.
+**A.7.3 Attribution (path- and scope-based).** A path belongs to every unit whose `include` matches and `exclude` does not (`picomatch/posix` v4, `dot: true`). Commit file lists use `--no-renames`, so renames count for both old and new path. In the release set (A.7.6) a commit without files (`git commit --allow-empty`) is attributed to every released unit, as release-please does; the build set is unchanged, since such a commit changes no files.
+
+`attribution.scopes` maps a Conventional Commits scope to unit ids (any unit, released or not; group names are not allowed; an unknown id fails with `E_ATTRIBUTION_UNKNOWN_UNIT`). The scope comes from the commit header only (`parseCommit(message).scope`), never from body lines of a squash commit. It is split on `,` and each part is trimmed; `S` is the union of the units of the mapped parts, and a commit with no mapped part is unscoped. Matching is exact and case-sensitive. With `F` the commit's files minus `ignore` minus `globalInputs` and `P` the path owners of `F`, a commit is attributed in the release set as follows (`attribution.mode`, default `paths`):
+
+| Commit                              | `paths`  | `narrow` |
+| :---------------------------------- | :------- | :------- |
+| Unscoped or unmapped, `F` not empty | `P`      | `P`      |
+| Mapped, `F` not empty               | `P ∪ S`  | `S`      |
+| Mapped, files but `F` empty         | none     | none     |
+| Without files, mapped               | `S`      | `S`      |
+| Without files, unmapped             | released | released |
+| A Change with explicit `units`      | `units`  | `units`  |
+
+So ignored, global and lockfile-only commits are never attributed through a scope, and explicit `units` (changesets) always win. Groups and absorption apply unchanged to the result; a scope that moves a commit off an unreleased unit also moves it off that unit's absorbing dependents. Without `attribution.scopes` the output and the git calls are unchanged.
 
 **A.7.4 Build set (v0.1).**
 
@@ -339,6 +352,8 @@ Group coupling (v0.2): if any member of a fixed group is affected, all members a
 A released unit owns `<root>/CHANGELOG.md` (`changelogPath`; `CHANGELOG.md` for a root unit) regardless of `ignore`, `include` and `exclude`, with reason `direct`; global inputs are still checked first. So a release commit always keeps its units in the build set, tag-only units under `ignore: ["**/*.md"]` included. `explain` lists that changelog among the unit's files.
 
 Tree-to-tree diff needs no special casing for merges, reverts or squash merges. Unreleased units (`version: none`) are included; build selection depends on release status only through changelog ownership. Output sorted by unit id.
+
+Scope attribution (v0.6): with `attribution.scopes`, a base and no global hit, the build set re-attributes each changed file through one `git.log(base, head)` call. The diff stays the authority for which files changed. A released unit's changelog keeps its owner. Any other file `f` touched by the non-merge commits `T(f)` of the range gets the union over `T(f)` of the commit rule of A.7.3 applied to its path owners; a file that no such commit touched (a merge-only edit, or the base side of a `--base` that is not an ancestor) keeps its path owners. On a global hit all units are affected and `unattributed` stays path-based. So narrowing drops the path owners of `f` only when every commit that touched it is scoped and mapped. This is a hazard of `narrow`: it can leave out the owner of a file that really changed, including an unreleased library and its dependents. Build and release results can differ when a squash message carries a different scope than the branch commits.
 
 **A.7.5 Build base resolution (cli, in order).**
 
@@ -830,6 +845,8 @@ Calver, flutter and dart: core scenarios `R81-calver`, `R81b-calver-month-rollov
 
 0.6 (mobile): core scenarios `C35-build-number-overlay`, `R82-build-number-default-line`, `R82b-build-number-offset`, `R82c-build-number-fixed-group` and `R82d-build-number-maintenance`; cli integration covers `line` on release list entries (`E08`), build numbers of releases and prereleases, `E_BUILD_NUMBER_SHALLOW` before any effect, no shallow check without `--github-output` or a unit with `buildNumber`, and `W_BUILD_NUMBER_MAINTENANCE` on a maintenance line.
 
+0.6 (scope attribution): core scenarios `R83-scope-forces-unit`, `R83b-scope-narrow`, `R83c-scope-narrow-ignored-global`, `R83d-scope-forces-group-member`, `R83e-scope-explicit-units-win`, `R83f-scope-multi`, `R83g-scope-absorption-paths`, `R83h-scope-absorption-narrow`, `A18-scope-revert-unchanged`, `A18b-scope-narrow-owner-kept` and `C36-attribution-unknown-unit`; `affected.spec.ts` shows that `affected` reads no log without scopes, without a base or on a global hit; `explain` lists the files of a commit attributed by its scope.
+
 **Rollout order**
 
 1. tallyrelease tasks 1 to 5 and the dry-run canary; release 0.3.0 by release-please.
@@ -854,7 +871,7 @@ Calver, flutter and dart: core scenarios `R81-calver`, `R81b-calver-month-rollov
 
 ### Later (no committed order)
 
-Linked groups; scope narrowing/forcing; standalone binary (SEA); `tallyrelease import release-please`.
+Linked groups; standalone binary (SEA); `tallyrelease import release-please`.
 
 Resolved without a new core feature: `generic` (regex version files) is covered by config-only units with `versionFiles`, either `pattern` entries or version markers, so manifest-less units release with tags and a changelog and need no plugin. The built-in `go` plugin checks the `/vN` module path rule in its `validate` hook (`E_GO_MAJOR_PATH`, surfaced as `E_PLUGIN_HOOK`).
 
