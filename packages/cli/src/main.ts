@@ -31,11 +31,8 @@ import type { CodeOf, ErrorCode } from "@tallyrelease/core";
 
 const internal = "E_INTERNAL" satisfies ErrorCode<CodeOf<typeof cliCodes>>;
 
-/** Runs the cli; returns the exit code (0 ok, 1 error, 2 usage). */
-export const main = async (
-	argv: readonly string[],
-	deps: Deps,
-): Promise<number> => {
+/** Builds the commander program; actions run against `deps`. */
+export const createProgram = (deps: Deps): Command => {
 	const program = new Command("tallyrelease")
 		.description(
 			"Affected build units and releases for monorepos and single repos",
@@ -230,6 +227,16 @@ export const main = async (
 		.action(async (flags: RunFlags) => {
 			await run(session(true), flags);
 		});
+
+	return program;
+};
+
+/** Runs the cli; returns the exit code (0 ok, 1 error, 2 usage). */
+export const main = async (
+	argv: readonly string[],
+	deps: Deps,
+): Promise<number> => {
+	const program = createProgram(deps);
 
 	try {
 		await program.parseAsync(argv, { from: "user" });

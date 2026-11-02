@@ -5,7 +5,7 @@ import { z } from "zod";
 import { affectedDocSchema } from "../dist/affected-schema.js";
 import { configJsonSchema } from "../dist/config/schema.js";
 import { explainSchema } from "../dist/explain-schema.js";
-import { planSchema } from "../dist/plan-schema.js";
+import { planSchema, releaseEntrySchema } from "../dist/plan-schema.js";
 
 writeFileSync(
 	new URL("../dist/affected.schema.json", import.meta.url),
@@ -20,6 +20,11 @@ writeFileSync(
 writeFileSync(
 	new URL("../dist/plan.schema.json", import.meta.url),
 	`${JSON.stringify(z.toJSONSchema(planSchema), null, "\t")}\n`,
+);
+
+writeFileSync(
+	new URL("../dist/releases.schema.json", import.meta.url),
+	`${JSON.stringify(z.toJSONSchema(releaseEntrySchema), null, "\t")}\n`,
 );
 
 writeFileSync(
