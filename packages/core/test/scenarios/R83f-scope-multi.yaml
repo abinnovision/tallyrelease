@@ -1,0 +1,39 @@
+description: >-
+  A header scope is split on commas and trimmed; a commit maps to the union of
+  its mapped parts, and stays path-based when no part is mapped.
+plugins:
+  - name: stub
+    units:
+      - { id: server, root: apps/server }
+      - { id: web, root: apps/web }
+config:
+  plugins: { stub: {} }
+  defaults: { release: true }
+  attribution:
+    mode: narrow
+    scopes: { api: [server], ui: [web] }
+  branches:
+    - { name: main, line: default }
+git:
+  commits:
+    - id: c0
+      files: { apps/server/index.ts: "0", apps/web/index.ts: "0" }
+    - id: c1
+      message: "fix(api, ui): both"
+      files: { README.md: "1" }
+    - id: c2
+      message: "fix(api,other): server"
+      files: { apps/web/index.ts: "2" }
+    - id: c3
+      message: "fix(x,y): web"
+      files: { apps/web/index.ts: "3" }
+  tags:
+    - { name: server-v1.0.0, commit: c0 }
+    - { name: web-v1.0.0, commit: c0 }
+base: c0
+plan: {}
+expect:
+  plan:
+    units:
+      - { id: server, bump: patch, changes: [{ sha: c2 }, { sha: c1 }] }
+      - { id: web, bump: patch, changes: [{ sha: c3 }, { sha: c1 }] }

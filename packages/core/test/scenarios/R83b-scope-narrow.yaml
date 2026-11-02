@@ -1,0 +1,44 @@
+description: >-
+  In narrow mode a mapped scope replaces a commit's path owners in the release
+  set and the build set; a released unit's changelog stays its own.
+plugins:
+  - name: stub
+    units:
+      - { id: server, root: apps/server }
+      - { id: web, root: apps/web }
+config:
+  plugins: { stub: {} }
+  defaults: { release: true }
+  attribution:
+    mode: narrow
+    scopes: { api: [server] }
+  branches:
+    - { name: main, line: default }
+git:
+  commits:
+    - id: c0
+      files: { apps/server/index.ts: "0", apps/web/index.ts: "0" }
+    - id: c1
+      message: "feat(api): both"
+      files: { apps/server/index.ts: "1", apps/web/index.ts: "1" }
+    - id: c2
+      message: "docs(api): changelog"
+      files: { apps/web/CHANGELOG.md: "2" }
+  tags:
+    - { name: server-v1.0.0, commit: c0 }
+    - { name: web-v1.0.0, commit: c0 }
+base: c0
+plan: {}
+expect:
+  affected:
+    units:
+      - { id: server, reason: direct }
+      - { id: web, reason: direct }
+    unattributed: []
+  plan:
+    units:
+      - id: server
+        bump: minor
+        next: 1.1.0
+        changes: [{ sha: c2 }, { sha: c1 }]
+      - { id: web, bump: null, next: null, changes: [] }

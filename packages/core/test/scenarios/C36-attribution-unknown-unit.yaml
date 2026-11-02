@@ -1,0 +1,19 @@
+description: >-
+  An attribution scope naming an unknown unit fails; scopes are checked in
+  sorted order.
+plugins:
+  - name: stub
+    units:
+      - { id: a, root: packages/a }
+config:
+  plugins: { stub: {} }
+  attribution:
+    scopes: { zz: [gone], api: [nope] }
+git:
+  commits:
+    - id: c0
+      files: { packages/a/index.ts: "0" }
+base: null
+error:
+  code: E_ATTRIBUTION_UNKNOWN_UNIT
+  details: { scope: api, unit: nope }

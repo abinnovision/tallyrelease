@@ -79,6 +79,17 @@ Globs of files whose change affects all units, unioned with plugin defaults.
 
 Type: list of string.
 
+## `attribution`
+
+Attribution of conventional commits to units by their header scope.
+
+Type: object.
+
+| Key                  | Type                    | Required | Description                                                                                                                                                                                                                                                                             |
+| -------------------- | ----------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `attribution.mode`   | `"paths"` or `"narrow"` | no       | paths (default) adds the units mapped by a commit's scope to the owners of its files. narrow attributes a scoped commit only to its mapped units, in the release set and the build set, so it can leave out the owners of files that really changed, including unreleased dependencies. |
+| `attribution.scopes` | map of list of string   | no       | Conventional commit scope to unit ids. The header scope is split on commas and each part is trimmed; a commit maps to the union of its mapped parts, and a commit without a mapped part is attributed by path. Matching is exact and case-sensitive.                                    |
+
 ## `branches`
 
 Branch rules; the first rule matching the branch wins.

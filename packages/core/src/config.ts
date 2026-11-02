@@ -77,6 +77,17 @@ export interface GroupConfig {
 	releasePr?: ReleasePrMode;
 }
 
+/** Attribution of conventional commits to units by their header scope. */
+export interface AttributionConfig {
+	/**
+	 * `paths` (default) adds the scoped units to a commit's path owners;
+	 * `narrow` replaces them.
+	 */
+	mode?: "paths" | "narrow";
+	/** Header scope to unit ids. */
+	scopes?: Record<string, string[]>;
+}
+
 export interface DepConfig {
 	from: string;
 	to: string;
@@ -104,6 +115,7 @@ export interface TallyConfig {
 	deps?: DepConfig[];
 	ignore?: string[];
 	globalInputs?: string[];
+	attribution?: AttributionConfig;
 	branches?: BranchConfig[];
 	bumps?: BumpsConfig;
 	/** Fixed groups by name; names follow the unit id pattern. */

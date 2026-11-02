@@ -1,7 +1,14 @@
-import { attribution, matcher } from "./attribution.js";
+import { fileOwners } from "./affected.js";
+import {
+	attribution,
+	matcher,
+	scopedUnits,
+	scopeUnits,
+} from "./attribution.js";
 import { changelogPath } from "./changelog.js";
 import { coreCodes } from "./codes.js";
 import { planWithFacts } from "./plan.js";
+import { uniqueSorted } from "./util.js";
 
 import type { Warning } from "./errors.js";
 import type {
@@ -97,19 +104,52 @@ export const explainUnit = async (
 		reason === "global"
 			? plan.build.globalInputs
 			: reason === "direct" && base !== null
-				? owned(await git.diffFiles(base, opts.head), id)
+				? [
+						...(await fileOwners(workspace, git, { base, head: opts.head }))
+							.owners,
+					].flatMap(([f, ids]) => (ids.includes(id) ? [f] : []))
 				: [];
 
 	const unitFacts = facts.units.find((f) => f.id === id);
-	const commitFiles = new Map(
+	const range = facts.ranges.find((r) => r.from === unitFacts?.from);
+	const commits = new Map(
 		unitFacts
-			? (await git.log(unitFacts.from, opts.head)).map((c) => [c.sha, c.files])
+			? (await git.log(unitFacts.from, opts.head)).map((c) => [c.sha, c])
 			: [],
 	);
-	const changes = (unit?.changes ?? []).map((c) => ({
-		...c,
-		files: owned(commitFiles.get(c.sha ?? "") ?? [], c.via ?? id),
-	}));
+	const { scopeRules } = workspace;
+	/*
+	 * Changed files of a commit whose change has no explicit units, when its
+	 * scope attributes it to `target`.
+	 */
+	const scopedFiles = (c: PlanChange, target: string): string[] => {
+		const commit = commits.get(c.sha ?? "");
+		const matching = range?.changes.some(
+			({ change }) =>
+				change.sha === c.sha &&
+				change.type === c.type &&
+				change.subject === c.subject &&
+				change.units === undefined,
+		);
+		if (!commit || scopeRules.scopes.size === 0 || !matching) {
+			return [];
+		}
+
+		const changed = commit.files.filter((f) => !ignored(f) && !isGlobal(f));
+		const paths = uniqueSorted(changed.flatMap(owners));
+		const scoped = scopeUnits(scopeRules, commit.message);
+
+		return scopedUnits(scopeRules, paths, scoped).includes(target)
+			? changed
+			: [];
+	};
+
+	const changes = (unit?.changes ?? []).map((c) => {
+		const target = c.via ?? id;
+		const own = owned(commits.get(c.sha ?? "")?.files ?? [], target);
+
+		return { ...c, files: own.length > 0 ? own : scopedFiles(c, target) };
+	});
 
 	const propagatedFrom = (unit?.propagatedFrom ?? []).map((from) => ({
 		id: from,
@@ -118,7 +158,6 @@ export const explainUnit = async (
 				?.pinned ?? null,
 	}));
 
-	const range = facts.ranges.find((r) => r.from === unitFacts?.from);
 	const footers = (unitFacts ? (range?.changes ?? []) : []).flatMap(
 		({ change, units }) =>
 			(change.releaseAs ?? [])

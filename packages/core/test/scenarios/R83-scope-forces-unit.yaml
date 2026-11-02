@@ -1,0 +1,47 @@
+description: >-
+  In paths mode a mapped scope adds its units to a commit's path owners; a
+  file-less commit goes to its mapped units, or to every released unit when
+  unscoped.
+plugins:
+  - name: stub
+    units:
+      - { id: server, root: apps/server }
+      - { id: web, root: apps/web }
+config:
+  plugins: { stub: {} }
+  defaults: { release: true }
+  attribution:
+    scopes: { api: [server] }
+  branches:
+    - { name: main, line: default }
+git:
+  commits:
+    - id: c0
+      files: { apps/server/index.ts: "0", apps/web/index.ts: "0" }
+    - id: c1
+      message: "fix(api): readme"
+      files: { README.md: "1" }
+    - id: c2
+      message: "feat(api): empty"
+    - id: c3
+      message: "fix: empty"
+  tags:
+    - { name: server-v1.0.0, commit: c0 }
+    - { name: web-v1.0.0, commit: c0 }
+base: c0
+plan: { all: true }
+expect:
+  affected:
+    units:
+      - { id: server, reason: direct }
+    unattributed: []
+  plan:
+    units:
+      - id: server
+        bump: minor
+        next: 1.1.0
+        changes: [{ sha: c3 }, { sha: c2 }, { sha: c1 }]
+      - id: web
+        bump: patch
+        next: 1.0.1
+        changes: [{ sha: c3 }]

@@ -1,3 +1,4 @@
+import { resolveAttribution } from "./attribution.js";
 import { CONFIG_FILE } from "./config.js";
 import { discoverUnits } from "./discover.js";
 import { buildGraph } from "./graph.js";
@@ -7,6 +8,7 @@ import { releaseSettings } from "./release-settings.js";
 import { schemeRegistry } from "./schemes.js";
 import { uniqueSorted } from "./util.js";
 
+import type { ScopeRules } from "./attribution.js";
 import type { TallyConfig } from "./config.js";
 import type { Warning } from "./errors.js";
 import type { Graph, SourcedEdge } from "./graph.js";
@@ -146,6 +148,8 @@ export interface Workspace {
 	readonly release: ReleaseSettings;
 	/** Fixed groups, sorted by name. */
 	readonly groups: readonly Group[];
+	/** Scope attribution rules; no scopes without `attribution.scopes`. */
+	readonly scopeRules: ScopeRules;
 	/** Plugin version files of released units by unit id; runs the hooks once. */
 	readonly versionFiles: () => Promise<
 		ReadonlyMap<string, readonly VersionFile[]>
@@ -170,6 +174,7 @@ export const loadWorkspace = async (
 	);
 
 	const groups = resolveGroups(units, input.config.groups, warnings);
+	const scopeRules = resolveAttribution(units, input.config.attribution);
 
 	const intents = active.flatMap(({ plugin, ctx }) =>
 		(plugin.intent ?? []).map((source) => ({
@@ -194,6 +199,7 @@ export const loadWorkspace = async (
 		})),
 		release: releaseSettings(input.config, units),
 		groups,
+		scopeRules,
 		versionFiles: versionFilesOf(active, units),
 	};
 };

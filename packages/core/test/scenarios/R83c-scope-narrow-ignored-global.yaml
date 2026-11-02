@@ -1,0 +1,43 @@
+description: >-
+  A scoped commit touching only ignored files or global inputs is attributed to
+  no unit; a changed global input still affects every unit.
+plugins:
+  - name: stub
+    units:
+      - { id: server, root: apps/server }
+      - { id: web, root: apps/web }
+config:
+  plugins: { stub: {} }
+  defaults: { release: true }
+  ignore: ["docs/**"]
+  globalInputs: [ci.yaml]
+  attribution:
+    mode: narrow
+    scopes: { api: [server] }
+  branches:
+    - { name: main, line: default }
+git:
+  commits:
+    - id: c0
+      files: { apps/server/index.ts: "0", apps/web/index.ts: "0" }
+    - id: c1
+      message: "fix(api): docs"
+      files: { docs/x.md: "1" }
+    - id: c2
+      message: "fix(api): ci"
+      files: { ci.yaml: "2" }
+  tags:
+    - { name: server-v1.0.0, commit: c0 }
+    - { name: web-v1.0.0, commit: c0 }
+base: c0
+plan: {}
+expect:
+  affected:
+    build: { all: true, globalInputs: [ci.yaml] }
+    units:
+      - { id: server, reason: global }
+      - { id: web, reason: global }
+  facts:
+    units:
+      - { id: server, changes: [] }
+      - { id: web, changes: [] }

@@ -8,6 +8,12 @@ Codes are only added, never removed or renamed. Plugins that define their own co
 
 ## Errors
 
+### E_ATTRIBUTION_UNKNOWN_UNIT
+
+Cause: An `attribution.scopes` entry names a unit id that does not exist.
+
+Fix: Correct the id in `attribution.scopes.<scope>`.
+
 ### E_BASE_REQUIRED
 
 Cause: `tallyrelease run` could not determine the build base because the request for the last successful run failed (`W_FORGE_ERROR`). Planning without a base would use the wrong range, so `run` stops before tagging or pushing anything.
