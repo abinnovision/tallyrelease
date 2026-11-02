@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import { edgeBetween, unitsByPackage } from "../_kit/edges.js";
 import { joinRoot, rootOf } from "../_kit/paths.js";
+import { BUILD, NUMBERS, PRERELEASE } from "../_kit/semver.js";
 
 import type { Ctx, EdgeDraft, UnitDraft } from "@tallyrelease/core";
 
@@ -14,11 +15,13 @@ type Options = z.infer<typeof optionsSchema>;
 type Pubspec = Record<string, unknown>;
 
 const PUBSPEC = "pubspec.yaml";
+const MELOS = "melos.yaml";
 const DEP_FIELDS = [
 	"dependencies",
 	"dev_dependencies",
 	"dependency_overrides",
 ] as const;
+const EXACT = new RegExp(`^${NUMBERS}${PRERELEASE}${BUILD}$`);
 /** The top-level `version:` line; group 3 is the value without quotes. */
 const VERSION_LINE = /^(version:[ \t]*)(["']?)([^\s"'#]+)\2/m;
 
@@ -45,9 +48,22 @@ const readPubspec = (ctx: Ctx<Options>, root: string): Pubspec | undefined => {
 /** Directories whose pubspecs are never units. */
 const SKIPPED = new Set(["build", "example"]);
 
-/** Roots of every `pubspec.yaml`, skipping dot, `build` and `example` directories. */
-const pubspecRoots = (ctx: Ctx<Options>): string[] =>
-	ctx.fs
+/** A root pubspec that only anchors a pub workspace or melos setup, without its own version. */
+const isWorkspaceRoot = (ctx: Ctx<Options>): boolean => {
+	const pubspec = readPubspec(ctx, ".");
+
+	return (
+		pubspec !== undefined &&
+		pubspec["version"] === undefined &&
+		(pubspec["workspace"] !== undefined || ctx.fs.exists(MELOS))
+	);
+};
+
+/** Roots of every `pubspec.yaml`, skipping dot, `build` and `example` directories and a workspace root. */
+const pubspecRoots = (ctx: Ctx<Options>): string[] => {
+	const skipRoot = isWorkspaceRoot(ctx);
+
+	return ctx.fs
 		.glob([PUBSPEC, `**/${PUBSPEC}`])
 		.filter((p) =>
 			p
@@ -55,7 +71,28 @@ const pubspecRoots = (ctx: Ctx<Options>): string[] =>
 				.slice(0, -1)
 				.every((s) => !s.startsWith(".") && !SKIPPED.has(s)),
 		)
-		.map((p) => (p === PUBSPEC ? "." : rootOf(p, PUBSPEC)));
+		.map((p) => (p === PUBSPEC ? "." : rootOf(p, PUBSPEC)))
+		.filter((root) => !(skipRoot && root === "."));
+};
+
+/**
+ * Whether a dependency entry makes the dependent ship the dependency's code:
+ * `path:` maps and exact versions under `dependencies`. Undefined when the
+ * entry is no link to a unit.
+ */
+const pinnedLink = (field: string, spec: unknown): boolean | undefined => {
+	if (spec === null) {
+		return false;
+	}
+
+	if (typeof spec === "string") {
+		return field === "dependencies" && EXACT.test(spec);
+	}
+
+	return typeof record(spec)["path"] === "string"
+		? field === "dependencies"
+		: undefined;
+};
 
 export const dartPlugin = definePlugin<Options>({
 	apiVersion: 1,
@@ -74,18 +111,23 @@ export const dartPlugin = definePlugin<Options>({
 			};
 		}),
 	edges: (ctx, units) => {
-		const byName = unitsByPackage(units, "dart");
+		const byName = unitsByPackage(units, "dart", (name, prior, unit) => {
+			ctx.log.warn(
+				`package "${name}" is declared by "${prior.root}" and "${unit.root}"; using "${unit.root}"`,
+			);
+		});
 
 		const edges: EdgeDraft[] = [];
 		for (const to of byName.values()) {
 			const pubspec = readPubspec(ctx, to.root) ?? {};
 			for (const field of DEP_FIELDS) {
 				for (const [name, spec] of Object.entries(record(pubspec[field]))) {
-					if (typeof record(spec)["path"] === "string") {
+					const pinned = pinnedLink(field, spec);
+					if (pinned !== undefined) {
 						edges.push(
 							...edgeBetween(byName.get(name), to, {
 								reason: `${field}: ${name}`,
-								pinned: false,
+								pinned,
 							}),
 						);
 					}
@@ -114,5 +156,12 @@ export const dartPlugin = definePlugin<Options>({
 						),
 		},
 	],
-	inputs: () => ({ global: ["pubspec.lock"] }),
+	inputs: (ctx) => ({
+		global: [
+			"pubspec.lock",
+			MELOS,
+			"analysis_options.yaml",
+			...(isWorkspaceRoot(ctx) ? [PUBSPEC] : []),
+		],
+	}),
 });

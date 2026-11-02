@@ -72,6 +72,37 @@ describe("dart discovery", () => {
 		]);
 	});
 
+	it.each([
+		["an unversioned workspace root", "name: _ws\nworkspace: [pkg]\n", {}],
+		["a melos root", "name: _ws\n", { "melos.yaml": "name: ws\n" }],
+	])("skips %s", async (_, root, extra) => {
+		const units = await dartPlugin.discover?.(
+			memoryCtx({
+				files: {
+					"pubspec.yaml": root,
+					"pkg/pubspec.yaml": "name: pkg\n",
+					...extra,
+				},
+			}),
+		);
+		expect(units?.map((u) => u.root)).toEqual(["pkg"]);
+	});
+
+	it.each([
+		[
+			"a versioned workspace root",
+			"name: ws\nversion: 1.0.0\nworkspace: [pkg]\n",
+		],
+		["a plain root pubspec", "name: ws\n"],
+	])("keeps %s as unit '.'", async (_, root) => {
+		const units = await dartPlugin.discover?.(
+			memoryCtx({
+				files: { "pubspec.yaml": root, "pkg/pubspec.yaml": "name: pkg\n" },
+			}),
+		);
+		expect(units?.map((u) => u.root).sort()).toEqual([".", "pkg"]);
+	});
+
 	it("rejects buildOffset", async () => {
 		const result = await dartPlugin.options?.["~standard"].validate({
 			buildOffset: 1,
@@ -81,19 +112,69 @@ describe("dart discovery", () => {
 });
 
 describe("dart edges", () => {
-	it("adds an unpinned edge per path dependency on a unit", async () => {
-		const units = [
-			unit("app", "apps/app", "app"),
-			unit("core", "packages/core", "core"),
-		];
-		expect(await dartPlugin.edges?.(memoryCtx({ files }), units)).toEqual([
-			{
-				from: "core",
-				to: "app",
-				reason: "dependencies: core",
-				pinned: false,
-			},
-		]);
+	const units = [
+		unit("app", "apps/app", "app"),
+		unit("core", "packages/core", "core"),
+	];
+	const edgesOf = (field: string, spec: string) =>
+		dartPlugin.edges?.(
+			memoryCtx({
+				files: {
+					"apps/app/pubspec.yaml": `name: app\n${field}:\n  core: ${spec}\n`,
+				},
+			}),
+			units,
+		);
+	const edge = (field: string, pinned: boolean) => [
+		{ from: "core", to: "app", reason: `${field}: core`, pinned },
+	];
+
+	it("pins a path dependency in dependencies", async () => {
+		expect(await dartPlugin.edges?.(memoryCtx({ files }), units)).toEqual(
+			edge("dependencies", true),
+		);
+	});
+
+	it.each([
+		["dependencies", "{ path: ../../packages/core }", true],
+		["dev_dependencies", "{ path: ../../packages/core }", false],
+		["dependency_overrides", "{ path: ../../packages/core }", false],
+		["dependencies", "1.2.0", true],
+		["dependencies", "1.2.0-rc.1+3", true],
+		["dependencies", "^1.0.0", false],
+		["dependencies", "any", false],
+		["dependencies", '">=1.0.0 <2.0.0"', false],
+		["dependencies", "", false],
+		["dev_dependencies", "1.2.0", false],
+		["dependency_overrides", "1.2.0", false],
+	])("%s %s pinned: %s", async (field, spec, pinned) => {
+		expect(await edgesOf(field, spec)).toEqual(edge(field, pinned));
+	});
+
+	it.each([
+		["a git map", "{ git: https://example.com/core.git }"],
+		["a hosted map", "{ hosted: https://pub.example.com }"],
+		["a numeric scalar", "1.0"],
+	])("adds no edge for %s", async (_, spec) => {
+		expect(await edgesOf("dependencies", spec)).toEqual([]);
+	});
+});
+
+describe("dart inputs", () => {
+	const inputs = (files: Record<string, string>) =>
+		dartPlugin.inputs?.(memoryCtx({ files }));
+	const base = ["pubspec.lock", "melos.yaml", "analysis_options.yaml"];
+
+	it("lists the lock, melos and analysis files", async () => {
+		expect(await inputs({ "pubspec.yaml": "name: a\n" })).toEqual({
+			global: base,
+		});
+	});
+
+	it("adds a skipped workspace root", async () => {
+		expect(
+			await inputs({ "pubspec.yaml": "name: ws\nworkspace: [a]\n" }),
+		).toEqual({ global: [...base, "pubspec.yaml"] });
 	});
 });
 
