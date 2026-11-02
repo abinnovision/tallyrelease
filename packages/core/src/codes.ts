@@ -45,6 +45,10 @@ export const defineCodes = <R extends Record<string, CodeDoc>>(
  * Codes raised by core. Codes are only added, never removed or renamed.
  */
 export const coreCodes = defineCodes({
+	E_ATTRIBUTION_UNKNOWN_UNIT: {
+		cause: "An `attribution.scopes` entry names a unit id that does not exist.",
+		fix: "Correct the id in `attribution.scopes.<scope>`.",
+	},
 	E_BRANCH_RULE: {
 		cause:
 			"An entry of `branches` is invalid. The `name` is empty, uses a token other than `{major}` or `{minor}`, repeats a token, uses `{minor}` without `{major}` or has an unbalanced brace. Or `unit` and `group` are both set, `unit` or `group` is set on a rule that is not a `maintenance` rule with `{major}`, or `unit` names a unit that is not released, is in a group or does not exist, or `group` names an unknown group.",

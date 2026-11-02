@@ -1,4 +1,9 @@
-import { attribution, matcher } from "./attribution.js";
+import {
+	attribution,
+	matcher,
+	scopedUnits,
+	scopeUnits,
+} from "./attribution.js";
 import { changelogPath } from "./changelog.js";
 import { uniqueSorted } from "./util.js";
 
@@ -10,6 +15,75 @@ import type {
 } from "./model/affected-types.js";
 import type { GitReader, Unit } from "./plugin.js";
 import type { Workspace } from "./workspace.js";
+
+/**
+ * Owners of each changed file of `base..head` that is neither ignored nor a
+ * global input, in diff order, and the sorted changed global inputs. A released
+ * unit owns its changelog regardless of ignore, include and exclude. With scope
+ * rules and no global hit, a file touched by commits of the range takes the
+ * union of `scopedUnits` over those commits; other files keep their path owners.
+ */
+export const fileOwners = async (
+	workspace: Workspace,
+	git: GitReader,
+	{ base, head }: { base: string; head: string },
+): Promise<{ owners: Map<string, string[]>; hits: string[] }> => {
+	const { units, scopeRules } = workspace;
+	const ignored = matcher(workspace.ignore);
+	const isGlobal = matcher(workspace.globalInputs);
+	const pathOwners = attribution(units);
+	const changelogs = new Map(
+		units
+			.filter((u) => u.version !== "none")
+			.map((u) => [changelogPath(u), u.id]),
+	);
+
+	const files = (await git.diffFiles(base, head)).filter(
+		(f) => changelogs.has(f) || !ignored(f),
+	);
+	const hits = uniqueSorted(files.filter(isGlobal));
+	// Scoped units of each commit touching a file.
+	const touched = new Map<string, string[][]>();
+	if (scopeRules.scopes.size > 0 && hits.length === 0) {
+		for (const c of await git.log(base, head)) {
+			const scoped = scopeUnits(scopeRules, c.message);
+			for (const f of c.files) {
+				const list = touched.get(f);
+				if (list) {
+					list.push(scoped);
+				} else {
+					touched.set(f, [scoped]);
+				}
+			}
+		}
+	}
+
+	const owners = new Map<string, string[]>();
+	for (const file of files) {
+		if (isGlobal(file)) {
+			continue;
+		}
+
+		const own = changelogs.get(file);
+		if (own !== undefined) {
+			owners.set(file, [own]);
+			continue;
+		}
+
+		const paths = pathOwners(file);
+		const scoped = touched.get(file);
+		owners.set(
+			file,
+			scoped === undefined
+				? paths
+				: uniqueSorted(
+						scoped.flatMap((s) => scopedUnits(scopeRules, paths, s)),
+					),
+		);
+	}
+
+	return { owners, hits };
+};
 
 /** Computes the build set for `base..head` from a tree-to-tree diff. */
 export const computeAffected = async (
@@ -53,29 +127,13 @@ export const computeAffected = async (
 		return doc(everything("all"), { all: true, globalInputs: [] }, []);
 	}
 
-	const ignored = matcher(workspace.ignore);
-	const isGlobal = matcher(workspace.globalInputs);
-	const owners = attribution(units);
-	// A released unit owns its changelog regardless of ignore, include and exclude.
-	const changelogs = new Map(
-		units
-			.filter((u) => u.version !== "none")
-			.map((u) => [changelogPath(u), u.id]),
-	);
-
-	const files = (await git.diffFiles(opts.base, opts.head)).filter(
-		(f) => changelogs.has(f) || !ignored(f),
-	);
-	const hits = uniqueSorted(files.filter(isGlobal));
+	const { owners, hits } = await fileOwners(workspace, git, {
+		base: opts.base,
+		head: opts.head,
+	});
 	const direct = new Set<string>();
 	const unattributed: string[] = [];
-	for (const file of files) {
-		if (isGlobal(file)) {
-			continue;
-		}
-
-		const own = changelogs.get(file);
-		const ids = own === undefined ? owners(file) : [own];
+	for (const [file, ids] of owners) {
 		if (ids.length === 0) {
 			unattributed.push(file);
 		}

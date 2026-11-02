@@ -247,6 +247,28 @@ const configObject = z.strictObject({
 		description:
 			"Globs of files whose change affects all units, unioned with plugin defaults.",
 	}),
+	attribution: z
+		.strictObject({
+			mode: z
+				.enum(["paths", "narrow"])
+				.meta({
+					description:
+						"paths (default) adds the units mapped by a commit's scope to the owners of its files. narrow attributes a scoped commit only to its mapped units, in the release set and the build set, so it can leave out the owners of files that really changed, including unreleased dependencies.",
+				})
+				.exactOptional(),
+			scopes: z
+				.record(z.string().regex(/^[^\s(),]+$/), z.array(unitId).min(1))
+				.meta({
+					description:
+						"Conventional commit scope to unit ids. The header scope is split on commas and each part is trimmed; a commit maps to the union of its mapped parts, and a commit without a mapped part is attributed by path. Matching is exact and case-sensitive.",
+				})
+				.exactOptional(),
+		})
+		.meta({
+			description:
+				"Attribution of conventional commits to units by their header scope.",
+		})
+		.exactOptional(),
 	branches: z
 		.array(
 			z.strictObject({

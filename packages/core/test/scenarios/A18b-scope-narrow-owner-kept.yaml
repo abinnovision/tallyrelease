@@ -1,0 +1,39 @@
+description: >-
+  In narrow mode a file keeps its path owners when an unscoped commit also
+  touched it or when only a merge commit changed it.
+plugins:
+  - name: stub
+    units:
+      - { id: server, root: apps/server }
+      - { id: web, root: apps/web }
+      - { id: worker, root: apps/worker }
+config:
+  plugins: { stub: {} }
+  attribution:
+    mode: narrow
+    scopes: { api: [server] }
+git:
+  commits:
+    - id: c0
+      files:
+        apps/server/index.ts: "0"
+        apps/web/index.ts: "0"
+        apps/worker/index.ts: "0"
+    - id: c1
+      message: "feat(api): both"
+      files: { apps/server/index.ts: "1", apps/web/index.ts: "1" }
+    - id: c2
+      message: "fix: web"
+      files: { apps/web/index.ts: "2" }
+    - id: c3
+      parents: [c0, c2]
+      message: "Merge branch 'feature'"
+      files: { apps/worker/index.ts: "3" }
+base: c0
+expect:
+  affected:
+    units:
+      - { id: server, reason: direct }
+      - { id: web, reason: direct }
+      - { id: worker, reason: direct }
+    unattributed: []

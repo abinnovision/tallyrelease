@@ -1,0 +1,27 @@
+description: >-
+  A scoped commit whose change is reverted in the range affects nothing; the
+  tree diff decides which files changed.
+plugins:
+  - name: stub
+    units:
+      - { id: server, root: apps/server }
+      - { id: web, root: apps/web }
+config:
+  plugins: { stub: {} }
+  attribution:
+    scopes: { api: [server] }
+git:
+  commits:
+    - id: c0
+      files: { apps/server/index.ts: "0", apps/web/index.ts: "0" }
+    - id: c1
+      message: "fix(api): web"
+      files: { apps/web/index.ts: "1" }
+    - id: c2
+      message: "revert: web"
+      files: { apps/web/index.ts: "0" }
+base: c0
+expect:
+  affected:
+    units: []
+    unattributed: []

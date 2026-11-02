@@ -1,4 +1,9 @@
-import { attribution, matcher } from "./attribution.js";
+import {
+	attribution,
+	matcher,
+	scopedUnits,
+	scopeUnits,
+} from "./attribution.js";
 import { coreCodes } from "./codes.js";
 import { pluginCtx, runHook } from "./plugins.js";
 import { matchUnitTags } from "./tags.js";
@@ -275,6 +280,21 @@ export const rangeFacts = (
 	const released = workspace.units
 		.filter((u) => u.version !== "none")
 		.map((u) => u.id);
+	const { scopeRules } = workspace;
+	// Ignored, global and lockfile-only commits are never attributed by scope.
+	const commitUnitsOf = (c: RawCommit): string[] => {
+		const scoped = scopeUnits(scopeRules, c.message);
+		if (c.files.length === 0) {
+			return scoped.length === 0 ? released : scoped;
+		}
+
+		const files = c.files.filter((f) => !ignored(f) && !isGlobal(f));
+
+		return files.length === 0
+			? []
+			: scopedUnits(scopeRules, uniqueSorted(files.flatMap(owners)), scoped);
+	};
+
 	const warned = new Set<string>();
 	const warnUnknown = (plugin: string, changes: readonly Change[]) => {
 		for (const id of changes.flatMap((c) => c.units ?? [])) {
@@ -303,18 +323,7 @@ export const rangeFacts = (
 			[...(await git.log(from, head))].sort(byCommitOrder),
 		);
 		const position = new Map(commits.map((c, i) => [c.sha, i]));
-		const commitUnits = new Map(
-			commits.map((c) => [
-				c.sha,
-				c.files.length === 0
-					? released
-					: uniqueSorted(
-							c.files
-								.filter((f) => !ignored(f) && !isGlobal(f))
-								.flatMap(owners),
-						),
-			]),
-		);
+		const commitUnits = new Map(commits.map((c) => [c.sha, commitUnitsOf(c)]));
 
 		const changes: Change[] = [];
 		for (const { plugin, source, ctx: sourceCtx } of intents) {

@@ -1,0 +1,44 @@
+description: >-
+  A scope forcing one member of a fixed group releases the whole group at one
+  version.
+plugins:
+  - name: stub
+    units:
+      - { id: server, root: apps/server }
+      - { id: web, root: apps/web }
+config:
+  plugins: { stub: {} }
+  defaults: { release: true }
+  groups:
+    apps: { units: [server, web] }
+  attribution:
+    scopes: { api: [server] }
+  branches:
+    - { name: main, line: default }
+git:
+  commits:
+    - id: c0
+      files: { apps/server/index.ts: "0", apps/web/index.ts: "0" }
+    - id: c1
+      message: "fix(api): readme"
+      files: { README.md: "1" }
+  tags:
+    - { name: server-v1.0.0, commit: c0 }
+    - { name: web-v1.0.0, commit: c0 }
+base: c0
+plan: {}
+expect:
+  affected:
+    units:
+      - { id: server, reason: direct }
+      - { id: web, reason: group, via: [server] }
+  plan:
+    units:
+      - {
+          id: server,
+          group: apps,
+          bump: patch,
+          next: 1.0.1,
+          changes: [{ sha: c1 }],
+        }
+      - { id: web, group: apps, bump: patch, next: 1.0.1, changes: [] }

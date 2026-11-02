@@ -64,6 +64,24 @@ describe("configJsonSchema", () => {
 		expect(validate({ groups: { sdk: { units: ["a b"] } } })).toBe(false);
 	});
 
+	it("accepts attribution scopes", () => {
+		for (const key of ["api/v2", "@acme/ui", "deps-dev"]) {
+			const config = { attribution: { scopes: { [key]: ["a"] } } };
+			expect(validate(config)).toBe(true);
+			expect(configSchema.safeParse(config).success).toBe(true);
+		}
+
+		expect(validate({ attribution: { mode: "narrow" } })).toBe(true);
+		expect(validate({ attribution: { mode: "wide" } })).toBe(false);
+		expect(validate({ attribution: { nope: 1 } })).toBe(false);
+		expect(validate({ attribution: { scopes: { api: [] } } })).toBe(false);
+		for (const key of ["a b", "a(b)", "a,b"]) {
+			const config = { attribution: { scopes: { [key]: ["a"] } } };
+			expect(validate(config)).toBe(false);
+			expect(configSchema.safeParse(config).success).toBe(false);
+		}
+	});
+
 	it("rejects id, include, exclude and versionFiles on glob unit keys", () => {
 		expect(
 			configSchema.safeParse({

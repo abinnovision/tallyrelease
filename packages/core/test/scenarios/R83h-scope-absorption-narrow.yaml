@@ -1,0 +1,44 @@
+description: >-
+  In narrow mode a scoped commit on an unreleased dependency reaches only its
+  mapped units, so the dependency and its dependents are left out.
+plugins:
+  - name: stub
+    units:
+      - { id: db, root: packages/db }
+      - { id: server, root: apps/server }
+      - { id: web, root: apps/web }
+    edges:
+      - { from: db, to: server, reason: dependencies, pinned: false }
+config:
+  plugins: { stub: {} }
+  defaults: { release: true }
+  units:
+    packages/db: { release: false }
+  attribution:
+    mode: narrow
+    scopes: { api: [web] }
+  branches:
+    - { name: main, line: default }
+git:
+  commits:
+    - id: c0
+      files:
+        apps/server/index.ts: "0"
+        apps/web/index.ts: "0"
+        packages/db/index.ts: "0"
+    - id: c1
+      message: "fix(api): db"
+      files: { packages/db/index.ts: "1" }
+  tags:
+    - { name: server-v1.0.0, commit: c0 }
+    - { name: web-v1.0.0, commit: c0 }
+base: c0
+plan: { all: true }
+expect:
+  affected:
+    units:
+      - { id: web, reason: direct }
+    unattributed: []
+  plan:
+    units:
+      - { id: web, bump: patch, next: 1.0.1, changes: [{ sha: c1 }] }

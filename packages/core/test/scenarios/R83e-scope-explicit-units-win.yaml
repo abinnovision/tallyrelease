@@ -1,0 +1,42 @@
+description: >-
+  Explicit units of a change win over the scope; the conventional change of
+  the same commit is attributed by its scope.
+plugins:
+  - name: stub
+    units:
+      - { id: server, root: apps/server }
+      - { id: web, root: apps/web }
+    changes:
+      - { sha: c1, units: [web], type: fix, breaking: false, subject: x }
+config:
+  plugins: { stub: {} }
+  defaults: { release: true }
+  attribution:
+    scopes: { api: [server] }
+  branches:
+    - { name: main, line: default }
+git:
+  commits:
+    - id: c0
+      files: { apps/server/index.ts: "0", apps/web/index.ts: "0" }
+    - id: c1
+      message: "fix(api): x"
+      files: { README.md: "1" }
+  tags:
+    - { name: server-v1.0.0, commit: c0 }
+    - { name: web-v1.0.0, commit: c0 }
+base: c0
+plan: { all: true }
+expect:
+  facts:
+    units:
+      - id: server
+        changes:
+          - { change: { sha: c1, scope: api, subject: x }, units: [server] }
+      - id: web
+        changes:
+          - { change: { sha: c1, units: [web], subject: x }, units: [web] }
+  plan:
+    units:
+      - { id: server, bump: patch, next: 1.0.1, changes: [{ sha: c1 }] }
+      - { id: web, bump: patch, next: 1.0.1, changes: [{ sha: c1 }] }
