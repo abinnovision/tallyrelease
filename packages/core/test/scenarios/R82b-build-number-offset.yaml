@@ -1,0 +1,38 @@
+description: >-
+  A glob key sets the offset; an exact key with buildNumber {} replaces the
+  whole value, so its offset is 0.
+plugins:
+  - name: stub
+    units:
+      - { id: a, root: apps/a }
+      - { id: b, root: apps/b }
+config:
+  plugins: { stub: {} }
+  defaults: { release: true }
+  units:
+    "apps/*": { buildNumber: { offset: 1000 } }
+    apps/b: { buildNumber: {} }
+  branches:
+    - { name: main, line: default }
+git:
+  commits:
+    - id: c0
+      files: { apps/a/index.ts: "0", apps/b/index.ts: "0" }
+    - id: c1
+      message: "chore(release): a@1.1.0, b@1.1.0"
+      files: { apps/a/CHANGELOG.md: "1.1.0", apps/b/CHANGELOG.md: "1.1.0" }
+  tags:
+    - { name: a-v1.0.0, commit: c0 }
+    - { name: b-v1.0.0, commit: c0 }
+    - { name: a-v1.1.0, commit: c1 }
+    - { name: b-v1.1.0, commit: c1 }
+base: c0
+plan: { released: true, buildNumbers: true }
+expect:
+  plan:
+    released:
+      - { id: a, releaseSha: c1 }
+      - { id: b, releaseSha: c1 }
+  buildNumbers:
+    numbers: [1002, 2]
+    warnings: []

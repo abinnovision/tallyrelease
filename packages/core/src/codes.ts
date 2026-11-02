@@ -218,6 +218,11 @@ export const coreCodes = defineCodes({
 			"Bumping a version produced a string that is not a valid version. This does not happen for a valid current version.",
 		fix: "Report it as a bug with the version named in the message and the `--verbose` output.",
 	},
+	W_BUILD_NUMBER_MAINTENANCE: {
+		cause:
+			"A unit with `buildNumber` is released or prereleased on a maintenance branch. Its build number is the first-parent commit count, which can repeat build numbers already uploaded from the default branch.",
+		fix: "Upload `max(N, latest store build + 1)` instead of the build number N, or give the maintenance line its own store app or a higher `offset`.",
+	},
 	W_CYCLE: {
 		cause: "The dependency graph has a cycle. The message shows the path.",
 		fix: "Remove one of the edges, for example a `deps` entry. The plan still runs, but the order of units in a cycle is not meaningful.",
