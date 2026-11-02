@@ -47,20 +47,38 @@ Plugins discover units and the edges between them. tallyrelease attributes each 
 
 ## The release cycle
 
-On every push to a line branch, `tallyrelease run` tags merged release PRs, plans HEAD and opens or updates the release PR. Merging the release PR tags the commit and creates the GitHub release.
+On every push to a line branch, `tallyrelease run` tags merged release PRs, plans HEAD and opens or updates the release PRs. The history below runs the example with a build channel, a cut channel, a maintenance rule and floating tags:
 
-```mermaid
-gitGraph
-  commit id: "chore: scaffold" tag: "api-v1.0.0"
-  commit id: "feat(db): add order lookup"
-  commit id: "fix(web): correct cart total"
-  branch "tallyrelease/release/main/shared"
-  commit id: "chore(release): main"
-  checkout main
-  merge "tallyrelease/release/main/shared" tag: "api-v1.0.1"
+```yaml
+branches:
+  - { name: main, line: default, channels: { build: beta, cut: rc } }
+  - { name: "release/{major}.x", line: maintenance }
+tags:
+  floating: ["{id}-v{major}"]
 ```
 
-The `db` change releases `api` as a patch, the `web` fix releases `web`, and the merge is also tagged `web-v1.0.1`. See [Releasing](docs/releasing.md) for maintenance lines and prereleases.
+```text
+* chore: scaffold                # api-v1.0.0, web-v1.0.0
+* feat(db): add order lookup     # api 1.0.1-beta.1 (db is build-only; api absorbs the change)
+* feat(api): add search          # api 1.1.0-beta.2
+* chore(release): main rc        # merged prerelease PR => api-v1.1.0-rc.3, GitHub prerelease
+* fix(web): correct cart total   # web 1.0.1-beta.4
+* chore(release): main           # merged release PR => api-v1.1.0, web-v1.0.1, GitHub releases
+|\                               # release/1.x starts at api-v1.1.0; floating tags api-v1, web-v1
+* | feat(api)!: new auth         # api 2.0.0-beta.1
+* | chore(release): main         # merged release PR => api-v2.0.0; floating tag api-v2
+| * fix(api): token refresh      # api 1.1.0 -> 1.1.1
+| * chore(release): release/1.x  # merged release PR => api-v1.1.1; api-v1 moves here
+| * feat(api)!: drop v1 tokens   # error[E_CAP]: 1.1.1 to 2.0.0 exceeds the minor limit
+```
+
+- Every push gets a build prerelease version, `{next}-beta.{N}`, where N counts first-parent commits since the last stable release. Nothing is tagged or written.
+- Merging the prerelease PR cuts `1.1.0-rc.3`: a tag and a GitHub prerelease, no version file changes.
+- Merging the release PR tags the merge commit and creates the GitHub releases. The plan is recomputed at the merge, so a PR that no longer matches is labelled stale and nothing is tagged.
+- Floating tags follow the highest stable release of each major, so `api-v1` moves with the maintenance line.
+- A maintenance rule caps bumps on `release/1.x` at minor and names the offending commit.
+
+See [Releasing](docs/releasing.md) for each case and [Recipes](docs/recipes.md) for step-by-step histories.
 
 ## Quick start
 

@@ -1,43 +1,83 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 300" width="880" height="300" role="img" aria-label="tallyrelease reads git history and a dependency graph, plans in a pure core, and produces a build set, a release plan and release effects">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 280" width="960" height="280" role="img" aria-label="tallyrelease pipeline. Stage 1, the repository: git history and manifests. Stage 2, units and edges discovered by plugins, where api depends on db. Stage 3, the pure deterministic plan, from tallyrelease plan, affected and explain. Stage 4, GitHub effects from tallyrelease run: a release PR, tags and GitHub releases.">
   <title>How tallyrelease works</title>
   <defs>
-    <marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M1 1L9 5L1 9Z" fill="#0f9b8e"/></marker>
+    <marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M2 1.5L8 5L2 8.5" fill="none" stroke="#59636e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker>
     <style>
       .sans{font-family:ui-sans-serif,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif}
-      .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
-      .t{font-size:16px;font-weight:600;fill:#1f2328}
+      .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;fill:#1f2328;white-space:pre}
+      .t{font-size:15px;font-weight:700;fill:#1f2328}
       .s{font-size:12px;fill:#59636e}
-      .c{font-size:12px;fill:#0f9b8e}
+      .l{font-size:10px;fill:#59636e}
+      .m{fill:#59636e}
+      .c{font-size:12px;font-weight:600;fill:#0f9b8e}
+      .p{font-size:11px;font-weight:600;text-anchor:middle}
     </style>
   </defs>
-  <g fill="none" stroke="#0f9b8e" stroke-width="2" marker-end="url(#ah)">
-    <path d="M250 90C290 90 286 150 320 150"/>
-    <path d="M250 190C290 190 286 150 320 150"/>
-    <path d="M556 150C596 150 592 62 624 62"/>
-    <path d="M556 150H624"/>
-    <path d="M556 150C596 150 592 238 624 238"/>
-  </g>
-  <rect x="14" y="48" width="236" height="84" rx="12" fill="#ffffff" stroke="#d0d7de" stroke-width="1.5"/>
-  <rect x="14" y="148" width="236" height="84" rx="12" fill="#ffffff" stroke="#d0d7de" stroke-width="1.5"/>
-  <rect x="326" y="90" width="228" height="120" rx="14" fill="#e8f7f5" stroke="#0f9b8e" stroke-width="2"/>
-  <rect x="630" y="24" width="236" height="76" rx="12" fill="#ffffff" stroke="#d0d7de" stroke-width="1.5"/>
-  <rect x="630" y="112" width="236" height="76" rx="12" fill="#ffffff" stroke="#d0d7de" stroke-width="1.5"/>
-  <rect x="630" y="200" width="236" height="76" rx="12" fill="#ffffff" stroke="#d0d7de" stroke-width="1.5"/>
+
   <g class="sans">
-    <text class="t" x="32" y="84">Git history</text>
-    <text class="s" x="32" y="106">conventional commits</text>
-    <text class="t" x="32" y="184">Dependency graph</text>
-    <text class="s" x="32" y="206">from ecosystem plugins</text>
-    <text class="t" x="440" y="144" text-anchor="middle" style="fill:#0f9b8e;font-size:18px;font-weight:700">tallyrelease core</text>
-    <text class="s" x="440" y="168" text-anchor="middle">pure, deterministic planner</text>
-    <text class="t" x="648" y="55">Build set</text>
-    <text class="t" x="648" y="143">Release plan</text>
-    <text class="t" x="648" y="227">Release effects</text>
-    <text class="s" x="648" y="248">versions · changelogs · release PRs</text>
-    <text class="s" x="648" y="264">tags · GitHub releases</text>
+    <text class="t" x="14" y="54">Repository</text>
+    <text class="s" x="14" y="74">git history and manifests</text>
+    <text class="t" x="272" y="54">Units and edges</text>
+    <text class="s" x="272" y="74">discovered by plugins</text>
+    <text class="t" x="498" y="54">Plan</text>
+    <text class="s" x="498" y="74">pure, deterministic</text>
+    <text class="t" x="748" y="54">GitHub</text>
+    <text class="s" x="748" y="74">effects</text>
   </g>
+
+  <g fill="#ffffff" stroke="#d0d7de" stroke-width="1.5">
+    <rect x="14" y="94" width="206" height="118" rx="10"/>
+    <rect x="272" y="94" width="160" height="118" rx="10"/>
+    <rect x="498" y="94" width="198" height="118" rx="10"/>
+    <rect x="748" y="94" width="198" height="118" rx="10"/>
+  </g>
+  <g stroke="#d0d7de" stroke-width="1">
+    <path d="M24 150H210"/>
+    <path d="M282 178H422"/>
+  </g>
+
+  <g fill="none" stroke="#59636e" stroke-width="1.5" stroke-linecap="round" marker-end="url(#ah)">
+    <path d="M226 153H264"/>
+    <path d="M438 153H490"/>
+    <path d="M702 153H740"/>
+  </g>
+  <g class="sans l" text-anchor="middle">
+    <text x="246" y="143">discover</text>
+    <text x="465" y="131">attribute +</text>
+    <text x="465" y="143">propagate</text>
+    <text x="722" y="143">apply</text>
+  </g>
+
   <g class="mono">
-    <text class="c" x="648" y="77">tallyrelease affected</text>
-    <text class="c" x="648" y="165">tallyrelease plan</text>
+    <text x="24" y="116">feat(db): add order lookup</text>
+    <text x="24" y="138">fix(web): correct cart total</text>
+    <text x="24" y="172" xml:space="preserve">apps/api  apps/web</text>
+    <text x="24" y="194">packages/db</text>
+
+    <text x="507" y="116" xml:space="preserve">api  1.0.0 -&gt; 1.0.1  <tspan class="m">via db</tspan></text>
+    <text x="507" y="138" xml:space="preserve">web  1.0.0 -&gt; 1.0.1</text>
+
+    <text x="757" y="116">release PR</text>
+    <text x="757" y="138">tags api-v1.0.1, web-v1.0.1</text>
+    <text x="757" y="160">GitHub releases</text>
+  </g>
+
+  <g>
+    <path d="M336 120H368" fill="none" stroke="#59636e" stroke-width="1.5" stroke-linecap="round" marker-end="url(#ah)"/>
+    <rect x="284" y="108" width="46" height="24" rx="12" fill="#ffffff" stroke="#d0d7de" stroke-width="1.5"/>
+    <rect x="376" y="108" width="46" height="24" rx="12" fill="#e8f7f5" stroke="#0f9b8e" stroke-width="1.5"/>
+    <rect x="284" y="142" width="46" height="24" rx="12" fill="#e8f7f5" stroke="#0f9b8e" stroke-width="1.5"/>
+  </g>
+  <g class="mono p">
+    <text x="307" y="124">db</text>
+    <text x="399" y="124" style="fill:#0f9b8e">api</text>
+    <text x="307" y="158" style="fill:#0f9b8e">web</text>
+  </g>
+  <text class="mono" x="282" y="198">released: <tspan style="fill:#0f9b8e">api, web</tspan></text>
+
+  <g class="mono c">
+    <text x="498" y="238">tallyrelease plan</text>
+    <text x="498" y="258">affected · explain</text>
+    <text x="748" y="238">tallyrelease run</text>
   </g>
 </svg>
