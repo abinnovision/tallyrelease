@@ -79,6 +79,8 @@ export interface ReleasedUnit {
 	/** Null when not looked up (no forge, or a forge error in `plan`). */
 	forge: ReleasedForge | null;
 	line: "default" | "maintenance";
+	/** A cut: a prerelease tag of the line's cut channel. */
+	prerelease: boolean;
 	/** Highest stable version tagged for the unit, never on a maintenance line. */
 	latest: boolean;
 }
@@ -97,7 +99,7 @@ export interface Plan extends Omit<AffectedDoc, "units"> {
 	units: UnitPlan[];
 	/** Sorted by name. */
 	groups: GroupPlan[];
-	/** Stable releases in `(build.base, head]`; empty until filled. */
+	/** Stable releases and cuts in `(build.base, head]`; empty until filled. */
 	released: ReleasedUnit[];
 }
 

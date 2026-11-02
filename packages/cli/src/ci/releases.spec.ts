@@ -19,6 +19,7 @@ const released = (id: string) => ({
 	catchUp: false,
 	forge,
 	line: "default" as const,
+	prerelease: false,
 	latest: true,
 });
 
