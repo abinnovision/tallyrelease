@@ -3,6 +3,7 @@
 The `node` plugin turns every package of an npm, Yarn or pnpm repository into a unit and rewrites `package.json` on release.
 
 ```yaml
+# tallyrelease.yaml
 plugins:
   node: {}
 ```
@@ -71,6 +72,7 @@ The plugin has no options. Only the core-owned `globalInputs: false` is accepted
 ## Example
 
 ```yaml
+# tallyrelease.yaml
 plugins:
   node: {}
   changesets: {}

@@ -3,6 +3,7 @@
 The `dart` plugin turns every Dart or Flutter package into a unit and rewrites the `version:` line of `pubspec.yaml` on release. Units use the `semver` scheme.
 
 ```yaml
+# tallyrelease.yaml
 plugins:
   dart: {}
 ```
@@ -78,6 +79,7 @@ The plugin has no options. Only the core-owned `globalInputs: false` is accepted
 ## Example
 
 ```yaml
+# tallyrelease.yaml
 plugins:
   dart: {}
 units:

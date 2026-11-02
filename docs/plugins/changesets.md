@@ -3,6 +3,7 @@
 The `changesets` plugin reads [Changesets](https://github.com/changesets/changesets) files as an intent source, so a release can be driven by `.changeset/*.md` files next to Conventional Commits. It discovers no units, so enable it next to the plugin of your ecosystem.
 
 ```yaml
+# tallyrelease.yaml
 plugins:
   node: {}
   changesets: {}
@@ -48,6 +49,7 @@ The plugin has no options. Any key on the entry other than the core-owned `globa
 ## Example
 
 ```yaml
+# tallyrelease.yaml
 plugins:
   node: {}
   changesets: {}
