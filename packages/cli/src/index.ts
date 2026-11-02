@@ -1,6 +1,6 @@
 export { version } from "./version.js";
 export { cliCodes } from "./codes.js";
-export { main } from "./main.js";
+export { createProgram, main } from "./main.js";
 export {
 	ForgeConflictError,
 	ForgeError,

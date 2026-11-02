@@ -27,10 +27,16 @@ const changeSchema = z.strictObject({
 /** Null when not looked up (no forge, or a forge error in `plan`). */
 const forgeSchema = z
 	.strictObject({
-		/** PR that merged the release sha. */
-		pr: z.strictObject({ number: z.number(), url: z.string() }).nullable(),
-		/** Forge release of the tag. */
-		release: z.strictObject({ url: z.string() }).nullable(),
+		pr: z
+			.strictObject({ number: z.number(), url: z.string() })
+			.nullable()
+			.describe("PR that merged the release commit, else null."),
+		release: z
+			.strictObject({ url: z.string() })
+			.nullable()
+			.describe(
+				"Forge release of the tag, else null. Null also for a release that a dry run would create.",
+			),
 	})
 	.nullable();
 
@@ -116,33 +122,66 @@ export const planSchema = z.strictObject({
 // Fails to compile when the schema misses or adds a field of `Plan`.
 export const planSchemaExact: Equals<z.infer<typeof planSchema>, Plan> = true;
 
-/** One entry of the `releases` output of `run --github-output`. */
-export const releaseEntrySchema = z.strictObject({
-	id: z.string(),
-	path: z.string(),
-	kind: z.enum(["release", "prerelease"]),
-	version: z.string(),
-	/** Build or cut channel of a prerelease, null for a release. */
-	channel: z.string().nullable(),
-	/** Null for build prereleases. */
-	tag: z.string().nullable(),
-	releaseSha: z.string(),
-	/** Not built from HEAD by this run (release sha differs from HEAD, or the unit is outside the build set). */
-	catchUp: z.boolean(),
-	/** Null for build prereleases. */
-	forge: forgeSchema,
-	/** Highest stable version tagged for the unit, never on a maintenance line; false for prereleases. */
-	latest: z.boolean(),
-	/** Own changes, then those of the units it was propagated from (transitively), `via` naming the owning unit; of a prerelease, those since the last stable release. */
-	changes: z.array(changeSchema),
-	/** Sorted unit tags. */
-	tags: z.array(z.string()),
-	/** Fixed group of the unit. */
-	group: z.string().nullable(),
-	/** Line of the planned branch. */
-	line: z.enum(["default", "maintenance"]),
-	/** First-parent commit count of `releaseSha` plus the unit's offset; null when the unit has no `buildNumber`. */
-	buildNumber: z.int().nullable(),
-});
+export const releaseEntrySchema = z
+	.strictObject({
+		id: z.string().describe("Unit id."),
+		path: z.string().describe("Unit root."),
+		kind: z
+			.enum(["release", "prerelease"])
+			.describe(
+				"`release` for a stable release, `prerelease` for a build or cut prerelease.",
+			),
+		version: z
+			.string()
+			.describe("Released version, or the prerelease version of the plan."),
+		channel: z
+			.string()
+			.nullable()
+			.describe("Build or cut channel of a prerelease, null for a release."),
+		tag: z
+			.string()
+			.nullable()
+			.describe(
+				"Version tag of a release or cut prerelease, null for a build prerelease.",
+			),
+		releaseSha: z
+			.string()
+			.describe(
+				"Full sha of the tagged commit, or HEAD for a build prerelease.",
+			),
+		catchUp: z
+			.boolean()
+			.describe(
+				"True when not built from HEAD by this run: the release commit is not HEAD, or the unit is outside the build set.",
+			),
+		forge: forgeSchema.describe(
+			"PR and forge release looked up on the forge, null for a build prerelease or without a forge.",
+		),
+		latest: z
+			.boolean()
+			.describe(
+				"True for the unit's highest stable tag, never on a maintenance line; false for prereleases.",
+			),
+		changes: z
+			.array(changeSchema)
+			.describe(
+				"Changes in the shape of the plan's `units[].changes`: the unit's own, then those of the units it was propagated from (transitively), with `via` naming the owning unit. For a prerelease, those since the last stable release.",
+			),
+		tags: z.array(z.string()).describe("Sorted unit tags."),
+		group: z
+			.string()
+			.nullable()
+			.describe("Fixed group of the unit, else null."),
+		line: z
+			.enum(["default", "maintenance"])
+			.describe("Line of the planned branch."),
+		buildNumber: z
+			.int()
+			.nullable()
+			.describe(
+				"First-parent commit count of `releaseSha` plus the unit's `buildNumber.offset`, null for a unit without `buildNumber`. Not part of the version.",
+			),
+	})
+	.describe("One entry of the `releases` output of `run --github-output`.");
 
 export type ReleaseEntry = z.infer<typeof releaseEntrySchema>;
