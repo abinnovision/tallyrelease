@@ -88,3 +88,5 @@ units:
 ```
 
 With a pub workspace whose members are `apps/mobile` and `packages/shared`, a fix in `packages/shared` releases `shared`. When `mobile` depends on it through `path:`, the pinned edge also gives `mobile` a patch release, and both units are written to their `pubspec.yaml` by `version`.
+
+For the store build number and a CI workflow, see [Mobile apps](../mobile.md).

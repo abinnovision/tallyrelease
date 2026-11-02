@@ -299,7 +299,7 @@ Mobile versions are semver and the build number comes from the release list, bec
 
 Findings folded into the contract: stable versions also need git data (`release(next, ctx)`); limits and pre-1.0 rules need a numeric core (`core()`); prerelease detection is scheme-specific (`isPrerelease`); build numbers must stay above every **tagged** build including tags not reachable from HEAD, because `firstParent.total` on a maintenance branch can be lower than on `main` (`PreCtx.tags`). Known limitation: untagged prerelease builds are invisible to every other line, so teams uploading prereleases from `main` to Play need a CI-run-number build source, which the `dart` plugin does not provide yet.
 
-The built-in `dart` plugin is described in [`plugins/dart.md`](plugins/dart.md).
+The built-in `dart` plugin is described in [`plugins/dart.md`](plugins/dart.md), and the mobile release flow in [`mobile.md`](mobile.md).
 
 ### A.6 Hook conflict rules
 
