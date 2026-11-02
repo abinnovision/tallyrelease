@@ -36,4 +36,4 @@ tallyrelease computes the affected build units and the release plan of a monorep
 - [Comparison](comparison.md): tallyrelease next to release-please and Changesets.
 - [Design](design.md): the internal specification.
 
-`cli.md`, `configuration.md`, `release-list.md` and `errors.md` are generated from the code with `yarn fix`.
+`cli.md`, `configuration.md`, `release-list.md` and `errors.md` are generated from the code with `yarn fix`, as are the git history drawings in `assets/` from `assets/histories/*.json`.

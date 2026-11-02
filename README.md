@@ -57,20 +57,12 @@ tags:
   floating: ["{id}-v{major}"]
 ```
 
-```text
-* chore: scaffold                # api-v1.0.0, web-v1.0.0
-* feat(db): add order lookup     # api 1.0.1-beta.1 (db is build-only; api absorbs the change)
-* feat(api): add search          # api 1.1.0-beta.2
-* chore(release): main rc        # merged prerelease PR => api-v1.1.0-rc.3, GitHub prerelease
-* fix(web): correct cart total   # web 1.0.1-beta.4
-* chore(release): main           # merged release PR => api-v1.1.0, web-v1.0.1, GitHub releases
-|\                               # release/1.x starts at api-v1.1.0; floating tags api-v1, web-v1
-* | feat(api)!: new auth         # api 2.0.0-beta.1
-* | chore(release): main         # merged release PR => api-v2.0.0; floating tag api-v2
-| * fix(api): token refresh      # api 1.1.0 -> 1.1.1
-| * chore(release): release/1.x  # merged release PR => api-v1.1.1; api-v1 moves here
-| * feat(api)!: drop v1 tokens   # error[E_CAP]: 1.1.1 to 2.0.0 exceeds the minor limit
-```
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/release-cycle-dark.svg">
+    <img src="docs/assets/release-cycle-light.svg" alt="Release history with build prereleases, a cut, stable releases, floating tags, a maintenance line and a capped bump">
+  </picture>
+</p>
 
 - Every push gets a build prerelease version, `{next}-beta.{N}`, where N counts first-parent commits since the last stable release. Nothing is tagged or written.
 - Merging the prerelease PR cuts `1.1.0-rc.3`: a tag and a GitHub prerelease, no version file changes.

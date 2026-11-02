@@ -13,18 +13,14 @@ tallyrelease turns commits on a line branch into release PRs, tags and GitHub re
 
 When a release PR is merged, the next run recomputes the plan at the first parent of the merge commit. If the versions still match the PR, the merge commit is tagged and the GitHub releases are created. Otherwise the PR is labelled `tallyrelease: stale` with a comment giving the reason, and nothing is tagged.
 
-```mermaid
-gitGraph
-  commit id: "chore: scaffold" tag: "api-v1.0.0"
-  commit id: "feat(db): add order lookup"
-  commit id: "fix(web): correct cart total"
-  branch "tallyrelease/release/main/shared"
-  commit id: "chore(release): main"
-  checkout main
-  merge "tallyrelease/release/main/shared" tag: "api-v1.0.1"
-```
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/release-pr-dark.svg">
+    <img src="assets/release-pr-light.svg" alt="Release history where a feature in db and a fix in web are released through a merged release PR tagged api-v1.0.1 and web-v1.0.1.">
+  </picture>
+</p>
 
-The scaffold commit also carries `web-v1.0.0`, and the merge commit also carries `web-v1.0.1`. A GitHub release is created for each tag.
+`api` has no commit of its own after the scaffold; it absorbs the `db` change and gets a patch. `web` gets a patch from its own fix. A GitHub release is created for each tag.
 
 ## Versions from commits
 
@@ -77,19 +73,14 @@ A `feat!` on `release/1.x` fails the same way against the minor limit.
 
 Floating tags move only when `tags.floating` is set. With `{id}-v{major}`, `api-v1` follows the highest 1.x release of `api` and never moves to 2.x. GitHub releases on a maintenance line are never marked latest.
 
-```mermaid
-gitGraph
-  commit id: "release 1.2.0" tag: "api-v1.2.0"
-  branch "release/1.x"
-  checkout main
-  commit id: "feat(api)!: new auth"
-  commit id: "release 2.0.0" tag: "api-v2.0.0"
-  checkout "release/1.x"
-  commit id: "fix(api): token refresh"
-  commit id: "release 1.2.1" tag: "api-v1.2.1"
-```
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/maintenance-line-dark.svg">
+    <img src="assets/maintenance-line-light.svg" alt="Release history where main moves to api-v2.0.0 while release/1.x starts at api-v1.2.0 and releases api-v1.2.1.">
+  </picture>
+</p>
 
-Each "release" commit is a merged release PR. With `tags.floating: ["{id}-v{major}"]`, `api-v1` points at `api-v1.2.1` and `api-v2` at `api-v2.0.0`.
+`release/1.x` starts at the commit tagged `api-v1.2.0`. The breaking commit on `main` gives `api` 2.0.0, and the fix on `release/1.x` gives 1.2.1. With `tags.floating: ["{id}-v{major}"]`, `api-v1` moves to `api-v1.2.1` and `api-v2` points at `api-v2.0.0`. The GitHub release for `api-v1.2.1` is not marked latest.
 
 ## Prereleases
 
@@ -123,22 +114,14 @@ branches:
   - { name: main, line: default, channels: { build: beta, cut: rc } }
 ```
 
-```mermaid
-gitGraph
-  commit id: "release 1.0.0" tag: "api-v1.0.0"
-  commit id: "feat: search (1.1.0-beta.1)"
-  commit id: "fix: paging (1.1.0-beta.2)"
-  branch "tallyrelease/prerelease/main/shared"
-  commit id: "chore(release): main rc"
-  checkout main
-  merge "tallyrelease/prerelease/main/shared" tag: "api-v1.1.0-rc.3"
-  branch "tallyrelease/release/main/shared"
-  commit id: "chore(release): main"
-  checkout main
-  merge "tallyrelease/release/main/shared" tag: "api-v1.1.0"
-```
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/prereleases-dark.svg">
+    <img src="assets/prereleases-light.svg" alt="Release history with build prereleases, a cut tagged api-v1.1.0-rc.3 and a final release tagged api-v1.1.0.">
+  </picture>
+</p>
 
-The prerelease PR was built on `fix: paging` (`N` = 2), so the cut is `1.1.0-rc.3`.
+The prerelease PR was built on `fix(api): fix paging` (`N` = 2), so the cut is `1.1.0-rc.3`. The counter keeps running after the cut, so the next build is `1.1.0-beta.4`.
 
 ## Groups and absorbed units
 
