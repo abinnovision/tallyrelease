@@ -5,7 +5,7 @@
   </picture>
 </p>
 
-<p align="center">Affected builds and release plans for monorepos, from one dependency graph.</p>
+<p align="center">Know what changed. Release what matters.</p>
 
 <p align="center">
   <a href="https://www.npmjs.com/package/@tallyrelease/cli"><img src="https://img.shields.io/npm/v/@tallyrelease/cli" alt="npm version"></a>
@@ -25,12 +25,19 @@ tallyrelease reads git history, Conventional Commits and a dependency graph supp
 
 ## Features
 
+### Know what changed
+
 - **One graph for builds and releases.** The same units and edges decide what CI builds and which units get a new version.
+- **Affected builds in any CI.** `affected` lists the changed units and their dependents as text, TSV, JSON or a GitHub Actions matrix.
+- **Explainable.** `explain` shows why a unit is affected and which commits bump it.
+
+### Release what matters
+
 - **Build-only units.** A change in an internal package is absorbed into the released units that depend on it, as a patch by default.
 - **Release PRs.** A merged release PR is tagged only after the plan is re-checked against it.
 - **Maintenance lines.** Branch rules cap bumps on a line and report the commits that would leave it.
 - **Prereleases.** Build prereleases are numbered from git history with nothing written to the repo, and merging a prerelease PR cuts one.
-- **Preview before writing.** `plan`, `explain` and `--dry-run` show versions, bumps and the commits behind them.
+- **Preview before writing.** `plan` and `--dry-run` show versions, bumps and the commits behind them.
 
 Not included: tallyrelease does not publish to registries; it hands a [release list](docs/release-list.md) to your publishers. Release effects need GitHub, while `affected` works in any CI with `--base`.
 
