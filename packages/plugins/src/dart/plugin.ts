@@ -109,7 +109,8 @@ export const dartPlugin = definePlugin<Options>({
 						)
 					: content.replace(
 							/^name:.*$/m,
-							(line) => `${line}\nversion: ${next}`,
+							(line) =>
+								`${line}${content.includes("\r\n") ? "\r\n" : "\n"}version: ${next}`,
 						),
 		},
 	],
