@@ -1,3 +1,4 @@
+import { memoryGit } from "@tallyrelease/core/testing";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
@@ -325,6 +326,7 @@ describe("run --github-output", () => {
 		harness: Awaited<ReturnType<typeof setup>>,
 		runDag: Dag,
 		before: string,
+		opts: RunOptions = {},
 	) => {
 		const dir = tmpDir("gh-output");
 		const githubOutput = join(dir, "output");
@@ -332,13 +334,18 @@ describe("run --github-output", () => {
 		const result = await harness.cli(
 			["run", "--github-output", "--out", join(dir, "plan.json")],
 			runDag,
-			{ event: push(before), env: { GITHUB_OUTPUT: githubOutput } },
+			{
+				event: push(before),
+				...opts,
+				env: { ...opts.env, GITHUB_OUTPUT: githubOutput },
+			},
 		);
 		expect(result.code).toBe(0);
 		const lines = readFileSync(githubOutput, "utf8").split("\n");
 		const line = lines.find((l) => l.startsWith("releases="));
 
 		return {
+			stderr: result.stderr,
 			plan: lines.find((l) => l.startsWith("plan=")),
 			releases: z
 				.array(releaseEntrySchema)
@@ -486,6 +493,152 @@ describe("run --github-output", () => {
 		for (const r of releases.filter((e) => !e.catchUp)) {
 			expect(built).toContain(r.id);
 		}
+	});
+
+	describe("build numbers", () => {
+		/** `dag` with branch `rules` and unit overlays; main gets a channel. */
+		const withConfig = (units: string[], rules: string[] = []): Dag => {
+			const yaml = [
+				config
+					.replace("line: default }", "line: default, channel: beta }")
+					.replace("branches:\n", ["branches:", ...rules, ""].join("\n")),
+				"units:",
+				...units,
+				"",
+			].join("\n");
+
+			return {
+				...dag,
+				commits: dag.commits.map((c, i) =>
+					i === 0
+						? { ...c, files: { ...c.files, "tallyrelease.yaml": yaml } }
+						: c,
+				),
+			};
+		};
+
+		const start = withConfig([
+			"  packages/a: { buildNumber: { offset: 100 } }",
+		]);
+		/** A clone of `runDag` with the remote's tags that reports being shallow. */
+		const shallow = (
+			harness: Awaited<ReturnType<typeof setup>>,
+			runDag: Dag,
+		) => ({
+			...memoryRepo(runDag, [harness.remote.tags]).git,
+			isShallow: () => true,
+		});
+
+		it("lists build numbers", async () => {
+			const harness = await setup(start);
+			harness.runs.push("c2");
+			const merged = harness.merge(start);
+			const later: Dag = {
+				...merged,
+				commits: [
+					...merged.commits,
+					{
+						id: "c5",
+						message: "feat(a): more a",
+						files: { "packages/a/y.ts": "1" },
+					},
+				],
+			};
+			const count = (sha: string) =>
+				memoryGit(later).countFirstParent(null, sha) as number;
+
+			const { releases, stderr } = await releasesOf(harness, later, "merge-1");
+			expect(releases.map((r) => [r.id, r.kind, r.buildNumber])).toEqual([
+				["a", "release", count("merge-1") + 100],
+				["b", "release", null],
+				["a", "prerelease", count("c5") + 100],
+			]);
+			expect(stderr).not.toContain("W_BUILD_NUMBER_MAINTENANCE");
+		});
+
+		it("fails in a shallow clone before any effect", async () => {
+			const harness = await setup(start);
+			harness.runs.push("c2");
+			const merged = harness.merge(start);
+			harness.remote.calls.length = 0;
+			const dir = tmpDir("gh-output");
+			const githubOutput = join(dir, "output");
+			writeFileSync(githubOutput, "");
+
+			const result = await harness.cli(
+				["run", "--github-output", "--out", join(dir, "plan.json")],
+				merged,
+				{
+					event: push("c2"),
+					env: { GITHUB_OUTPUT: githubOutput },
+					git: shallow(harness, merged),
+				},
+			);
+			expect(result).toMatchObject({
+				code: 1,
+				stderr: expect.stringContaining("error[E_BUILD_NUMBER_SHALLOW]"),
+			});
+			expect(harness.remote.calls).toEqual([]);
+			expect(harness.remote.tags.size).toBe(0);
+			expect(harness.remote.prs).toHaveLength(1);
+			expect(harness.remote.prs[0]?.labels).toEqual(["tallyrelease: pending"]);
+		});
+
+		it("does not check shallow without --github-output", async () => {
+			const harness = await setup(start);
+			harness.runs.push("c2");
+			const merged = harness.merge(start);
+
+			const result = await harness.run(merged, [], {
+				event: push("c2"),
+				git: shallow(harness, merged),
+			});
+			expect(result.code).toBe(0);
+			expect(harness.remote.tags.has("a-v1.1.0")).toBe(true);
+		});
+
+		it("does not check shallow without a unit with buildNumber", async () => {
+			const harness = await setup();
+			harness.runs.push("c2");
+			const merged = harness.merge(dag);
+
+			const { releases } = await releasesOf(harness, merged, "c2", {
+				git: shallow(harness, merged),
+			});
+			expect(releases.map((r) => r.buildNumber)).toEqual([null, null]);
+		});
+
+		it("warns on a maintenance line", async () => {
+			const maintenance = withConfig(
+				[
+					"  packages/a: { buildNumber: {} }",
+					"  packages/b: { buildNumber: {} }",
+				],
+				[
+					'  - { name: "release/{major}.x", line: maintenance, channel: "rc-{major}" }',
+				],
+			);
+			const harness = await setup(maintenance);
+
+			const { releases, stderr } = await releasesOf(
+				harness,
+				maintenance,
+				"c0",
+				{
+					env: { GITHUB_REF_NAME: "release/1.x" },
+				},
+			);
+			const head = memoryGit(maintenance).countFirstParent(null, "c2");
+			expect(
+				releases.map((r) => [r.id, r.kind, r.line, r.buildNumber]),
+			).toEqual([
+				["a", "prerelease", "maintenance", head],
+				["b", "prerelease", "maintenance", head],
+			]);
+			expect(
+				stderr.match(/warning\[W_BUILD_NUMBER_MAINTENANCE\]/g),
+			).toHaveLength(2);
+		});
 	});
 });
 
