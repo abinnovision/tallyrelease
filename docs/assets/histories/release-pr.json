@@ -1,0 +1,28 @@
+{
+	"lanes": ["main"],
+	"commits": [
+		{
+			"lane": "main",
+			"subject": "chore: scaffold",
+			"tags": ["api-v1.0.0", "web-v1.0.0"]
+		},
+		{
+			"lane": "main",
+			"subject": "feat(db): add order lookup",
+			"versions": ["api 1.0.0 -> 1.0.1"],
+			"note": "absorbed from db"
+		},
+		{
+			"lane": "main",
+			"subject": "fix(web): correct cart total",
+			"versions": ["web 1.0.0 -> 1.0.1"]
+		},
+		{
+			"lane": "main",
+			"subject": "chore(release): main",
+			"kind": "merge",
+			"tags": ["api-v1.0.1", "web-v1.0.1"],
+			"note": "release PR, GitHub releases"
+		}
+	]
+}

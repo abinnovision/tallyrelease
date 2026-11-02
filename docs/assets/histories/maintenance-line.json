@@ -1,0 +1,40 @@
+{
+	"lanes": ["main", "release/1.x"],
+	"commits": [
+		{
+			"lane": "main",
+			"subject": "chore(release): main",
+			"kind": "merge",
+			"tags": ["api-v1.2.0"],
+			"floating": ["api-v1"],
+			"note": "release PR",
+			"branchFrom": "release/1.x"
+		},
+		{
+			"lane": "main",
+			"subject": "feat(api)!: new auth",
+			"versions": ["api 1.2.0 -> 2.0.0"]
+		},
+		{
+			"lane": "main",
+			"subject": "chore(release): main",
+			"kind": "merge",
+			"tags": ["api-v2.0.0"],
+			"floating": ["api-v2"],
+			"note": "release PR"
+		},
+		{
+			"lane": "release/1.x",
+			"subject": "fix(api): token refresh",
+			"versions": ["api 1.2.0 -> 1.2.1"]
+		},
+		{
+			"lane": "release/1.x",
+			"subject": "chore(release): release/1.x",
+			"kind": "merge",
+			"tags": ["api-v1.2.1"],
+			"floating": ["api-v1"],
+			"note": "release PR, not latest"
+		}
+	]
+}

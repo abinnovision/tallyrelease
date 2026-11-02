@@ -1,0 +1,74 @@
+{
+	"lanes": ["main", "release/1.x"],
+	"commits": [
+		{
+			"lane": "main",
+			"subject": "chore: scaffold",
+			"tags": ["api-v1.0.0", "web-v1.0.0"]
+		},
+		{
+			"lane": "main",
+			"subject": "feat(db): add order lookup",
+			"versions": ["api 1.0.1-beta.1"],
+			"note": "absorbed from db"
+		},
+		{
+			"lane": "main",
+			"subject": "feat(api): add search",
+			"versions": ["api 1.1.0-beta.2"]
+		},
+		{
+			"lane": "main",
+			"subject": "chore(release): main rc",
+			"kind": "merge",
+			"tags": ["api-v1.1.0-rc.3"],
+			"note": "prerelease PR"
+		},
+		{
+			"lane": "main",
+			"subject": "fix(web): correct cart total",
+			"versions": ["web 1.0.1-beta.4"]
+		},
+		{
+			"lane": "main",
+			"subject": "chore(release): main",
+			"kind": "merge",
+			"tags": ["api-v1.1.0", "web-v1.0.1"],
+			"floating": ["api-v1", "web-v1"],
+			"note": "release PR",
+			"branchFrom": "release/1.x"
+		},
+		{
+			"lane": "main",
+			"subject": "feat(api)!: new auth",
+			"versions": ["api 2.0.0-beta.1"]
+		},
+		{
+			"lane": "main",
+			"subject": "chore(release): main",
+			"kind": "merge",
+			"tags": ["api-v2.0.0"],
+			"floating": ["api-v2"],
+			"note": "release PR"
+		},
+		{
+			"lane": "release/1.x",
+			"subject": "fix(api): token refresh",
+			"versions": ["api 1.1.1"],
+			"note": "no channel on this line"
+		},
+		{
+			"lane": "release/1.x",
+			"subject": "chore(release): release/1.x",
+			"kind": "merge",
+			"tags": ["api-v1.1.1"],
+			"floating": ["api-v1"],
+			"note": "release PR"
+		},
+		{
+			"lane": "release/1.x",
+			"subject": "feat(api)!: drop v1 tokens",
+			"error": "E_CAP: 1.1.1 to 2.0.0 exceeds the minor limit"
+		}
+	]
+}

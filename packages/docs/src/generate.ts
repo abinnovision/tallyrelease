@@ -1,4 +1,4 @@
-// Regenerates docs/*.md. With --check, lists stale files and fails instead of writing.
+// Regenerates docs/*.md and the history SVGs. With --check, lists stale files and fails instead of writing.
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
