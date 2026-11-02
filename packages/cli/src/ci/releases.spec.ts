@@ -115,6 +115,29 @@ describe("releaseListEntries", () => {
 		).toEqual([[change("released")], [], [], [change("pending")]]);
 	});
 
+	it("sets line on releases and prereleases", () => {
+		const plan = (kind?: "maintenance") =>
+			({
+				head: "def",
+				line: kind ? { kind } : null,
+				released: [{ ...released("a"), line: kind ?? "default" }],
+				units: [
+					{
+						id: "b",
+						kind: "prerelease",
+						version: "1.1.0-0",
+						changes: [],
+						propagatedFrom: [],
+					},
+				],
+			}) as unknown as Plan;
+		const lines = (p: Plan) =>
+			releaseListEntries(p, workspace([]), new Map()).map((e) => e.line);
+
+		expect(lines(plan())).toEqual(["default", "default"]);
+		expect(lines(plan("maintenance"))).toEqual(["maintenance", "maintenance"]);
+	});
+
 	describe("propagated changes", () => {
 		const change = (sha: string | undefined, via?: string) => ({
 			type: "fix",
