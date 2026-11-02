@@ -22,9 +22,9 @@ export const example = definePlugin({
 });
 ```
 
-See `Plugin` in [`src/plugin.ts`](https://github.com/abinnovision/tallyrelease/blob/main/packages/core/src/plugin.ts) for the available hooks (`discover`, `edges`, `inputs`, `versionFiles`, `schemes`, `intent`). The [plugin authoring guide](https://github.com/abinnovision/tallyrelease/blob/main/docs/plugins.md) covers the contract, testing, distribution and the trust model.
+See `Plugin` in [`src/plugin.ts`](https://github.com/abinnovision/tallyrelease/blob/main/packages/core/src/plugin.ts) for the available hooks (`options`, `discover`, `edges`, `inputs`, `versionFiles`, `schemes`, `intent`, `validate`, `changelog`). The [plugin authoring guide](https://github.com/abinnovision/tallyrelease/blob/main/docs/plugins.md) covers the contract, testing, distribution and the trust model.
 
-Core always registers the `semver` scheme and the Conventional Commits intent source. A plugin that reads commit messages can use `parseCommit` for the same parsing.
+Core always registers the `semver` and `calver` schemes and the Conventional Commits intent source. A plugin that reads commit messages can use `parseCommit` for the same parsing.
 
 ### Tag formats
 

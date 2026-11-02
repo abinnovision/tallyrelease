@@ -15,8 +15,8 @@ make setup-worktree   # same, for a linked git worktree
 
 ```bash
 yarn build                    # build all packages
-yarn fix                      # fix linting and formatting
-yarn check                    # format, lint, sort, typecheck and core purity checks
+yarn fix                      # fix linting and formatting, and regenerate docs
+yarn check                    # format, lint, sort, typecheck, core purity and docs freshness checks
 yarn test-unit                # unit tests
 yarn turbo test-integration   # integration tests (cli)
 ```
@@ -25,10 +25,17 @@ Run `yarn check`, `yarn test-unit` and `yarn turbo test-integration` before open
 
 ## Layout
 
-- `packages/core` is the pure planning core and the plugin contract. It does no I/O; files and git are read only through injected `ReadonlyFs`, `Ctx` and `GitReader`. `yarn check` enforces this.
-- `packages/cli` is the `tallyrelease` binary with config loading, git, forge, CI integration and the built-in plugins (`node`, `php`, `kustomize`, `dart`). Plugins use only the public API of `@tallyrelease/core`.
+- `packages/core` is the pure planning core and the plugin contract; it does no I/O, and `yarn check` enforces this.
+- `packages/cli` is the `tallyrelease` binary with config loading, git, forge and CI integration.
+- `packages/plugins` holds the built-in plugins (`node`, `php`, `go`, `kustomize`, `dart`, `changesets`), which use only the public API of `@tallyrelease/core`.
+- `packages/docs` generates the reference pages in `docs/`.
+- `packages/tsconfig` holds the shared TypeScript configs.
 
 The full design is in [`docs/design.md`](docs/design.md).
+
+## Docs
+
+`docs/cli.md`, `docs/configuration.md`, `docs/release-list.md` and `docs/errors.md` are generated from the code. `yarn fix` regenerates them, and `yarn check` fails when they are stale. Complete config examples in the docs start with `# tallyrelease.yaml` (or the `# yaml-language-server:` modeline) and are validated against the config schema by a test in `packages/docs`. Snippets that are not complete configs do not carry the line.
 
 ## Tests
 
@@ -39,10 +46,10 @@ The full design is in [`docs/design.md`](docs/design.md).
 
 ## Commits and pull requests
 
-Commits and pull request titles follow [Conventional Commits](https://www.conventionalcommits.org/), for example `fix(cli): ...` or `feat(core): ...`. commitlint checks them in a git hook. tallyrelease releases itself from these commits: `feat` and `fix` produce a release, `docs`, `chore`, `test` and similar types do not.
+Commits and pull request titles follow [Conventional Commits](https://www.conventionalcommits.org/), for example `fix(cli): ...` or `feat(core): ...`. commitlint checks them in a git hook. tallyrelease releases itself from these commits: `feat`, `fix`, `perf`, `revert` and breaking changes produce a release; `docs`, `chore`, `test` and similar types do not.
 
 Keep pull requests focused on one change and add a test for behavior changes.
 
-## License
+## Licence
 
-By contributing you agree that your contributions are licensed under the [Apache-2.0](LICENSE) license.
+By contributing you agree that your contributions are licensed under the [Apache-2.0](LICENSE) licence.
