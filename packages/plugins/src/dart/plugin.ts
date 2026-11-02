@@ -1,4 +1,4 @@
-import { defaultUnitId, definePlugin, flutter } from "@tallyrelease/core";
+import { defaultUnitId, definePlugin } from "@tallyrelease/core";
 import { parse as parseYaml } from "yaml";
 import { z } from "zod";
 
@@ -7,10 +7,7 @@ import { joinRoot, rootOf } from "../_kit/paths.js";
 
 import type { Ctx, EdgeDraft, UnitDraft } from "@tallyrelease/core";
 
-const optionsSchema = z.strictObject({
-	/** Added to the first-parent commit count for flutter build numbers. */
-	buildOffset: z.number().int().nonnegative().optional(),
-});
+const optionsSchema = z.strictObject({});
 
 type Options = z.infer<typeof optionsSchema>;
 
@@ -60,32 +57,20 @@ const pubspecRoots = (ctx: Ctx<Options>): string[] =>
 		)
 		.map((p) => (p === PUBSPEC ? "." : rootOf(p, PUBSPEC)));
 
-/** A private app that depends on the Flutter SDK. */
-const isFlutterApp = (pubspec: Pubspec): boolean =>
-	pubspec["publish_to"] === "none" &&
-	(record(record(pubspec["dependencies"])["flutter"])["sdk"] === "flutter" ||
-		record(pubspec["environment"])["flutter"] !== undefined);
-
 export const dartPlugin = definePlugin<Options>({
 	apiVersion: 1,
 	name: "dart",
 	options: optionsSchema,
-	schemes: { flutter },
 	discover: (ctx) =>
 		pubspecRoots(ctx).map((root): UnitDraft => {
 			const pubspec = readPubspec(ctx, root) ?? {};
 			const packageName = pubspec["name"];
-			const { buildOffset } = ctx.options;
 
 			return {
 				id: defaultUnitId(root, ctx.repo.name),
 				root,
 				version: "file",
-				scheme: isFlutterApp(pubspec) ? "flutter" : "semver",
-				meta: {
-					...(typeof packageName === "string" && { packageName }),
-					...(buildOffset !== undefined && { buildOffset }),
-				},
+				meta: typeof packageName === "string" ? { packageName } : {},
 			};
 		}),
 	edges: (ctx, units) => {

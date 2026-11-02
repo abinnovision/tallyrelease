@@ -485,38 +485,43 @@ describe("plan on a maintenance branch", () => {
 });
 
 describe("plan with the dart plugin", () => {
-	const flutterApp = (buildOffset: number, tagged: string): Dag => ({
+	const dartApp = (plugins: string): Dag => ({
 		commits: [
 			{
 				id: "f0",
 				files: {
-					"tallyrelease.yaml": `plugins: { dart: { buildOffset: ${String(buildOffset)} } }
+					"tallyrelease.yaml": `plugins: ${plugins}
 defaults: { release: true, tagFormat: "v{version}" }
 branches:
   - { name: main, line: default }
 `,
-					"pubspec.yaml":
-						"name: app\npublish_to: none\nversion: 1.2.0+5\ndependencies:\n  flutter:\n    sdk: flutter\n",
+					"pubspec.yaml": "name: app\npublish_to: none\nversion: 1.2.0+5\n",
 				},
 			},
 			{ id: "f1", message: "fix: crash", files: { "lib/main.dart": "1" } },
 		],
-		tags: [{ name: `v${tagged}`, commit: "f0" }],
+		tags: [{ name: "v1.2.0+5", commit: "f0" }],
 	});
 
-	it.each([
-		["the first-parent total plus buildOffset", 100, "1.2.0+5", "1.2.1+102"],
-		["the highest tagged build plus one", 100, "1.2.0+500", "1.2.1+501"],
-	])(
-		"releases a flutter app with %s as build number",
-		async (_, buildOffset, tagged, next) => {
-			const result = await runCli(["plan", "--json", "--base", "f0"], {
-				...memoryRepo(flutterApp(buildOffset, tagged)),
-			});
-			expect(result).toMatchObject({ code: 0, stderr: "" });
-			expect(planSchema.parse(JSON.parse(result.stdout)).units).toMatchObject([
-				{ scheme: "flutter", from: tagged, bump: "patch", next },
-			]);
-		},
-	);
+	/*
+	 * semver.compare ignores build metadata, so equal-core tags are ordered by
+	 * tag name (tags.ts).
+	 */
+	it("keeps matching x.y.z+build tags and drops the build number", async () => {
+		const result = await runCli(["plan", "--json", "--base", "f0"], {
+			...memoryRepo(dartApp("{ dart: {} }")),
+		});
+		expect(result).toMatchObject({ code: 0, stderr: "" });
+		expect(planSchema.parse(JSON.parse(result.stdout)).units).toMatchObject([
+			{ scheme: "semver", from: "1.2.0+5", bump: "patch", next: "1.2.1" },
+		]);
+	});
+
+	it("rejects the removed buildOffset option", async () => {
+		const result = await runCli(["plan", "--json", "--base", "f0"], {
+			...memoryRepo(dartApp("{ dart: { buildOffset: 1 } }")),
+		});
+		expect(result.code).not.toBe(0);
+		expect(result.stderr).toContain("E_PLUGIN_OPTIONS");
+	});
 });
