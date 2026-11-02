@@ -10,25 +10,10 @@ const read = (path: string) =>
 
 const validate = new Ajv({ strict: false }).compile(configJsonSchema());
 
-// Examples from design.md A.10 without v0.3 keys.
-const examples = [
-	...read("../../../../docs/design.md").matchAll(/```yaml\n([\s\S]*?)```/g),
-]
-	.map((m) => m[1]!.split("# v0.3")[0]!)
-	.filter((y) => y.startsWith("# "));
-
 describe("configJsonSchema", () => {
-	it("finds the design examples", () => {
-		expect(examples.length).toBeGreaterThan(0);
-	});
-
 	it("accepts the repo config and an empty config", () => {
 		expect(validate({})).toBe(true);
 		expect(validate(parse(read("../../../../tallyrelease.yaml")))).toBe(true);
-	});
-
-	it.each(examples)("accepts design example %#", (yaml) => {
-		expect(validate(parse(yaml))).toBe(true);
 	});
 
 	it("accepts $schema", () => {

@@ -51,8 +51,10 @@
 			"dependsOn": ["^build"],
 			"inputs": [
 				"$TURBO_DEFAULT$",
+				"$TURBO_ROOT$/docs/cli.md",
 				"$TURBO_ROOT$/docs/configuration.md",
-				"$TURBO_ROOT$/docs/errors.md"
+				"$TURBO_ROOT$/docs/errors.md",
+				"$TURBO_ROOT$/docs/release-list.md"
 			]
 		},
 		"check:purity": {
