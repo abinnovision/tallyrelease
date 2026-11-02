@@ -35,7 +35,7 @@ const internal = "E_INTERNAL" satisfies ErrorCode<CodeOf<typeof cliCodes>>;
 export const createProgram = (deps: Deps): Command => {
 	const program = new Command("tallyrelease")
 		.description(
-			"Affected build units and releases for monorepos and single repos",
+			"Know what changed, release what matters: affected builds and release plans for monorepos and single repos",
 		)
 		.version(version)
 		.option("--cwd <dir>", "repository root")
