@@ -47,6 +47,8 @@ export interface UnitPlan {
 	absorbedFrom: string[];
 	next: string | null;
 	version: string | null;
+	/** Version a prerelease PR cuts; null when it cannot be cut. */
+	cut: string | null;
 	/** The planned commit. */
 	sha: string;
 	/** Core commit order. */
@@ -61,6 +63,8 @@ export interface GroupPlan {
 	bump: BumpLevel | null;
 	next: string | null;
 	version: string | null;
+	/** Version a prerelease PR cuts; null when it cannot be cut. */
+	cut: string | null;
 }
 
 export interface ReleasedUnit {

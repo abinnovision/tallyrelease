@@ -1,0 +1,19 @@
+description: A rule setting both channel and channels.build fails.
+plugins:
+  - name: stub
+    units:
+      - { id: a, root: packages/a }
+config:
+  plugins: { stub: {} }
+  defaults: { release: true }
+  branches:
+    - { name: main, line: default, channel: beta, channels: { build: beta } }
+git:
+  commits:
+    - id: c0
+      files: { packages/a/index.ts: "0" }
+base: null
+plan: {}
+error:
+  code: E_CONFIG
+  details: { rule: main }

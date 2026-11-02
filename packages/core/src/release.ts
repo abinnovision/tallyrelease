@@ -45,6 +45,8 @@ export interface UnitRelease {
 	readonly nextSource: "bump" | "initial" | "release-as" | null;
 	/** Prerelease of `next` on `channel`; null without a channel or `next`. */
 	readonly prerelease: string | null;
+	/** Prerelease of `next` on `cut`, numbered one past `head`; null when it cannot be cut. */
+	readonly cut: string | null;
 }
 
 export interface ReleaseInput<V> {
@@ -60,6 +62,8 @@ export interface ReleaseInput<V> {
 	/** Committer date of `head`. */
 	readonly date?: string;
 	readonly channel: string | null;
+	/** Cut channel. */
+	readonly cut: string | null;
 }
 
 /**
@@ -152,7 +156,7 @@ export const releaseUnit = <V>(
 					: from === undefined
 						? "initial"
 						: "bump",
-		...render({ scheme, raw, ctx, channel: input.channel }),
+		...render({ scheme, raw, ctx, channel: input.channel, cut: input.cut }),
 	};
 };
 
@@ -181,7 +185,7 @@ export const releaseGroup = <V>(
 		throw new TypeError("a group has at least one member");
 	}
 
-	const { scheme, facts, channel } = first.input;
+	const { scheme, facts, channel, cut } = first.input;
 	const max = (a: V | undefined, b: V | undefined): V | undefined =>
 		a === undefined || (b !== undefined && scheme.compare(b, a) > 0) ? b : a;
 	const from = fromOf(scheme, facts);
@@ -239,6 +243,6 @@ export const releaseGroup = <V>(
 					: from === undefined
 						? "initial"
 						: "bump",
-		...render({ scheme, raw, ctx, channel }),
+		...render({ scheme, raw, ctx, channel, cut }),
 	};
 };

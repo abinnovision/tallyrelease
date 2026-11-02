@@ -1,0 +1,62 @@
+description: >-
+  A cut is the prerelease of next on the cut channel numbered N+1; fixed group
+  members share the group's cut, and cut items carry it with tags rendered
+  from it.
+plugins:
+  - name: stub
+    units:
+      - { id: a, root: packages/a }
+      - { id: b, root: packages/b }
+      - { id: c, root: packages/c }
+config:
+  plugins: { stub: {} }
+  defaults: { release: true }
+  groups:
+    sdk: { units: [a, b] }
+  branches:
+    - { name: main, line: default, channels: { cut: beta } }
+git:
+  commits:
+    - id: c0
+      files:
+        { packages/a/i.ts: "0", packages/b/i.ts: "0", packages/c/i.ts: "0" }
+    - id: c1
+      message: "feat: a"
+      files: { packages/a/i.ts: "1" }
+    - id: c2
+      message: "fix: c"
+      files: { packages/c/i.ts: "2" }
+  tags:
+    - { name: a-v1.0.0, commit: c0 }
+    - { name: b-v1.0.0, commit: c0 }
+    - { name: c-v1.0.0, commit: c0 }
+base: c0
+plan: { all: true }
+release:
+  cut: true
+expect:
+  plan:
+    units:
+      - { id: a, next: 1.1.0, cut: 1.1.0-beta.3 }
+      - { id: b, next: 1.1.0, cut: 1.1.0-beta.3 }
+      - { id: c, next: 1.0.1, cut: 1.0.1-beta.3 }
+    groups:
+      - { name: sdk, next: 1.1.0, version: null, cut: 1.1.0-beta.3 }
+    warnings: []
+  cutItems:
+    - name: sdk
+      kind: group
+      units: [a, b]
+      next: 1.1.0
+      version: 1.1.0-beta.3
+      tags:
+        - { id: a, tag: a-v1.1.0-beta.3 }
+        - { id: b, tag: b-v1.1.0-beta.3 }
+    - name: c
+      kind: unit
+      units: [c]
+      next: 1.0.1
+      version: 1.0.1-beta.3
+      tags: [{ id: c, tag: c-v1.0.1-beta.3 }]
+  cutWarnings: []
+  previousCut: { a: null, b: null, c: null }

@@ -9,6 +9,7 @@ import { normalizeRoot } from "./discover.js";
 import { pluginCtx, runHook } from "./plugins.js";
 import { frozenCopy } from "./util.js";
 
+import type { CutChanges } from "./changelog.js";
 import type { Warning } from "./errors.js";
 import type { Plan } from "./model/plan-types.js";
 import type {
@@ -265,6 +266,7 @@ interface UnitStep {
 	ctx: (plugin: string, options: unknown) => Ctx;
 	/** Frozen copy of `plan` for plugin hooks, made on first use. */
 	hookPlan: () => Plan;
+	cut?: CutChanges;
 }
 
 const required = (staged: Staged, path: string, unit: string): string => {
@@ -361,7 +363,7 @@ const pluginSection = async (
 	step: UnitStep,
 	section: string,
 ): Promise<string> => {
-	const { workspace, item, unit, scheme, ctx, hookPlan } = step;
+	const { workspace, item, unit, scheme, ctx, hookPlan, cut } = step;
 	const owner = workspace.plugins.find((p) => p.plugin.name === unit.plugin);
 	const hook = owner?.plugin.changelog;
 	if (!owner || !hook) {
@@ -373,6 +375,7 @@ const pluginSection = async (
 			unit,
 			plan: hookPlan(),
 			section,
+			cut: cut ? { version: item.version } : null,
 		});
 		if (typeof result !== "string") {
 			throw new TypeError("changelog must return a string");
@@ -402,12 +405,14 @@ const changelogStep = async (
 	staged: Staged,
 	step: UnitStep,
 ): Promise<string | undefined> => {
-	const { workspace, plan, unit, scheme, from, repoUrl, date, prUnits } = step;
+	const { workspace, plan, unit, scheme, from, repoUrl, date, prUnits, cut } =
+		step;
 	const fallback = changelogSection(workspace, plan, {
 		id: unit.id,
 		repoUrl,
 		date,
 		prUnits,
+		...(cut && { cut: { ...cut, versions: step.versions } }),
 	});
 	const section =
 		fallback === undefined ? undefined : await pluginSection(step, fallback);
@@ -416,7 +421,7 @@ const changelogStep = async (
 		staged.files.set(
 			path,
 			updateChangelog(staged.read(path), section, {
-				baseVersion: from,
+				baseVersion: cut ? (cut.previousCut?.version ?? from) : from,
 				scheme,
 			}),
 		);
@@ -533,7 +538,8 @@ export const versionFileClaims = async (
  * checks claims first. Templates skip first releases and warn
  * `W_VERSION_FILE_NO_MATCH` without any match, markers warn
  * `W_MARKER_NO_MATCH`; a missing version file is
- * `E_VERSION_FILE_MISSING`.
+ * `E_VERSION_FILE_MISSING`. With `cut` (items at their cut versions), only
+ * the changelogs of the units in `cut` are written and nothing is consumed.
  */
 export const releaseFiles = async (
 	workspace: Workspace,
@@ -545,6 +551,8 @@ export const releaseFiles = async (
 		repoUrl: string | null;
 		/** `YYYY-MM-DD` changelog heading date. */
 		date: string;
+		/** Cut changelog input by unit id. */
+		cut?: ReadonlyMap<string, CutChanges>;
 	},
 ): Promise<{
 	files: Map<string, string>;
@@ -554,8 +562,10 @@ export const releaseFiles = async (
 	sections: Map<string, string>;
 	warnings: Warning[];
 }> => {
-	const { fs, items, repoUrl, date } = opts;
-	const pluginFiles = await versionFileClaims(workspace);
+	const { fs, items, repoUrl, date, cut } = opts;
+	const pluginFiles = cut
+		? new Map<string, readonly VersionFile[]>()
+		: await versionFileClaims(workspace);
 	const { schemes } = workspace;
 	const units = new Map(workspace.units.map((u) => [u.id, u]));
 	const planned = new Map(plan.units.map((u) => [u.id, u]));
@@ -583,7 +593,8 @@ export const releaseFiles = async (
 			const unit = units.get(id);
 			const entry = planned.get(id);
 			const scheme = unit && schemes.get(unit.scheme);
-			if (!unit || !entry || !scheme) {
+			const changes = cut?.get(id);
+			if (!unit || !entry || !scheme || (cut && !changes)) {
 				continue;
 			}
 
@@ -600,10 +611,14 @@ export const releaseFiles = async (
 				date,
 				ctx,
 				hookPlan,
+				...(changes && { cut: changes }),
 			};
-			// eslint-disable-next-line no-await-in-loop -- files are written in order
-			await versionFileStep(staged, step, pluginFiles.get(id) ?? []);
-			warnings.push(...templateStep(staged, step));
+			if (!changes) {
+				// eslint-disable-next-line no-await-in-loop -- files are written in order
+				await versionFileStep(staged, step, pluginFiles.get(id) ?? []);
+				warnings.push(...templateStep(staged, step));
+			}
+
 			// eslint-disable-next-line no-await-in-loop -- files are written in order
 			const section = await changelogStep(staged, step);
 			if (section !== undefined) {
@@ -614,10 +629,12 @@ export const releaseFiles = async (
 
 	return {
 		files: new Map([...files].filter(([path, c]) => fs.read(path) !== c)),
-		deletes: consumedFiles(plan, new Set(versions.keys()), {
-			fs,
-			written: files,
-		}),
+		deletes: cut
+			? new Set()
+			: consumedFiles(plan, new Set(versions.keys()), {
+					fs,
+					written: files,
+				}),
 		sections,
 		warnings,
 	};

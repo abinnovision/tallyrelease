@@ -11,7 +11,7 @@ config:
   groups:
     sdk: { units: [a, b] }
   branches:
-    - { name: main, line: default, channel: beta }
+    - { name: main, line: default, channels: { build: beta } }
 git:
   commits:
     - id: c0
