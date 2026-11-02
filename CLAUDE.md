@@ -1,16 +1,16 @@
 # tallyrelease - Development Guide
 
-tallyrelease computes affected build units and release plans for monorepos and single repos. The full design is in `docs/design.md`. Current status: v0.3 (release effects: version files, release PRs, tags, forge releases). This repo releases itself with tallyrelease (app-stack `tallyrelease: release`).
+tallyrelease computes affected build units and release plans for monorepos and single repos. User docs live in `docs/` (index `docs/README.md`), the full design is in `docs/design.md`. This repo releases itself with tallyrelease.
 
 ## Packages
 
 Yarn 4 monorepo with Turbo orchestration. Names in parentheses are used for `turbo --filter`:
 
-- `packages/core` (`@tallyrelease/core`) - pure planning core and the plugin contract. Exports `.` and `./testing` (fakes: `memoryFs`, `memoryCtx`, `memoryGit`).
-- `packages/cli` (`@tallyrelease/cli`) - imperative shell, binary `tallyrelease`. Config loading, git, forge (typed `ForgeError`s), CI integration through `CiProvider` (`src/ci/provider.ts`, GitHub Actions only).
+- `packages/core` (`@tallyrelease/core`) - pure planning core and the plugin contract. Exports include `.`, `./testing` (fakes: `memoryFs`, `memoryCtx`, `memoryGit`) and `./testing/conformance`.
+- `packages/cli` (`@tallyrelease/cli`) - imperative shell, binary `tallyrelease`. Config loading, git, forge (typed `ForgeError`s), CI integration through `CiProvider` (`src/ci/provider.ts`, GitHub Actions only). Exports include `main(argv, deps)` and `createProgram(deps)`, the commander program builder used by the docs generator.
 - `packages/plugins` (`@tallyrelease/plugins`) - built-in plugins (`node`, `php`, `go`, `kustomize`, `dart`, `changesets`). Exports only `builtinPlugins`.
 - `packages/tsconfig` (`@internal/tsconfig`) - shared TypeScript configs.
-- `packages/docs` (`@internal/docs`) - private generators for `docs/*.md`, run with Node type stripping.
+- `packages/docs` (`@internal/docs`) - private generators for `docs/cli.md`, `docs/configuration.md`, `docs/release-list.md`, `docs/errors.md` and the git history SVGs in `docs/assets/` (from `docs/assets/histories/*.json`), run with Node type stripping.
 
 ## Commands
 
@@ -46,6 +46,7 @@ Every `make` target runs `tools/<target>.sh`; ordering and flags live in the scr
 ## Conventions
 
 - Node >=24, ESM only, Apache-2.0.
-- Commits follow Conventional Commits; tallyrelease versions `packages/core` and `packages/cli` as the fixed group `tallyrelease` (one version) through release PRs on `tallyrelease/release/main/shared`.
+- Commits follow Conventional Commits; tallyrelease versions `packages/core`, `packages/cli` and `packages/plugins` as the fixed group `tallyrelease` (one version) through release PRs on `tallyrelease/release/main/shared`.
 - Raise `E_*`/`W_*` codes through `coreCodes` or `cliCodes` (`src/codes.ts`). A new code needs a `cause` and `fix` entry, then `yarn fix` regenerates `docs/errors.md`. Codes are never renamed or removed.
+- Complete config examples in docs start with `# tallyrelease.yaml` (or the `# yaml-language-server:` modeline) and are validated against the schema by a test in `packages/docs`. Snippets that are not complete configs do not carry the line.
 - Keep comments short and about the current code.
