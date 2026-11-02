@@ -2,11 +2,11 @@ import { describe, expect, it } from "vitest";
 
 import { corePlugin } from "../src/builtin.js";
 import { calver } from "../src/calver.js";
-import { flutter } from "../src/flutter.js";
 import { loadWorkspace } from "../src/index.js";
 import { PLUGIN_API_VERSION } from "../src/plugin.js";
 import { assertSchemes, schemeRegistry } from "../src/schemes.js";
 import { semver } from "../src/semver.js";
+import { flutter } from "./fixtures/flutter.js";
 import { schemeConformance } from "../src/testing/conformance.js";
 import { memoryFs } from "../src/testing/index.js";
 
@@ -70,7 +70,7 @@ describe("schemes", () => {
 		expect(flutter.parse("1.2.3")).toBeUndefined();
 	});
 
-	it("adds the owning plugin's buildOffset to the first-parent total", () => {
+	it("uses the highest tagged build plus one", () => {
 		const v = flutter.parse("1.2.3+0");
 		const unit = {
 			id: "app",
@@ -84,7 +84,7 @@ describe("schemes", () => {
 			propagate: "auto" as const,
 			tags: [],
 			initialVersion: null,
-			meta: { dart: { buildOffset: 100 }, other: { buildOffset: 5 } },
+			meta: {},
 		};
 		const ctx = {
 			unit,
@@ -93,7 +93,7 @@ describe("schemes", () => {
 			tags: ["v1.2.2+7"],
 			firstParent: { sinceLineBase: 1, total: 3 },
 		};
-		expect(v && flutter.format(flutter.release(v, ctx))).toBe("1.2.3+103");
+		expect(v && flutter.format(flutter.release(v, ctx))).toBe("1.2.3+8");
 		const tags = ["app2-v1.2.2+500"];
 		expect(v && flutter.format(flutter.release(v, { ...ctx, tags }))).toBe(
 			"1.2.3+501",

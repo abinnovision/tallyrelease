@@ -8,7 +8,6 @@ import { collectPlanFacts } from "../src/facts.js";
 import {
 	computeAffected,
 	computePlan,
-	flutter,
 	loadWorkspace,
 	planEquals,
 	releaseFiles,
@@ -16,6 +15,7 @@ import {
 	releaseNotes,
 	withReleased,
 } from "../src/index.js";
+import { flutter } from "./fixtures/flutter.js";
 import { memoryFs, memoryGit } from "../src/testing/index.js";
 
 import type {

@@ -66,7 +66,6 @@ export type {
 export type { Marker, MarkerRelease } from "./marker.js";
 export type { ReleaseItem } from "./release-items.js";
 export type { ReleaseSettings } from "./release-settings.js";
-export type { FlutterVersion } from "./flutter.js";
 export type { SemVer } from "./semver.js";
 export type { TagFormat } from "./tags.js";
 export type { IntentEntry, Workspace, WorkspaceInput } from "./workspace.js";
@@ -80,7 +79,6 @@ export { CONFIG_FILE } from "./config.js";
 export { parseCommit } from "./conventional.js";
 export { TallyError } from "./errors.js";
 export { explainUnit } from "./explain.js";
-export { flutter } from "./flutter.js";
 export { definePlugin, defaultUnitId, PLUGIN_API_VERSION } from "./plugin.js";
 export { computePlan } from "./plan.js";
 export { decodeMarker, encodeMarker } from "./marker.js";
