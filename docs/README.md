@@ -15,6 +15,7 @@ tallyrelease computes the affected build units and the release plan of a monorep
 ## Operate
 
 - [CI](ci.md): GitHub Actions setup, outputs, token permissions and recovery.
+- [Mobile apps](mobile.md): Flutter release flow with store build numbers.
 - [Plugin authoring guide](plugins.md): write a plugin for another ecosystem.
 - [node](plugins/node.md): npm, Yarn and pnpm packages.
 - [php](plugins/php.md): Composer projects.
