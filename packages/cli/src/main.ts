@@ -14,7 +14,7 @@ import { run } from "./commands/run.js";
 import { applyVersions } from "./commands/version.js";
 import { painter } from "./output/paint.js";
 import { createSession } from "./session.js";
-import { version } from "./version.js";
+import { commit, version } from "./version.js";
 
 import type { PlanFlags } from "./app/setup.js";
 import type { cliCodes } from "./codes.js";
@@ -37,7 +37,7 @@ export const createProgram = (deps: Deps): Command => {
 		.description(
 			"Know what changed, release what matters: affected builds and release plans for monorepos and single repos",
 		)
-		.version(version)
+		.version(commit === null ? version : `${version} (${commit.slice(0, 7)})`)
 		.option("--cwd <dir>", "repository root")
 		.option("--config <file>", "config file", CONFIG_FILE)
 		.option("--token <token>", "forge token (default: GITHUB_TOKEN)")
