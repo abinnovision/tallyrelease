@@ -79,10 +79,12 @@ interface Scenario {
 	 * Collects plan facts and computes the plan when set; with `fails` a plan
 	 * error is returned as `planError`; `released` fills `plan.released`;
 	 * `buildNumbers` numbers the releases, then the prereleases not released at
-	 * HEAD, in the order of the release list.
+	 * HEAD, in the order of the release list; `buildChannel` selects the
+	 * build prerelease channel.
 	 */
 	plan?: {
 		all?: boolean;
+		buildChannel?: "build" | "nightly";
 		fails?: boolean;
 		released?: boolean;
 		buildNumbers?: boolean;
@@ -290,6 +292,7 @@ const run = async (s: Scenario) => {
 				...opts,
 				fs,
 				all: s.plan.all ?? false,
+				...(s.plan.buildChannel && { buildChannel: s.plan.buildChannel }),
 			})
 				.then(async (p) =>
 					s.plan?.released ? await withReleased(workspace, p, { git }) : p,

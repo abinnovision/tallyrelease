@@ -188,7 +188,11 @@ export const releasePrs = async (
 	}
 
 	// Release PRs need no build base; HEAD as base skips the forge lookup.
-	const setup = await planOptions(session, { ...flags, base: "HEAD" });
+	const setup = await planOptions(
+		session,
+		{ ...flags, base: "HEAD" },
+		{ channel: false },
+	);
 	const repoUrl = await session.repoUrl();
 	const date = session.clock().toISOString().slice(0, 10);
 	const planned = await session.workspaceAt(null, async (workspace, fs) => {

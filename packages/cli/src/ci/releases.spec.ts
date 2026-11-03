@@ -139,6 +139,29 @@ describe("releaseListEntries", () => {
 		expect(lines(plan("maintenance"))).toEqual(["maintenance", "maintenance"]);
 	});
 
+	it("labels a prerelease with the line's nightly channel", () => {
+		const plan = {
+			head: "def",
+			line: { kind: "default", channel: "nightly", channelKind: "nightly" },
+			released: [],
+			units: [
+				{
+					id: "b",
+					kind: "prerelease",
+					version: "1.1.0-nightly.3",
+					changes: [],
+					propagatedFrom: [],
+				},
+			],
+		} as unknown as Plan;
+
+		expect(
+			releaseListEntries(plan, workspace([{ id: "b" }]), new Map()).map(
+				({ version, channel, tag }) => ({ version, channel, tag }),
+			),
+		).toEqual([{ version: "1.1.0-nightly.3", channel: "nightly", tag: null }]);
+	});
+
 	describe("propagated changes", () => {
 		const change = (sha: string | undefined, via?: string) => ({
 			type: "fix",

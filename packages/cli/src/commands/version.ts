@@ -6,7 +6,7 @@ import {
 } from "@tallyrelease/core";
 
 import { effectSkipped } from "../app/effects.js";
-import { resolveHead } from "../app/setup.js";
+import { buildChannel, resolveHead } from "../app/setup.js";
 import { cliCodes } from "../codes.js";
 import { versionText } from "../render/version.js";
 import { branchName } from "../session.js";
@@ -78,12 +78,14 @@ export const applyVersions = async (
 		);
 	}
 
+	const branch = flags.branch ?? (await branchName(session));
 	const opts = {
 		tool: `tallyrelease@${version}`,
-		branch: flags.branch ?? (await branchName(session)),
+		branch,
 		head,
 		base: null,
 		baseSource: "none" as const,
+		buildChannel: await buildChannel(session, branch),
 	};
 	const result = await session.workspaceAt(null, async (workspace, fs) => {
 		const plan = await computePlan(workspace, session.git, { ...opts, fs });

@@ -19,6 +19,11 @@ export const cliCodes = defineCodes({
 			"Prerelease numbers and build numbers count first-parent commits, which a shallow clone truncates. Raised by `run --github-output` when a unit sets `buildNumber`, and by `version`, before any effect.",
 		fix: "Fetch the full history, for example `fetch-depth: 0` in `actions/checkout` or `git fetch --unshallow`.",
 	},
+	E_CHANNEL_SELECT: {
+		cause:
+			"The build channel selection is not usable: `TALLYRELEASE_CHANNEL` is not `build` or `nightly`, or `nightly` was selected with `--channel` or `TALLYRELEASE_CHANNEL` on a branch whose rule sets no `channels.nightly`. Scheduled runs select `nightly` on their own and keep the build channel on such a branch.",
+		fix: "Set `TALLYRELEASE_CHANNEL` to `build` or `nightly`, or add `channels.nightly` to the branch rule, or drop the selection on that branch.",
+	},
 	E_CONFIG_MISSING: {
 		cause:
 			"The config file does not exist at the path given by `--config` (default `tallyrelease.yaml`) in the repository root.",
@@ -138,7 +143,7 @@ export const cliCodes = defineCodes({
 	},
 	W_NO_LAST_SUCCESS: {
 		cause:
-			"The forge has no successful run of this workflow on this branch that is an ancestor of HEAD, so there is no base. Push and manual runs build on push runs, scheduled runs on scheduled runs.",
+			"The forge has no successful run of this workflow on this branch that is an ancestor of HEAD, so there is no base. Push and manual runs build on push runs, scheduled runs on scheduled runs. Nightly runs (on a rule with `channels.nightly`) build on scheduled and manual runs.",
 		fix: "Expected on the first run. Otherwise, check that the workflow succeeded on this branch before, or pass `--base <ref>`.",
 	},
 	W_NO_WORKFLOW_CONTEXT: {

@@ -66,17 +66,17 @@ export const coreCodes = defineCodes({
 	},
 	E_CHANNEL_DUPLICATE: {
 		cause:
-			"Two `branches` rules set the same channel, or one rule uses the same channel for `channels.build` and `channels.cut`. Build and cut channels (and the deprecated `channel`) share one namespace.",
-		fix: "Give each `channels.build` and `channels.cut` a distinct value, or remove one of them.",
+			"Two `branches` rules set the same channel, or one rule uses the same channel twice among `channels.build`, `channels.cut` and `channels.nightly`. Build, cut and nightly channels (and the deprecated `channel`) share one namespace.",
+		fix: "Give each `channels.build`, `channels.cut` and `channels.nightly` a distinct value, or remove one of them.",
 	},
 	E_CHANNEL_INVALID: {
 		cause:
-			"A rule's `channels.build` or `channels.cut` (or the deprecated `channel`) is not a valid prerelease identifier: it must match `[0-9A-Za-z-]+`, contain a letter or dash, and use only `{major}` and `{minor}` tokens that the rule's `name` captures. The same code is raised when the channel does not form a valid prerelease for a version.",
+			"A rule's `channels.build`, `channels.cut` or `channels.nightly` (or the deprecated `channel`) is not a valid prerelease identifier: it must match `[0-9A-Za-z-]+`, contain a letter or dash, and use only `{major}` and `{minor}` tokens that the rule's `name` captures. The same code is raised when the channel does not form a valid prerelease for a version.",
 		fix: "Use letters, digits and dashes only (for example `beta` or `rc-{major}`) and capture any token you use in the rule `name`.",
 	},
 	E_CHANNEL_WILDCARD: {
 		cause:
-			"A `branches` rule sets `channels.build` or `channels.cut` (or the deprecated `channel`) while its `name` contains `*`, so the channel would be ambiguous.",
+			"A `branches` rule sets `channels.build`, `channels.cut` or `channels.nightly` (or the deprecated `channel`) while its `name` contains `*`, so the channel would be ambiguous.",
 		fix: "Remove the `*` from the rule `name`, or remove the channels from that rule.",
 	},
 	E_CONFIG: {
@@ -235,8 +235,8 @@ export const coreCodes = defineCodes({
 	},
 	W_CHANNEL_ORDER: {
 		cause:
-			"A rule's `channels.cut` does not sort above its `channels.build` as a SemVer prerelease identifier (identifiers compare in ASCII order), so a build of a version ranks above or equal to a cut of the same version.",
-		fix: "Pick labels whose ASCII order matches their maturity, for example `alpha` for builds and `beta` for cuts.",
+			"A rule's `channels.cut` does not sort above its `channels.build` or `channels.nightly` as a SemVer prerelease identifier (identifiers compare in ASCII order), so a build or nightly of a version ranks above or equal to a cut of the same version.",
+		fix: "Pick labels whose ASCII order matches their maturity, for example `alpha` for builds, `nightly` for nightlies and `rc` for cuts.",
 	},
 	W_CUT_SCHEME: {
 		cause:

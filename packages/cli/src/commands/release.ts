@@ -361,10 +361,14 @@ export const reconcile = async (
 	}
 
 	// Reconcile needs no build base; HEAD as base skips the forge lookup.
-	const setup = await planOptions(session, {
-		...(flags.branch !== undefined && { branch: flags.branch }),
-		base: "HEAD",
-	});
+	const setup = await planOptions(
+		session,
+		{
+			...(flags.branch !== undefined && { branch: flags.branch }),
+			base: "HEAD",
+		},
+		{ channel: false },
+	);
 	const { opts } = setup;
 	const atHead = await session.planAt(null, opts);
 	if (effectSkipped(session, command, atHead)) {

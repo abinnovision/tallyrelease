@@ -10,6 +10,8 @@ export interface BranchRule {
 	readonly build: string | null;
 	/** Cut channel. */
 	readonly cut: string | null;
+	/** Nightly channel. */
+	readonly nightly: string | null;
 	/** Release item of the absolute maintenance check. */
 	readonly unit: string | null;
 	readonly group: string | null;
@@ -19,8 +21,13 @@ export interface BranchRule {
 export interface Line {
 	rule: string;
 	kind: "default" | "maintenance";
-	/** Build channel, rendered with the rule's captures. */
+	/**
+	 * Build channel, rendered with the rule's captures: the nightly channel
+	 * when selected and set, else the build channel.
+	 */
 	channel: string | null;
+	/** Which channel `channel` renders; null without one. */
+	channelKind: "build" | "nightly" | null;
 	/** Cut channel, rendered with the rule's captures. */
 	cut: string | null;
 	/** Maintenance rules: `minor` for `{major}`, `patch` with `{minor}`. */

@@ -101,6 +101,31 @@ describe("version", () => {
 		expect(files).toEqual(after);
 	});
 
+	it("stamps the nightly prerelease on a schedule event, as plan reports it", async () => {
+		const dag = repo(
+			config({ line: ", channels: { build: beta, nightly: nightly }" }),
+		);
+		const opts = {
+			event: { name: "schedule", payload: {} },
+			env: { GITHUB_REF_NAME: "main" },
+		};
+		const { files, version } = setup(dag, opts);
+		expect((await version()).code).toBe(0);
+		expect(files["packages/core/package.json"]).toBe(
+			pkg("core", "1.1.0-nightly.1"),
+		);
+
+		const plan = await runCli(["plan", "--json"], {
+			...memoryRepo(dag),
+			...opts,
+		});
+		expect(
+			(JSON.parse(plan.stdout) as { units: { version: string }[] }).units.map(
+				(u) => u.version,
+			),
+		).toEqual(["1.1.0-nightly.1", "1.0.1-nightly.1"]);
+	});
+
 	it("prints the files without writing them with --dry-run", async () => {
 		const { files, before, version } = setup();
 		expect((await version(["--dry-run"])).stdout).toBe(

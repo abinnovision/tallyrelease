@@ -51,6 +51,12 @@ export const createProgram = (deps: Deps): Command => {
 			"--allow-local-plugins",
 			"let pr, release and run load plugins.<name>.path",
 		)
+		.addOption(
+			new Option(
+				"--channel <channel>",
+				"channel of build prereleases (default: TALLYRELEASE_CHANNEL, nightly on schedule events, else build)",
+			).choices(["build", "nightly"]),
+		)
 		.exitOverride()
 		.configureOutput({
 			writeOut: (s) => deps.stdout.write(s),

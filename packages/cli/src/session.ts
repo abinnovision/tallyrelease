@@ -32,6 +32,7 @@ import type { RepoGit } from "./git/reader.js";
 import type { GitWriter } from "./git/writer.js";
 import type { Writer } from "./output/writer.js";
 import type {
+	BuildChannel,
 	Plan,
 	PlanOptions,
 	ReadonlyFs,
@@ -76,8 +77,16 @@ export interface GlobalOptions {
 	remote?: string;
 	/** `--allow-local-plugins`: privileged commands may load local plugins. */
 	allowLocalPlugins?: boolean;
+	/** `--channel`: channel of build prereleases. */
+	channel?: BuildChannel;
 	/** Set by commands that hold write tokens (`pr`, `release`, `run`, `version`). */
 	privileged?: boolean;
+}
+
+/** The selected build channel; `explicit` when chosen by flag or env. */
+export interface ChannelSelection {
+	channel: BuildChannel;
+	explicit: boolean;
 }
 
 /** Resolved dependencies shared by all commands. */
@@ -95,6 +104,11 @@ export interface Session {
 	readonly token: string | undefined;
 	/** `--remote`, else `origin`. */
 	readonly remote: string;
+	/**
+	 * `--channel`, else `TALLYRELEASE_CHANNEL`, else `nightly` on a schedule
+	 * event, else `build`; `E_CHANNEL_SELECT` for an invalid env value.
+	 */
+	readonly channel: () => ChannelSelection;
 	readonly gitWriter: GitWriter;
 	readonly writeFile: (path: string, content: string) => void;
 	readonly writeOutFile: (path: string, content: string) => void;
@@ -124,6 +138,35 @@ export interface Session {
 	) => Promise<Plan>;
 	readonly warn: (warnings: readonly Warning[]) => void;
 }
+
+/** See `Session.channel`. */
+const selectChannel = (
+	flag: BuildChannel | undefined,
+	env: Env,
+	ci: Pick<CiProvider, "event">,
+): ChannelSelection => {
+	const fromEnv = env["TALLYRELEASE_CHANNEL"];
+	if (flag !== undefined) {
+		return { channel: flag, explicit: true };
+	}
+
+	if (fromEnv !== undefined && fromEnv !== "") {
+		if (fromEnv !== "build" && fromEnv !== "nightly") {
+			throw cliCodes.error(
+				"E_CHANNEL_SELECT",
+				`TALLYRELEASE_CHANNEL "${fromEnv}" must be build or nightly`,
+				{ channel: fromEnv },
+			);
+		}
+
+		return { channel: fromEnv, explicit: true };
+	}
+
+	return {
+		channel: ci.event?.kind === "schedule" ? "nightly" : "build",
+		explicit: false,
+	};
+};
 
 /**
  * Https web URL of a git remote without credentials or `.git`, null when not
@@ -323,6 +366,7 @@ export const createSession = (deps: Deps, opts: GlobalOptions): Session => {
 		forge: token ? (deps.forge ?? defaultForge(deps.env, token)) : undefined,
 		token,
 		remote,
+		channel: () => selectChannel(opts.channel, deps.env, ci),
 		gitWriter:
 			deps.gitWriter ??
 			gitWriter(root, debug, {

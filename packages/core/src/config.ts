@@ -54,9 +54,10 @@ export interface BranchConfig {
 	channel?: string;
 	/**
 	 * Prerelease channels, may use the `{major}`/`{minor}` captures of `name`:
-	 * `build` labels every push, `cut` labels prerelease PRs and their tags.
+	 * `build` labels every push, `cut` labels prerelease PRs and their tags,
+	 * `nightly` labels builds of the nightly channel.
 	 */
-	channels?: { build?: string; cut?: string };
+	channels?: { build?: string; cut?: string; nightly?: string };
 	/** Maintenance rules: the unit of the absolute check; excludes `group`. */
 	unit?: string;
 	/** Maintenance rules: the group of the absolute check; excludes `unit`. */

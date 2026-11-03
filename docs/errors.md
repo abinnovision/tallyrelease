@@ -52,19 +52,25 @@ Fix: Cut the branch from the last release of that line, or remove the newer comm
 
 ### E_CHANNEL_DUPLICATE
 
-Cause: Two `branches` rules set the same channel, or one rule uses the same channel for `channels.build` and `channels.cut`. Build and cut channels (and the deprecated `channel`) share one namespace.
+Cause: Two `branches` rules set the same channel, or one rule uses the same channel twice among `channels.build`, `channels.cut` and `channels.nightly`. Build, cut and nightly channels (and the deprecated `channel`) share one namespace.
 
-Fix: Give each `channels.build` and `channels.cut` a distinct value, or remove one of them.
+Fix: Give each `channels.build`, `channels.cut` and `channels.nightly` a distinct value, or remove one of them.
 
 ### E_CHANNEL_INVALID
 
-Cause: A rule's `channels.build` or `channels.cut` (or the deprecated `channel`) is not a valid prerelease identifier: it must match `[0-9A-Za-z-]+`, contain a letter or dash, and use only `{major}` and `{minor}` tokens that the rule's `name` captures. The same code is raised when the channel does not form a valid prerelease for a version.
+Cause: A rule's `channels.build`, `channels.cut` or `channels.nightly` (or the deprecated `channel`) is not a valid prerelease identifier: it must match `[0-9A-Za-z-]+`, contain a letter or dash, and use only `{major}` and `{minor}` tokens that the rule's `name` captures. The same code is raised when the channel does not form a valid prerelease for a version.
 
 Fix: Use letters, digits and dashes only (for example `beta` or `rc-{major}`) and capture any token you use in the rule `name`.
 
+### E_CHANNEL_SELECT
+
+Cause: The build channel selection is not usable: `TALLYRELEASE_CHANNEL` is not `build` or `nightly`, or `nightly` was selected with `--channel` or `TALLYRELEASE_CHANNEL` on a branch whose rule sets no `channels.nightly`. Scheduled runs select `nightly` on their own and keep the build channel on such a branch.
+
+Fix: Set `TALLYRELEASE_CHANNEL` to `build` or `nightly`, or add `channels.nightly` to the branch rule, or drop the selection on that branch.
+
 ### E_CHANNEL_WILDCARD
 
-Cause: A `branches` rule sets `channels.build` or `channels.cut` (or the deprecated `channel`) while its `name` contains `*`, so the channel would be ambiguous.
+Cause: A `branches` rule sets `channels.build`, `channels.cut` or `channels.nightly` (or the deprecated `channel`) while its `name` contains `*`, so the channel would be ambiguous.
 
 Fix: Remove the `*` from the rule `name`, or remove the channels from that rule.
 
@@ -390,9 +396,9 @@ Fix: Replace `channel: <name>` with `channels: { build: <name> }`.
 
 ### W_CHANNEL_ORDER
 
-Cause: A rule's `channels.cut` does not sort above its `channels.build` as a SemVer prerelease identifier (identifiers compare in ASCII order), so a build of a version ranks above or equal to a cut of the same version.
+Cause: A rule's `channels.cut` does not sort above its `channels.build` or `channels.nightly` as a SemVer prerelease identifier (identifiers compare in ASCII order), so a build or nightly of a version ranks above or equal to a cut of the same version.
 
-Fix: Pick labels whose ASCII order matches their maturity, for example `alpha` for builds and `beta` for cuts.
+Fix: Pick labels whose ASCII order matches their maturity, for example `alpha` for builds, `nightly` for nightlies and `rc` for cuts.
 
 ### W_CUT_SCHEME
 
@@ -456,7 +462,7 @@ Fix: Pass `--token` or set `GITHUB_TOKEN`, or pass `--base <ref>`.
 
 ### W_NO_LAST_SUCCESS
 
-Cause: The forge has no successful run of this workflow on this branch that is an ancestor of HEAD, so there is no base. Push and manual runs build on push runs, scheduled runs on scheduled runs.
+Cause: The forge has no successful run of this workflow on this branch that is an ancestor of HEAD, so there is no base. Push and manual runs build on push runs, scheduled runs on scheduled runs. Nightly runs (on a rule with `channels.nightly`) build on scheduled and manual runs.
 
 Fix: Expected on the first run. Otherwise, check that the workflow succeeded on this branch before, or pass `--base <ref>`.
 

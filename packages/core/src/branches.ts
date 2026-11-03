@@ -10,7 +10,7 @@ import type {
 	LimitSubject,
 	Line,
 } from "./model/branch-types.js";
-import type { Plan } from "./model/plan-types.js";
+import type { BuildChannel, Plan } from "./model/plan-types.js";
 import type { ReleaseItem } from "./release-items.js";
 import type { Workspace } from "./workspace.js";
 
@@ -87,7 +87,7 @@ const commitLabel = ({ sha, subject, level, via, releaseAs }: LimitCommit) => {
 /**
  * Validates rule names, `unit`/`group` and channels: `E_BRANCH_RULE`, `E_CONFIG`
  * (`channel` with `channels.build`), `E_CHANNEL_WILDCARD`, `E_CHANNEL_INVALID`
- * and `E_CHANNEL_DUPLICATE` (over build and cut channels).
+ * and `E_CHANNEL_DUPLICATE` (over build, cut and nightly channels).
  */
 export const validateBranches = (rules: readonly BranchRule[]): void => {
 	const channels = new Map<string, string>();
@@ -115,7 +115,11 @@ export const validateBranches = (rules: readonly BranchRule[]): void => {
 			);
 		}
 
-		for (const channel of [rule.build ?? rule.channel, rule.cut]) {
+		for (const channel of [
+			rule.build ?? rule.channel,
+			rule.cut,
+			rule.nightly,
+		]) {
 			if (channel === null) {
 				continue;
 			}
@@ -147,7 +151,7 @@ export const validateBranches = (rules: readonly BranchRule[]): void => {
 				throw coreCodes.error(
 					"E_CHANNEL_DUPLICATE",
 					other === rule.name
-						? `channel "${channel}" is both the build and the cut channel of branch rule "${rule.name}"`
+						? `channel "${channel}" is set twice by branch rule "${rule.name}"`
 						: `channel "${channel}" is set by branch rules "${other}" and "${rule.name}"`,
 					{ channel, rules: [other, rule.name] },
 				);
@@ -161,12 +165,19 @@ export const validateBranches = (rules: readonly BranchRule[]): void => {
 /**
  * The first rule matching `branch`, or null. Rules must be validated. A
  * maintenance rule with `{major}` gets an absolute check for its `unit` or
- * `group`, else for `single`, the repo's only release item.
+ * `group`, else for `single`, the repo's only release item. `buildChannel`
+ * `nightly` renders the rule's nightly channel when it sets one.
  */
 export const matchBranch = (
 	rules: readonly BranchRule[],
 	branch: string,
-	single: LimitSubject | null = null,
+	{
+		single = null,
+		buildChannel = "build",
+	}: {
+		single?: LimitSubject | null;
+		buildChannel?: BuildChannel;
+	} = {},
 ): Line | null => {
 	for (const rule of rules) {
 		const match = compileRule(rule).exec(branch);
@@ -188,10 +199,19 @@ export const matchBranch = (
 				(_, token: string) => captures[token] ?? "",
 			) ?? null;
 
+		const build = rule.build ?? rule.channel;
+		let channelKind: Line["channelKind"] = null;
+		if (buildChannel === "nightly" && rule.nightly !== null) {
+			channelKind = "nightly";
+		} else if (build !== null) {
+			channelKind = "build";
+		}
+
 		return {
 			rule: rule.name,
 			kind: rule.line,
-			channel: render(rule.build ?? rule.channel),
+			channel: render(channelKind === "nightly" ? rule.nightly : build),
+			channelKind,
 			cut: render(rule.cut),
 			maxBump: !capped ? null : minor === undefined ? "minor" : "patch",
 			absolute:
@@ -210,12 +230,13 @@ export const matchBranch = (
 
 /**
  * `W_CHANNEL_DEPRECATED` per rule using `channel`, and `W_CHANNEL_ORDER` when
- * the line's cut channel does not sort above its build channel as a SemVer
- * prerelease identifier.
+ * the line's cut channel does not sort above its build or nightly channel as
+ * a SemVer prerelease identifier. `lines` are the matched line rendered with
+ * each build channel selection, so both checks run on every plan.
  */
 export const channelWarnings = (
 	rules: readonly BranchRule[],
-	line: Line | null,
+	lines: readonly (Line | null)[],
 ): Warning[] => {
 	const warnings = rules
 		.filter((r) => r.channel !== null)
@@ -225,16 +246,24 @@ export const channelWarnings = (
 				`branch rule "${r.name}" uses channel, a deprecated alias of channels.build`,
 			),
 		);
-	if (
-		line !== null &&
-		line.channel !== null &&
-		line.cut !== null &&
-		line.cut <= line.channel
-	) {
+	const seen = new Set<string>();
+	for (const line of lines) {
+		if (
+			line === null ||
+			line.channel === null ||
+			line.cut === null ||
+			line.cut > line.channel ||
+			seen.has(line.channel)
+		) {
+			continue;
+		}
+
+		seen.add(line.channel);
+		const nightly = line.channelKind === "nightly";
 		warnings.push(
 			coreCodes.warning(
 				"W_CHANNEL_ORDER",
-				`cut channel "${line.cut}" of branch rule "${line.rule}" does not sort above build channel "${line.channel}"; builds rank above cuts of the same version`,
+				`cut channel "${line.cut}" of branch rule "${line.rule}" does not sort above ${nightly ? "nightly" : "build"} channel "${line.channel}"; ${nightly ? "nightlies" : "builds"} rank above cuts of the same version`,
 			),
 		);
 	}

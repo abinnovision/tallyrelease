@@ -22,6 +22,7 @@ export type {
 } from "./explain.js";
 export type { BranchRule, Line as PlanLine } from "./model/branch-types.js";
 export type {
+	BuildChannel,
 	GroupPlan,
 	Plan,
 	PlanChange,
@@ -74,7 +75,7 @@ export type { IntentEntry, Workspace, WorkspaceInput } from "./workspace.js";
 export { computeAffected } from "./affected.js";
 export { buildNumbers } from "./build-numbers.js";
 export { calver } from "./calver.js";
-export { maintenanceCut } from "./branches.js";
+export { maintenanceCut, matchBranch } from "./branches.js";
 export { isListed, releaseNotes } from "./changelog.js";
 export { coreCodes, defineCodes } from "./codes.js";
 export { CONFIG_FILE } from "./config.js";

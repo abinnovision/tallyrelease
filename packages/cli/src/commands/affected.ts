@@ -1,6 +1,7 @@
 import { computeAffected } from "@tallyrelease/core";
 
 import { toJson, writeAffected } from "../app/outputs.js";
+import { buildChannel } from "../app/setup.js";
 import { resolveBuildBase } from "../ci/base.js";
 import { cliCodes } from "../codes.js";
 import { painter } from "../output/paint.js";
@@ -35,6 +36,7 @@ export const affected = async (
 		);
 	}
 
+	const branch = await branchName(session);
 	const base = await resolveBuildBase({
 		git,
 		head,
@@ -44,10 +46,11 @@ export const affected = async (
 		baseInputs: ci.baseInputs,
 		forge: session.forge,
 		remote: session.remote,
+		channel: await buildChannel(session, branch),
 	});
 	const computed = await computeAffected(workspace, git, {
 		tool: `tallyrelease@${version}`,
-		branch: await branchName(session),
+		branch,
 		head,
 		base: base.base,
 		baseSource: base.source,

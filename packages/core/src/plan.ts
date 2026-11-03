@@ -22,6 +22,7 @@ import type {
 } from "./model/branch-types.js";
 import type { PlanFacts, UnitFacts } from "./model/facts-types.js";
 import type {
+	BuildChannel,
 	GroupPlan,
 	Plan,
 	PlanChange,
@@ -359,15 +360,22 @@ const resolveReleases = (
 ): { plan: Plan; releases: Map<string, UnitRelease> } => {
 	const { affected, facts } = input;
 	const { units: _, ...doc } = affected;
-	const line = matchBranch(
-		workspace.release.branches,
-		affected.branch,
-		singleItem(workspace),
+	const match = (channel: BuildChannel) =>
+		matchBranch(workspace.release.branches, affected.branch, {
+			single: singleItem(workspace),
+			buildChannel: channel,
+		});
+	const build = match("build");
+	// The nightly line differs from the build line only when its rule sets `nightly`.
+	const hasNightly = workspace.release.branches.some(
+		(r) => r.name === build?.rule && r.nightly !== null,
 	);
+	const nightly = hasNightly ? match("nightly") : build;
+	const line = input.buildChannel === "nightly" ? nightly : build;
 	const warnings = [
 		...affected.warnings,
 		...lineWarnings(workspace, affected.branch, line),
-		...channelWarnings(workspace.release.branches, line),
+		...channelWarnings(workspace.release.branches, [build, nightly]),
 		...facts.warnings,
 		...releaseAsWarnings(workspace.units, facts.ranges),
 	];
@@ -559,6 +567,7 @@ export const planWithFacts = async (
 		facts,
 		schemes: workspace.schemes,
 		all: opts.all ?? false,
+		...(opts.buildChannel && { buildChannel: opts.buildChannel }),
 	});
 	plan.warnings.push(...(await pluginValidation(workspace, plan, opts)));
 

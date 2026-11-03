@@ -303,9 +303,16 @@ const configObject = z.strictObject({
 									"Cut channel: labels the tagged prereleases that prerelease PRs cut.",
 							})
 							.exactOptional(),
+						nightly: z
+							.string()
+							.meta({
+								description:
+									"Nightly channel: labels the untagged prerelease version of scheduled runs and of runs selecting the nightly channel.",
+							})
+							.exactOptional(),
 					})
 					.refine((c) => Object.keys(c).length > 0, {
-						message: "channels needs build or cut",
+						message: "channels needs build, cut or nightly",
 					})
 					.meta({
 						description:
