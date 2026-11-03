@@ -540,6 +540,8 @@ export const versionFileClaims = async (
  * `W_MARKER_NO_MATCH`; a missing version file is
  * `E_VERSION_FILE_MISSING`. With `cut` (items at their cut versions), only
  * the changelogs of the units in `cut` are written and nothing is consumed.
+ * With `changelogs: false`, only version files, templates and markers are
+ * written, with no sections and no deletes.
  */
 export const releaseFiles = async (
 	workspace: Workspace,
@@ -548,11 +550,13 @@ export const releaseFiles = async (
 		/** Files the release is based on. */
 		fs: ReadonlyFs;
 		items: readonly ReleaseItem[];
-		repoUrl: string | null;
+		repoUrl?: string | null;
 		/** `YYYY-MM-DD` changelog heading date. */
-		date: string;
+		date?: string;
 		/** Cut changelog input by unit id. */
 		cut?: ReadonlyMap<string, CutChanges>;
+		/** Writes changelogs and consumes change files (default true). */
+		changelogs?: boolean;
 	},
 ): Promise<{
 	files: Map<string, string>;
@@ -562,7 +566,7 @@ export const releaseFiles = async (
 	sections: Map<string, string>;
 	warnings: Warning[];
 }> => {
-	const { fs, items, repoUrl, date, cut } = opts;
+	const { fs, items, repoUrl = null, date = "", cut, changelogs = true } = opts;
 	const pluginFiles = cut
 		? new Map<string, readonly VersionFile[]>()
 		: await versionFileClaims(workspace);
@@ -619,22 +623,25 @@ export const releaseFiles = async (
 				warnings.push(...templateStep(staged, step));
 			}
 
-			// eslint-disable-next-line no-await-in-loop -- files are written in order
-			const section = await changelogStep(staged, step);
-			if (section !== undefined) {
-				sections.set(id, section);
+			if (changelogs) {
+				// eslint-disable-next-line no-await-in-loop -- files are written in order
+				const section = await changelogStep(staged, step);
+				if (section !== undefined) {
+					sections.set(id, section);
+				}
 			}
 		}
 	}
 
 	return {
 		files: new Map([...files].filter(([path, c]) => fs.read(path) !== c)),
-		deletes: cut
-			? new Set()
-			: consumedFiles(plan, new Set(versions.keys()), {
-					fs,
-					written: files,
-				}),
+		deletes:
+			cut || !changelogs
+				? new Set()
+				: consumedFiles(plan, new Set(versions.keys()), {
+						fs,
+						written: files,
+					}),
 		sections,
 		warnings,
 	};
