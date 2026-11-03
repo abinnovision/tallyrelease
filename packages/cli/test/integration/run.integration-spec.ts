@@ -423,6 +423,86 @@ describe("run --github-output", () => {
 		).toEqual([[["c1", "add a"]], [["c2", "add b"]], [["c5", "more a"]]]);
 	});
 
+	describe("on a schedule event with channels.nightly", () => {
+		const nightlyDag: Dag = {
+			...dag,
+			commits: dag.commits.map((c, i) =>
+				i === 0
+					? {
+							...c,
+							files: {
+								...c.files,
+								"tallyrelease.yaml": config.replace(
+									"line: default }",
+									"line: default, channels: { build: beta, nightly: nightly } }",
+								),
+							},
+						}
+					: c,
+			),
+		};
+		const schedule = { event: { name: "schedule", payload: {} } };
+
+		it("lists an untagged nightly for a commit since the last scheduled run", async () => {
+			const harness = await setup(nightlyDag);
+			harness.runs.push("c1");
+			const { releases } = await releasesOf(
+				harness,
+				nightlyDag,
+				"c1",
+				schedule,
+			);
+			expect(releases).toMatchObject([
+				{
+					id: "b",
+					kind: "prerelease",
+					version: "1.1.0-nightly.2",
+					channel: "nightly",
+					tag: null,
+				},
+			]);
+		});
+
+		it("plans HEAD with the nightly channel for run --channel nightly and still updates the release PR", async () => {
+			const harness = await setup(nightlyDag);
+			harness.runs.push("c1");
+			const result = await harness.run(nightlyDag, ["--channel", "nightly"], {
+				event: push("c1"),
+			});
+			expect(result.code).toBe(0);
+			expect(result.plan?.line).toMatchObject({ channelKind: "nightly" });
+			expect(result.plan?.units.map((u) => u.version)).toContain(
+				"1.1.0-nightly.2",
+			);
+			expect(harness.remote.prs).toMatchObject([
+				{ number: 1, state: "open", labels: ["tallyrelease: pending"] },
+			]);
+		});
+
+		it("lists no prerelease without a commit since the last scheduled run", async () => {
+			const harness = await setup(nightlyDag);
+			harness.runs.push("c2");
+			const { releases } = await releasesOf(
+				harness,
+				nightlyDag,
+				"c2",
+				schedule,
+			);
+			expect(releases).toEqual([]);
+		});
+
+		it("lists a stable release since the last nightly as a release", async () => {
+			const harness = await setup(nightlyDag);
+			harness.runs.push("c2");
+			const merged = harness.merge(nightlyDag);
+			const { releases } = await releasesOf(harness, merged, "c2", schedule);
+			expect(releases.map((r) => [r.kind, r.tag, r.channel])).toEqual([
+				["release", "a-v1.1.0", null],
+				["release", "b-v1.1.0", null],
+			]);
+		});
+	});
+
 	it("emits every release again until a run succeeds (E24, E25)", async () => {
 		const harness = await setup();
 		harness.runs.push("c2");

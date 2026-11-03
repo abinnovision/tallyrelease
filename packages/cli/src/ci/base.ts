@@ -6,7 +6,7 @@ import type { BaseInputs, CiEvent } from "./provider.js";
 import type { Forge, WorkflowRunQuery } from "../forge/forge.js";
 import type { RepoGit } from "../git/reader.js";
 import type { Paint } from "../output/paint.js";
-import type { BaseSource, Warning } from "@tallyrelease/core";
+import type { BaseSource, BuildChannel, Warning } from "@tallyrelease/core";
 
 const ZERO_SHA = /^0+$/;
 
@@ -59,6 +59,18 @@ const noLastSuccess: Warning = cliCodes.warning(
 	"no successful run of this workflow on this branch",
 );
 
+/** Events of the runs a dispatch or schedule run builds on. */
+const runEvents = (
+	kind: "dispatch" | "schedule",
+	channel: BuildBaseInput["channel"],
+): string[] => {
+	if (channel === "nightly") {
+		return ["schedule", "workflow_dispatch"];
+	}
+
+	return kind === "dispatch" ? ["push"] : ["schedule"];
+};
+
 export interface BuildBase {
 	base: string | null;
 	source: BaseSource;
@@ -80,6 +92,8 @@ export interface BuildBaseInput {
 	forge?: Forge | undefined;
 	/** Remote of the default branch candidates; defaults to `origin`. */
 	remote?: string | undefined;
+	/** Selected build channel; `nightly` bases schedule and manual runs on both. */
+	channel?: BuildChannel | undefined;
 }
 
 /** Resolves the build base from `--base`, the CI event, the forge, then the local default branch. */
@@ -158,7 +172,11 @@ export const resolveBuildBase = async (
 		return noLastSuccess;
 	};
 
-	/** The newest usable successful run of `events`; of several, the one that descends from the others. */
+	/**
+	 * The newest usable successful run of `events`; of several, the one that
+	 * descends from the others. When neither descends from the other, the first
+	 * queried event wins.
+	 */
 	const lastSuccess = async (
 		from: Forge,
 		events: readonly string[],
@@ -301,9 +319,8 @@ export const resolveBuildBase = async (
 		}
 
 		case "dispatch":
-			return await fromLastSuccess(["push"]);
 		case "schedule":
-			return await fromLastSuccess(["schedule"]);
+			return await fromLastSuccess(runEvents(event.kind, input.channel));
 		case "other":
 		case undefined:
 			return result(null, "none");

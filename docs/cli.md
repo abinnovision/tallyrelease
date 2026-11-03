@@ -6,16 +6,17 @@ Run `tallyrelease <command> [flags]`; `--help` on any command prints its flags. 
 
 ## Global flags
 
-| Flag                    | Description                                        | Default             |
-| ----------------------- | -------------------------------------------------- | ------------------- |
-| `-V, --version`         | output the version number                          |                     |
-| `--cwd <dir>`           | repository root                                    |                     |
-| `--config <file>`       | config file                                        | `tallyrelease.yaml` |
-| `--token <token>`       | forge token (default: GITHUB_TOKEN)                |                     |
-| `--remote <name>`       | git remote to push to and read the repository from | `origin`            |
-| `--verbose`             | print debug output                                 |                     |
-| `--allow-local-plugins` | let pr, release and run load plugins.\<name>.path  |                     |
-| `-h, --help`            | display help for command                           |                     |
+| Flag                    | Description                                                                                                                        | Default             |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | ------------------- |
+| `-V, --version`         | output the version number                                                                                                          |                     |
+| `--cwd <dir>`           | repository root                                                                                                                    |                     |
+| `--config <file>`       | config file                                                                                                                        | `tallyrelease.yaml` |
+| `--token <token>`       | forge token (default: GITHUB_TOKEN)                                                                                                |                     |
+| `--remote <name>`       | git remote to push to and read the repository from                                                                                 | `origin`            |
+| `--verbose`             | print debug output                                                                                                                 |                     |
+| `--allow-local-plugins` | let pr, release and run load plugins.\<name>.path                                                                                  |                     |
+| `--channel <channel>`   | channel of build prereleases (default: TALLYRELEASE_CHANNEL, nightly on schedule events, else build) (one of `build` or `nightly`) |                     |
+| `-h, --help`            | display help for command                                                                                                           |                     |
 
 ## tallyrelease check
 

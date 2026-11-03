@@ -356,6 +356,82 @@ describe("explain", () => {
 	});
 });
 
+describe("plan --channel", () => {
+	const nightly: Dag = {
+		...dag,
+		commits: dag.commits.map((c, i) =>
+			i === 0
+				? {
+						...c,
+						files: {
+							...c.files,
+							"tallyrelease.yaml": config.replace(
+								"{ build: beta }",
+								"{ build: beta, nightly: nightly }",
+							),
+						},
+					}
+				: c,
+		),
+	};
+	const schedule = { name: "schedule", payload: {} };
+	const actions = { GITHUB_REF_NAME: "main" };
+
+	it("plans the nightly channel without a CI event", async () => {
+		const doc = await plan(["--channel", "nightly", "--base", "p2"], {
+			...memoryRepo(nightly),
+		});
+		expect(doc.line).toMatchObject({
+			channel: "nightly",
+			channelKind: "nightly",
+		});
+		expect(doc.units.map((u) => u.version)).toEqual([
+			"1.1.0-nightly.3",
+			"1.0.1-nightly.3",
+		]);
+	});
+
+	it("selects the flag over the env and the env over a schedule event", async () => {
+		const channel = async (args: string[], env: Record<string, string>) =>
+			(
+				await plan(args, {
+					...memoryRepo(nightly),
+					event: schedule,
+					env: { ...actions, ...env },
+				})
+			).line?.channel;
+
+		expect(await channel([], {})).toBe("nightly");
+		expect(await channel([], { TALLYRELEASE_CHANNEL: "build" })).toBe("beta");
+		expect(
+			await channel(["--channel", "nightly"], {
+				TALLYRELEASE_CHANNEL: "build",
+			}),
+		).toBe("nightly");
+	});
+
+	it("keeps the build channel on a schedule event without channels.nightly", async () => {
+		const doc = await plan([], { event: schedule, env: actions });
+		expect(doc.line).toMatchObject({ channel: "beta", channelKind: "build" });
+	});
+
+	it("rejects an explicit nightly without channels.nightly", async () => {
+		for (const opts of [
+			{ args: ["--channel", "nightly"], env: {} },
+			{ args: [], env: { TALLYRELEASE_CHANNEL: "nightly" } },
+		]) {
+			// eslint-disable-next-line no-await-in-loop -- runs in order
+			const result = await run(["plan", ...opts.args], { env: opts.env });
+			expect(result).toMatchObject({
+				code: 1,
+				stderr: expect.stringContaining(
+					'error[E_CHANNEL_SELECT]: the nightly channel is selected, but branch rule "main" sets no channels.nightly',
+				),
+			});
+		}
+	});
+});
+
 describe("plan --head", () => {
 	const json = (value: unknown) => JSON.stringify(value);
 	/** c1 adds unit y and releases every unit; c0 has only x. */

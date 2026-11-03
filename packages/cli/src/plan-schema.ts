@@ -48,6 +48,7 @@ export const planSchema = z.strictObject({
 			rule: z.string(),
 			kind: z.enum(["default", "maintenance"]),
 			channel: z.string().nullable(),
+			channelKind: z.enum(["build", "nightly"]).nullable(),
 			cut: z.string().nullable(),
 			maxBump: z.enum(["minor", "patch"]).nullable(),
 			absolute: z
@@ -137,7 +138,9 @@ export const releaseEntrySchema = z
 		channel: z
 			.string()
 			.nullable()
-			.describe("Build or cut channel of a prerelease, null for a release."),
+			.describe(
+				"Build, nightly or cut channel of a prerelease, null for a release.",
+			),
 		tag: z
 			.string()
 			.nullable()

@@ -65,9 +65,12 @@ export const memoryRemote = (): MemoryRemote => ({
 	calls: [],
 });
 
-/** In-memory `Forge` over `remote`; serves canned run head shas and records queries. */
+/**
+ * In-memory `Forge` over `remote`; serves canned run head shas, for every
+ * event or by event, and records queries.
+ */
 export const fakeForge = (
-	runs: string[] = [],
+	runs: string[] | Record<string, string[]> = [],
 	remote: MemoryRemote = memoryRemote(),
 ): Forge & { queries: WorkflowRunQuery[]; remote: MemoryRemote } => {
 	const queries: WorkflowRunQuery[] = [];
@@ -81,7 +84,9 @@ export const fakeForge = (
 		lastSuccessfulRuns: async (query) => {
 			queries.push(query);
 
-			return await Promise.resolve((query.page ?? 1) === 1 ? runs : []);
+			const shas = Array.isArray(runs) ? runs : (runs[query.event] ?? []);
+
+			return await Promise.resolve((query.page ?? 1) === 1 ? shas : []);
 		},
 		releasePrs: async (_repo, { base, state }) => {
 			const prs = remote.prs

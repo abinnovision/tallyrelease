@@ -5,6 +5,7 @@ import { afterAll, describe, expect, it } from "vitest";
 import { createRepo, git, removeTmpDirs } from "./harness/git-repo.js";
 import { runCli } from "./harness/run-cli.js";
 import { affectedDocSchema } from "../../src/affected-schema.js";
+import { planSchema } from "../../src/plan-schema.js";
 
 import type { Env } from "../../src/ci/env.js";
 import type { Dag } from "@tallyrelease/core/testing";
@@ -34,6 +35,36 @@ const affected = async (cwd: string, env: Env = {}) => {
 afterAll(removeTmpDirs);
 
 describe("local merge base (G29)", () => {
+	it("plans the nightly channel with --channel against the local merge base", async () => {
+		const { dir, sha } = createRepo({
+			commits: [
+				{
+					id: "c0",
+					files: {
+						"tallyrelease.yaml":
+							"units:\n  a: { release: true }\nbranches:\n  - { name: main, line: default, channels: { build: beta, nightly: nightly } }\n",
+						"a/x": "0",
+					},
+				},
+				{ id: "c1", message: "feat: a", files: { "a/x": "1" } },
+			],
+			tags: [{ name: "a-v1.0.0", commit: "c0" }],
+		});
+		git(dir, "update-ref", "refs/remotes/origin/main", sha("c0"));
+
+		const result = await runCli(["plan", "--json", "--channel", "nightly"], {
+			cwd: dir,
+			env: {},
+		});
+		expect(result).toMatchObject({ code: 0 });
+		const doc = planSchema.parse(JSON.parse(result.stdout));
+		expect(doc.build).toMatchObject({
+			base: sha("c0"),
+			baseSource: "local-merge-base",
+		});
+		expect(doc.units.map((u) => u.version)).toEqual(["1.1.0-nightly.1"]);
+	});
+
 	it("diffs a feature branch against origin/HEAD outside CI", async () => {
 		const { dir, sha } = createRepo(dag);
 		git(dir, "update-ref", "refs/remotes/origin/main", sha("c0"));

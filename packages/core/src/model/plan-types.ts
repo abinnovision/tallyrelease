@@ -103,11 +103,16 @@ export interface Plan extends Omit<AffectedDoc, "units"> {
 	released: ReleasedUnit[];
 }
 
+/** Channel labeling build prereleases. */
+export type BuildChannel = "build" | "nightly";
+
 export interface PlanOptions extends AffectedOptions {
 	/** Files at `head`, for intent source contexts. */
 	fs: ReadonlyFs;
 	/** Also list released units outside the build set with a pending release. */
 	all?: boolean;
+	/** Channel labeling build prereleases; defaults to `build`. */
+	buildChannel?: BuildChannel;
 	debug?: (message: string) => void;
 }
 
@@ -117,4 +122,6 @@ export interface ResolveInput {
 	facts: PlanFacts;
 	schemes: ReadonlyMap<string, VersionScheme<any>>;
 	all: boolean;
+	/** Channel labeling build prereleases; defaults to `build`. */
+	buildChannel?: BuildChannel;
 }

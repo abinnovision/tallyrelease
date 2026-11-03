@@ -1,3 +1,5 @@
+import { matchBranch } from "@tallyrelease/core";
+
 import { repoRef } from "./effects.js";
 import { resolveBuildBase } from "../ci/base.js";
 import { cliCodes } from "../codes.js";
@@ -6,7 +8,12 @@ import { version } from "../version.js";
 
 import type { BuildBase } from "../ci/base.js";
 import type { Session } from "../session.js";
-import type { PlanOptions, ReleasedUnit, Warning } from "@tallyrelease/core";
+import type {
+	BuildChannel,
+	PlanOptions,
+	ReleasedUnit,
+	Warning,
+} from "@tallyrelease/core";
 
 export interface PlanFlags {
 	branch?: string;
@@ -45,12 +52,43 @@ export const resolveHead = async (session: Session): Promise<string> => {
 };
 
 /**
+ * The build channel of `branch`: `nightly` when selected and the branch rule
+ * sets a nightly channel, else `build`. `E_CHANNEL_SELECT` when `nightly` is
+ * selected explicitly and the rule sets none.
+ */
+export const buildChannel = async (
+	session: Session,
+	branch: string,
+): Promise<BuildChannel> => {
+	const { channel, explicit } = session.channel();
+	if (channel === "nightly") {
+		const { branches } = (await session.workspace()).release;
+		const line = matchBranch(branches, branch, { buildChannel: "nightly" });
+		if (line?.channelKind === "nightly") {
+			return "nightly";
+		}
+
+		if (explicit) {
+			throw cliCodes.error(
+				"E_CHANNEL_SELECT",
+				`the nightly channel is selected, but ${line ? `branch rule "${line.rule}"` : `no branch rule of "${branch}"`} sets no channels.nightly`,
+				{ branch, rule: line?.rule ?? null },
+			);
+		}
+	}
+
+	return "build";
+};
+
+/**
  * Plan options for `--branch`, `--base` and `--head`. With `--head` only
  * `--base` and the local merge base apply, and files come from the commit.
+ * `channel: false` plans the build channel and skips the selection.
  */
 export const planOptions = async (
 	session: Session,
 	flags: Pick<PlanFlags, "branch" | "base" | "head">,
+	{ channel = true }: { channel?: boolean } = {},
 ): Promise<PlanSetup> => {
 	const { git } = session;
 	const current = await resolveHead(session);
@@ -66,6 +104,8 @@ export const planOptions = async (
 	}
 
 	const replay = flags.head !== undefined;
+	const branch = flags.branch ?? (await branchName(session));
+	const selected = channel ? await buildChannel(session, branch) : "build";
 	const base = await resolveBuildBase({
 		git,
 		head,
@@ -75,9 +115,9 @@ export const planOptions = async (
 		baseInputs: replay ? undefined : session.ci.baseInputs,
 		forge: replay ? undefined : session.forge,
 		remote: session.remote,
+		channel: selected,
 	});
 
-	const branch = flags.branch ?? (await branchName(session));
 	const headBranch: Warning[] =
 		replay && flags.branch === undefined
 			? [
@@ -95,6 +135,7 @@ export const planOptions = async (
 			head,
 			base: base.base,
 			baseSource: base.source,
+			buildChannel: selected,
 		},
 		ref: replay ? head : null,
 		base,

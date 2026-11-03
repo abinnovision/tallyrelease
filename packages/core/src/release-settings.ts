@@ -73,6 +73,7 @@ export const releaseSettings = (
 			channel: b.channel ?? null,
 			build: b.channels?.build ?? null,
 			cut: b.channels?.cut ?? null,
+			nightly: b.channels?.nightly ?? null,
 			unit: b.unit ?? null,
 			group: b.group ?? null,
 		})),

@@ -41,6 +41,22 @@ const dag: Dag = {
 	],
 };
 
+/** `dag` with a branch rule for main setting `channels`. */
+const withChannels = (channels: string): Dag => ({
+	commits: dag.commits.map((c, i) =>
+		i === 0
+			? {
+					...c,
+					files: {
+						...c.files,
+						"tallyrelease.yaml": `${config}branches:\n  - { name: main, line: default, channels: ${channels} }\n`,
+					},
+				}
+			: c,
+	),
+});
+const nightly = memoryRepo(withChannels("{ build: beta, nightly: nightly }"));
+
 const push = (before: string) => ({ name: "push", payload: { before } });
 const token = { ...actionsEnv, GITHUB_TOKEN: "t" };
 
@@ -326,6 +342,112 @@ describe("affected", () => {
 		const noToken = await affected([], { event });
 		expect(noToken.build).toEqual({ base: null, source: "none" });
 		expect(noToken.warnings).toEqual(["W_NO_FORGE"]);
+	});
+
+	it.each([
+		["schedule", [], {}, ["schedule", "workflow_dispatch"]],
+		["schedule", [], { TALLYRELEASE_CHANNEL: "build" }, ["schedule"]],
+		[
+			"schedule",
+			["--channel", "nightly"],
+			{ TALLYRELEASE_CHANNEL: "build" },
+			["schedule", "workflow_dispatch"],
+		],
+		[
+			"workflow_dispatch",
+			[],
+			{ TALLYRELEASE_CHANNEL: "nightly" },
+			["schedule", "workflow_dispatch"],
+		],
+		[
+			"workflow_dispatch",
+			["--channel", "build"],
+			{ TALLYRELEASE_CHANNEL: "nightly" },
+			["push"],
+		],
+	])(
+		"%s with %j and %j queries %j runs",
+		async (name, flags: string[], env, events) => {
+			const forge = fakeForge(["p1"]);
+			await affected(flags, {
+				...nightly,
+				event: { name, payload: {} },
+				env: { ...token, ...env },
+				forge,
+			});
+			expect(forge.queries.map((q) => q.event)).toEqual(events);
+		},
+	);
+
+	it("keeps the schedule query when the rule sets no channels.nightly", async () => {
+		const forge = fakeForge(["p1"]);
+		await affected([], {
+			...memoryRepo(withChannels("{ build: beta }")),
+			event: { name: "schedule", payload: {} },
+			env: token,
+			forge,
+		});
+		expect(forge.queries.map((q) => q.event)).toEqual(["schedule"]);
+	});
+
+	it("bases a nightly on the schedule or dispatch run that descends from the other", async () => {
+		const event = { name: "schedule", payload: {} };
+		for (const runs of [
+			{ schedule: ["p1"], workflow_dispatch: ["p2"] },
+			{ schedule: ["p2"], workflow_dispatch: ["p1"] },
+		]) {
+			// eslint-disable-next-line no-await-in-loop -- runs in order
+			const result = await affected([], {
+				...nightly,
+				event,
+				env: token,
+				forge: fakeForge(runs),
+			});
+			expect(result.build).toEqual({
+				base: "p2",
+				source: "forge-last-success",
+			});
+		}
+	});
+
+	it("bases a nightly on the schedule run when the runs have diverged", async () => {
+		const event = { name: "schedule", payload: {} };
+		// HEAD merges x into p3, so both runs are its ancestors but neither descends from the other.
+		const merged = withChannels("{ build: beta, nightly: nightly }");
+		merged.commits.push({
+			id: "m",
+			parents: ["p3", "x"],
+			files: { "apps/web/a.ts": "m" },
+		});
+		for (const [runs, base] of [
+			[{ schedule: ["x"], workflow_dispatch: ["p3"] }, "x"],
+			[{ schedule: ["p3"], workflow_dispatch: ["x"] }, "p3"],
+		] as const) {
+			// eslint-disable-next-line no-await-in-loop -- runs in order
+			const result = await affected([], {
+				...memoryRepo(merged),
+				event,
+				env: token,
+				forge: fakeForge({
+					schedule: [...runs.schedule],
+					workflow_dispatch: [...runs.workflow_dispatch],
+				}),
+			});
+			expect(result.build).toEqual({ base, source: "forge-last-success" });
+		}
+	});
+
+	it("rejects an invalid TALLYRELEASE_CHANNEL", async () => {
+		const result = await runCli(["affected"], {
+			...memoryRepo(dag),
+			env: { ...actionsEnv, TALLYRELEASE_CHANNEL: "weekly" },
+		});
+		expect(result).toMatchObject({
+			code: 1,
+			stderr: expect.stringContaining(
+				'error[E_CHANNEL_SELECT]: TALLYRELEASE_CHANNEL "weekly" must be build or nightly',
+			),
+		});
 	});
 
 	it("pull_request_target builds everything", async () => {
