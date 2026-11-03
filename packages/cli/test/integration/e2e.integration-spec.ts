@@ -100,7 +100,7 @@ describe("e2e", () => {
 							"  apps/a: { release: true }",
 							"  apps/b: { release: true }",
 							"branches:",
-							"  - { name: main, line: default }",
+							"  - { name: main, line: default, channels: { build: beta } }",
 							"",
 						].join("\n"),
 						"pubspec.yaml":
@@ -165,10 +165,10 @@ describe("e2e", () => {
 		const version = await runCli(["version"], { cwd: dir });
 		expect(version).toMatchObject({ code: 0 });
 		expect(readFileSync(join(dir, "apps/a/pubspec.yaml"), "utf8")).toBe(
-			app("a", "\n").replace("1.0.0+7", "1.0.1"),
+			app("a", "\n").replace("1.0.0+7", "1.0.1-beta.3"),
 		);
 		expect(readFileSync(join(dir, "apps/b/pubspec.yaml"), "utf8")).toBe(
-			app("b", "\r\n").replace("1.0.0+7", "1.0.1"),
+			app("b", "\r\n").replace("1.0.0+7", "1.0.1-beta.3"),
 		);
 	});
 

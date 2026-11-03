@@ -122,6 +122,7 @@ describe("local plugins in privileged commands", () => {
 		const imported: string[] = [];
 		const result = await runCli(argv, {
 			...memoryRepo(dag),
+			forge: fakeForge([], memoryRemote()),
 			importPlugin: (specifier) => {
 				imported.push(specifier);
 
@@ -132,39 +133,43 @@ describe("local plugins in privileged commands", () => {
 				});
 			},
 			...opts,
+			env: { GITHUB_TOKEN: "t", GITHUB_REPOSITORY: "acme/repo", ...opts.env },
 		});
 
 		return { ...result, imported };
 	};
 
 	it("load only when allowed", async () => {
-		const denied = await run(["version", "--dry-run"]);
+		const denied = await run(["pr", "--dry-run"]);
 		expect(denied).toMatchObject({ code: 1, imported: [] });
 		expect(denied.stderr).toContain(
 			'error[E_PLUGIN_LOCAL]: plugin "local": privileged commands load local plugins only with --allow-local-plugins',
 		);
 
 		expect(
-			await run(["version", "--dry-run", "--allow-local-plugins"]),
+			await run(["pr", "--dry-run", "--allow-local-plugins"]),
 		).toMatchObject({ code: 0, imported: ["./tools/plugin.ts"] });
 		expect(
-			await run(["version", "--dry-run"], {
+			await run(["pr", "--dry-run"], {
 				env: { TALLYRELEASE_ALLOW_LOCAL_PLUGINS: "true" },
 			}),
 		).toMatchObject({ code: 0, imported: ["./tools/plugin.ts"] });
 		expect(
-			await run(["version", "--dry-run"], {
+			await run(["pr", "--dry-run"], {
 				env: { TALLYRELEASE_ALLOW_LOCAL_PLUGINS: "false" },
 			}),
 		).toMatchObject({ code: 1, imported: [] });
 	});
 
-	it("load in non-privileged commands without the flag", async () => {
-		expect(await run(["check"])).toMatchObject({
-			code: 0,
-			imported: ["./tools/plugin.ts"],
-		});
-	});
+	it.each([["check"], ["version", "--dry-run"]])(
+		"load in non-privileged commands without the flag (%s)",
+		async (...argv) => {
+			expect(await run(argv)).toMatchObject({
+				code: 0,
+				imported: ["./tools/plugin.ts"],
+			});
+		},
+	);
 
 	// pull_request_target skips the effect; a review event reaches the gate.
 	it.each([
@@ -173,7 +178,7 @@ describe("local plugins in privileged commands", () => {
 	])(
 		"never run the head's plugin of a fork PR on %s",
 		async (name, ref, code, error) => {
-			const result = await run(["version", "--allow-local-plugins"], {
+			const result = await run(["pr", "--dry-run", "--allow-local-plugins"], {
 				env: { GITHUB_REF: ref },
 				event: {
 					name,
@@ -187,7 +192,7 @@ describe("local plugins in privileged commands", () => {
 	);
 
 	it("never run on a pull request ref without an event", async () => {
-		const result = await run(["version", "--allow-local-plugins"], {
+		const result = await run(["pr", "--dry-run", "--allow-local-plugins"], {
 			env: { GITHUB_REF: "refs/pull/1/merge" },
 		});
 

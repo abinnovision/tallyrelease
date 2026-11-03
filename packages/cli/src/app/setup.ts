@@ -29,6 +29,21 @@ export interface PlanSetup {
 	warnings: Warning[];
 }
 
+/** The HEAD sha; `E_NO_HEAD` in a repository without commits. */
+export const resolveHead = async (session: Session): Promise<string> => {
+	const head = await session.git.resolve("HEAD");
+	if (head === undefined) {
+		// Surfaces E_NOT_A_REPO and E_NOT_REPO_ROOT first.
+		await session.workspace();
+		throw cliCodes.error(
+			"E_NO_HEAD",
+			"HEAD does not resolve to a commit; the repository has no commits",
+		);
+	}
+
+	return head;
+};
+
 /**
  * Plan options for `--branch`, `--base` and `--head`. With `--head` only
  * `--base` and the local merge base apply, and files come from the commit.
@@ -38,15 +53,7 @@ export const planOptions = async (
 	flags: Pick<PlanFlags, "branch" | "base" | "head">,
 ): Promise<PlanSetup> => {
 	const { git } = session;
-	const current = await git.resolve("HEAD");
-	if (current === undefined) {
-		// Surfaces E_NOT_A_REPO and E_NOT_REPO_ROOT first.
-		await session.workspace();
-		throw cliCodes.error(
-			"E_NO_HEAD",
-			"HEAD does not resolve to a commit; the repository has no commits",
-		);
-	}
+	const current = await resolveHead(session);
 
 	const head =
 		flags.head === undefined ? current : await git.resolve(flags.head);

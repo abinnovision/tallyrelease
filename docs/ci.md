@@ -9,7 +9,7 @@ Check out the full history in `actions/checkout` with `fetch-depth: 0`, optional
 A shallow clone fails only when it lacks what a command needs:
 
 - `E_SHALLOW_BASE` when the base commit is missing from the clone, or has no common history with HEAD in it.
-- `E_BUILD_NUMBER_SHALLOW` when a unit has `buildNumber`, since the build number counts first-parent commits. `run --github-output` raises it before any effect.
+- `E_BUILD_NUMBER_SHALLOW` when a unit has `buildNumber`, since the build number counts first-parent commits. `run --github-output` raises it before any effect. `version` always needs the full history and raises it before writing.
 
 ## Build base
 
@@ -69,6 +69,22 @@ jobs:
 | `all`            | `true` when the base is null or a global input changed, so everything is in the build set. |
 | `base`           | The resolved base sha, empty when there is none.                                           |
 | `base-source`    | Where the base came from.                                                                  |
+
+## Stamp before build
+
+Run `tallyrelease version` in the build job, after a full checkout and before the build, so built artifacts carry the prerelease of the commit (see [releasing.md](releasing.md#build-versions)). It writes only the working tree and needs no token.
+
+```yaml
+steps:
+  - uses: actions/checkout@v4
+    with:
+      fetch-depth: 0
+  - run: npm ci
+  - run: npx tallyrelease version
+  - run: npm run build
+```
+
+When `version` runs before the install step, for example to stamp the sources that go into an image, a local plugin cannot import packages that are not installed yet.
 
 ## Releases
 

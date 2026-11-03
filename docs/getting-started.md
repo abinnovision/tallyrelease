@@ -184,20 +184,7 @@ changes (1)
 
 The commit touches `packages/db`, which `api` depends on. A `feat` in a build-only dependency is absorbed into `api` as a patch change by default.
 
-`version --dry-run` lists the files the release would write, and `pr --dry-run` shows the release PRs. Neither writes anything:
-
-```sh
-tallyrelease version --dry-run --branch main
-```
-
-```text
-would update apps/api/package.json
-would update apps/api/CHANGELOG.md
-would update apps/web/package.json
-would update apps/web/CHANGELOG.md
-```
-
-`pr` needs a forge token. Without one it fails with `E_NO_FORGE`:
+`pr --dry-run` prints the release PRs it would create, update or close, without pushing anything. `pr` needs a forge token. Without one it fails with `E_NO_FORGE`:
 
 ```sh
 tallyrelease pr --dry-run --branch main
