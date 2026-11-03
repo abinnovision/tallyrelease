@@ -250,7 +250,7 @@ Fix: Fix the options named in the message, or remove them.
 
 ### E_PLUGIN_UNKNOWN
 
-Cause: `plugins` lists a name that matches no built-in plugin (`node`, `php`, `kustomize`, `dart`).
+Cause: `plugins` lists a name that matches no built-in plugin (`node`, `php`, `go`, `kustomize`, `dart`, `changesets`).
 
 Fix: Correct the plugin name in `plugins`, or remove the entry.
 

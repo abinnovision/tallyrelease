@@ -73,6 +73,15 @@ describe("parseCommit", () => {
 		);
 	});
 
+	it("takes the last breaking footer of either spelling as notes", () => {
+		expect(
+			parseCommit("feat: a\n\nBREAKING-CHANGE: a\nBREAKING CHANGE: b").notes,
+		).toBe("b");
+		expect(
+			parseCommit("feat: a\n\nBREAKING CHANGE: a\nBREAKING-CHANGE: b").notes,
+		).toBe("b");
+	});
+
 	it("starts footers at the first footer paragraph of a squash message", () => {
 		const parsed = parseCommit(
 			"feat: x (#12)\n\n* feat: x\n\n* fix: y\n\nBREAKING CHANGE: api gone\n\n---------\n\nCo-authored-by: A <a@x>",
