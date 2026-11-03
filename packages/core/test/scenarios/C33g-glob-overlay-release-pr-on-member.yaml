@@ -1,0 +1,28 @@
+description: >-
+  releasePr from a glob key on a grouped unit is a config error; it belongs on
+  the group.
+plugins:
+  - name: stub
+    units:
+      - { id: a, root: packages/a }
+      - { id: b, root: packages/b }
+config:
+  plugins: { stub: {} }
+  defaults: { release: true }
+  units:
+    "packages/*": { releasePr: separate }
+  groups:
+    sdk: { units: [a, b] }
+git:
+  commits:
+    - id: c0
+      files: { packages/a/i.ts: "0", packages/b/i.ts: "0" }
+    - id: c1
+      message: "fix: a"
+      files: { packages/a/i.ts: "1" }
+base: c0
+plan: { fails: true }
+expect:
+  planError:
+    code: E_CONFIG
+    details: { unit: a, group: sdk }

@@ -1,5 +1,6 @@
 import { coreCodes } from "./codes.js";
 
+import type { ReleasePrMode } from "./config.js";
 import type { Plan } from "./model/plan-types.js";
 import type { StandardSchemaV1 } from "@standard-schema/spec";
 
@@ -138,6 +139,8 @@ export interface Unit {
 	readonly initialVersion: string | null;
 	/** Config overlay only; absent when not configured. */
 	readonly buildNumber?: { readonly offset: number };
+	/** Config overlay only; absent when not configured. */
+	readonly releasePr?: ReleasePrMode;
 	readonly meta: Readonly<Record<string, Readonly<Record<string, unknown>>>>;
 }
 

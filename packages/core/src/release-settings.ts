@@ -39,7 +39,7 @@ export interface ReleaseSettings {
 	readonly branches: readonly BranchRule[];
 	readonly releasePr: {
 		readonly default: ReleasePrMode;
-		/** Set by unit overlays, by unit id. */
+		/** Set by unit overlays, glob keys included, by unit id. */
 		readonly units: ReadonlyMap<string, ReleasePrMode>;
 		/** Set by groups, by group name. */
 		readonly groups: ReadonlyMap<string, ReleasePrMode>;
@@ -79,8 +79,8 @@ export const releaseSettings = (
 		releasePr: {
 			default: config.defaults?.releasePr ?? "shared",
 			units: new Map(
-				overlays.flatMap(([id, overlay]) =>
-					overlay.releasePr ? [[id, overlay.releasePr] as const] : [],
+				units.flatMap((u) =>
+					u.releasePr ? [[u.id, u.releasePr] as const] : [],
 				),
 			),
 			groups: new Map(

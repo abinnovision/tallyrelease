@@ -3,7 +3,7 @@ import { defaultUnitId } from "./plugin.js";
 import { runHook } from "./plugins.js";
 import { compare, uniqueSorted } from "./util.js";
 
-import type { UnitOverlay } from "./config.js";
+import type { ReleasePrMode, UnitOverlay } from "./config.js";
 import type { Warning } from "./errors.js";
 import type { Unit, UnitDraft } from "./plugin.js";
 import type { ActivePlugin } from "./plugins.js";
@@ -24,6 +24,8 @@ interface Entry {
 	initialVersion?: string | undefined;
 	/** From the config overlay only. */
 	buildNumber?: { offset?: number } | undefined;
+	/** From the config overlay only. */
+	releasePr?: ReleasePrMode | undefined;
 }
 
 /** Escapes glob metacharacters so a root matches literally. */
@@ -78,12 +80,19 @@ const globMatches = (segments: readonly string[], root: string): boolean => {
 };
 
 /**
- * Merges draft fields; sets `release`, `tags`, `initialVersion` and
- * `buildNumber` when defined.
+ * Merges draft fields; sets `release`, `tags`, `initialVersion`,
+ * `buildNumber` and `releasePr` when defined.
  */
 const applyOverlay = (
 	entry: Entry,
-	{ release, tags, initialVersion, buildNumber, ...overlay }: UnitOverlay,
+	{
+		release,
+		tags,
+		initialVersion,
+		buildNumber,
+		releasePr,
+		...overlay
+	}: UnitOverlay,
 ): void => {
 	entry.draft = { ...entry.draft, ...overlay };
 	if (release !== undefined) {
@@ -100,6 +109,10 @@ const applyOverlay = (
 
 	if (buildNumber !== undefined) {
 		entry.buildNumber = buildNumber;
+	}
+
+	if (releasePr !== undefined) {
+		entry.releasePr = releasePr;
 	}
 };
 
@@ -257,6 +270,7 @@ export const discoverUnits = async (
 				tags,
 				initialVersion,
 				buildNumber,
+				releasePr,
 			}): Unit => {
 				const { root } = draft;
 				const nested = roots
@@ -288,6 +302,7 @@ export const discoverUnits = async (
 					...(buildNumber && {
 						buildNumber: Object.freeze({ offset: buildNumber.offset ?? 0 }),
 					}),
+					...(releasePr && { releasePr }),
 					meta: Object.freeze(meta),
 				});
 			},
