@@ -158,6 +158,76 @@ The `concurrency` group keeps one run per branch. Leave `cancel-in-progress` off
 
 Tags and PRs created with `GITHUB_TOKEN` trigger no workflows. Publishing therefore runs in the same workflow, from `releases`, instead of in a workflow that listens for tags. Entries with `catchUp: true` are not built from HEAD, so check them out and build them from their `releaseSha`, as the `publish` job does.
 
+## Nightly prereleases
+
+A nightly publishes one untagged prerelease per night, and nothing when no commit landed since the last one (see [Nightly prereleases](releasing.md#nightly-prereleases)). Put it in its own workflow file. The nightly base reads the last successful scheduled or dispatched runs of the workflow file it runs in. In the push workflow, manual dispatch runs that are not nightlies would move that base.
+
+```yaml
+name: nightly
+on:
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+env:
+  TALLYRELEASE_CHANNEL: nightly
+permissions:
+  actions: read
+  contents: write
+  pull-requests: write
+  issues: write
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  affected:
+    runs-on: ubuntu-latest
+    outputs:
+      affected: ${{ steps.affected.outputs.affected }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: affected
+        run: npx @tallyrelease/cli affected --github-output
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  nightly:
+    needs: affected
+    if: needs.affected.outputs.affected != '[]'
+    runs-on: ubuntu-latest
+    outputs:
+      releases: ${{ steps.run.outputs.releases }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: npm ci
+      - run: npx tallyrelease version
+      - run: npm run build
+      - id: run
+        run: npx @tallyrelease/cli run --github-output --summary
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GIT_AUTHOR_NAME: github-actions[bot]
+          GIT_AUTHOR_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+  publish:
+    needs: nightly
+    if: needs.nightly.outputs.releases != '' && needs.nightly.outputs.releases != '[]'
+    strategy:
+      matrix:
+        release: ${{ fromJSON(needs.nightly.outputs.releases) }}
+    runs-on: ubuntu-latest
+    steps:
+      - if: matrix.release.kind == 'prerelease' && matrix.release.tag == null
+        run: echo "publish ${{ matrix.release.id }} ${{ matrix.release.version }}"
+```
+
+- `TALLYRELEASE_CHANNEL` makes manual runs nightlies too. Without it, only the `schedule` trigger selects the nightly channel.
+- Use the same `concurrency` group as the push workflow. `run` also reconciles merged release PRs and updates open ones, so the two workflows must not run at once.
+- The `affected` job skips the build and the publish on idle nights.
+- The scheduled base can list stable releases made since the last nightly. Publish only the entries with `kind == "prerelease" && tag == null`. The push workflow publishes the stable ones.
+- Scheduled workflows run on the default branch only.
+
 ## Token
 
 The token comes from `--token` or `GITHUB_TOKEN`. It authenticates two things: REST calls to the forge, and `git push` to `origin` or `--remote` (sent as an `Authorization` header that replaces persisted checkout credentials). Names below are fine-grained token and GitHub App permissions. `Metadata: read` is always granted.

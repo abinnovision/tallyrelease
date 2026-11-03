@@ -9,12 +9,12 @@ tallyrelease computes the affected build units and the release plan of a monorep
 ## Understand
 
 - [Concepts](concepts.md): units, edges, groups, lines, channels, the build base and the plan.
-- [Releasing](releasing.md): the release PR cycle, versions from commits, maintenance lines and prereleases.
+- [Releasing](releasing.md): the release PR cycle, versions from commits, maintenance lines, prereleases and nightlies.
 - [Recipes](recipes.md): step-by-step guides for common setups.
 
 ## Operate
 
-- [CI](ci.md): GitHub Actions setup, outputs, token permissions and recovery.
+- [CI](ci.md): GitHub Actions setup, outputs, the nightly workflow, token permissions and recovery.
 - [Mobile apps](mobile.md): Flutter release flow with store build numbers.
 - [Plugin authoring guide](plugins.md): write a plugin for another ecosystem.
 - [node](plugins/node.md): npm, Yarn and pnpm packages.
