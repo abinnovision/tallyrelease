@@ -185,7 +185,7 @@ renderTag({ id: "web", tagFormat: "{id}-v{version}" }, "1.2.0"); // "web-v1.2.0"
 
 An `IntentSource` has a `name` and `collect(ctx, { from, to, commits, units })` that returns `Change[]`. `units` lists all units of the workspace, for example to map package names to unit ids. Core always runs the Conventional Commits source (`parseCommit` is exported for plugins that read commit messages). A source can attribute a change through a commit (`sha`, by the files it touched) or explicitly (`units`). The built-in `changesets` plugin is an example.
 
-A change with explicit `units` can consume files with `files`. A file is deleted in the release commit once every unit named by the changes that carry it is released by that commit: `version` removes it from the working tree (`would delete <path>` with `--dry-run`) and the release PR commit drops it. When the named units release in different release PRs, no release commit deletes the file; remove it by hand after they are released.
+A change with explicit `units` can consume files with `files`. A file is deleted in the release commit once every unit named by the changes that carry it is released by that commit: the release PR commit drops it. When the named units release in different release PRs, no release commit deletes the file; remove it by hand after they are released.
 
 ### Validation
 
@@ -322,9 +322,9 @@ plugins:
 
 A plugin is code that runs inside the cli with the permissions of the job. A local plugin is code from the checked-out branch, so a pull request can change it.
 
-- `pr`, `release`, `run` and `version` hold write tokens and push, tag and create releases. They load local plugins only when you opt in with `--allow-local-plugins` or `TALLYRELEASE_ALLOW_LOCAL_PLUGINS=true`. Without it they fail with `E_PLUGIN_LOCAL`.
+- `pr`, `release` and `run` hold write tokens and push, tag and create releases. They load local plugins only when you opt in with `--allow-local-plugins` or `TALLYRELEASE_ALLOW_LOCAL_PLUGINS=true`. Without it they fail with `E_PLUGIN_LOCAL`.
 - Even with the opt-in, they never load local plugins on a pull request head: on `pull_request`, `pull_request_target` and `merge_group` events, or with a `GITHUB_REF` under `refs/pull/`.
-- `check`, `graph`, `affected`, `plan` and `explain` do load local plugins on any ref. Run them without secrets and write tokens on code you do not trust, and in particular do not run them from a `pull_request_target` job that checked out the pull request head.
+- `check`, `graph`, `affected`, `plan`, `explain` and `version` do load local plugins on any ref. Run them without secrets and write tokens on code you do not trust, and in particular do not run them from a `pull_request_target` job that checked out the pull request head.
 - `plugins.<name>.package` is not gated. For untrusted contexts, such as release jobs on repositories that accept outside contributions, publish the plugin as a package and pin it in the lockfile, so that the code that runs is not editable from a pull request.
 
 Allow local plugins only in jobs that run on trusted branches:

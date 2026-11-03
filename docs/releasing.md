@@ -167,9 +167,15 @@ Without the `fix(web)` commit, `web` would still release 1.0.1 with `api`, with 
 
 By default all release items share one release PR on `tallyrelease/release/<branch>/shared`. `releasePr: separate` (in `defaults`, on an ungrouped unit or on a group) gives an item its own PR on `tallyrelease/release/<branch>/<item>`. The PR commit updates version files and changelogs. The body has one `<details>` section per unit with its changelog section, followed by a hidden marker with the planned versions, which reconcile compares on merge. When the changelogs are too long for a PR body, whole unit sections are left out with a note; the files in the PR hold all of it.
 
-`tallyrelease version` writes the same version files and changelogs of the pending releases to the working tree, without a PR.
+`pr --dry-run` prints the release PRs it would create, update or close, without pushing.
 
 A stale merge leaves the release commit on the branch without tags. The next release PR adds one new changelog section per unit, above the section of the last release, with the versions of the new plan.
+
+## Build versions
+
+`tallyrelease version` writes the versions of the build at HEAD into the version files, templates and markers of the working tree. It writes no changelogs. Run it before the build, so the artifacts report the version that `run` releases for that commit. On a line with a build channel each pending unit gets its prerelease, for example `1.1.0-beta.4`. A merged release PR whose version files already hold `next` stays as it is. Known gap: a unit that was never released and still holds its initial version, such as `1.0.0`, counts as released at HEAD and keeps that version instead of the beta. On a line without a build channel nothing changes.
+
+`version` plans HEAD without a build base and calls no forge, so it needs no token. It needs the full history for the prerelease number and fails with `E_BUILD_NUMBER_SHALLOW` in a shallow clone. Like `pr`, `release` and `run`, it does nothing on pull request events. It writes only the working tree, so it loads local plugins without `--allow-local-plugins`.
 
 ## What is not covered
 

@@ -1,5 +1,5 @@
 import { computePlan, loadWorkspace, withReleased } from "@tallyrelease/core";
-import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import {
 	basename,
 	dirname,
@@ -57,8 +57,6 @@ export interface Deps {
 	gitWriter?: GitWriter;
 	/** Writes a file relative to the repo root; defaults to `node:fs`. */
 	writeFile?: (path: string, content: string) => void;
-	/** Deletes a file relative to the repo root, if present; defaults to `node:fs`. */
-	deleteFile?: (path: string) => void;
 	/** Writes a file at `path` as given, such as `--out`; defaults to `node:fs`. */
 	writeOutFile?: (path: string, content: string) => void;
 	/** Appends to a file at `path` as given, such as `$GITHUB_OUTPUT`; defaults to `node:fs`. */
@@ -99,7 +97,6 @@ export interface Session {
 	readonly remote: string;
 	readonly gitWriter: GitWriter;
 	readonly writeFile: (path: string, content: string) => void;
-	readonly deleteFile: (path: string) => void;
 	readonly writeOutFile: (path: string, content: string) => void;
 	readonly clock: () => Date;
 	/** Web URL of the repository for changelog links, null when unknown. */
@@ -339,11 +336,6 @@ export const createSession = (deps: Deps, opts: GlobalOptions): Session => {
 				const file = inRoot(path);
 				mkdirSync(dirname(file), { recursive: true });
 				writeFileSync(file, content);
-			}),
-		deleteFile:
-			deps.deleteFile ??
-			((path) => {
-				rmSync(inRoot(path), { force: true });
 			}),
 		writeOutFile:
 			deps.writeOutFile ??

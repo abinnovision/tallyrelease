@@ -71,7 +71,7 @@ const tail = `## Flag rules
 - \`--json\` and \`--format\` cannot be combined; the command exits with 2.
 - \`plan --summary\` with JSON output (\`--json\` or \`--format json\`) needs \`GITHUB_STEP_SUMMARY\`, since both would use stdout; otherwise the command exits with 2.
 - \`affected --tag\` is repeatable and keeps units with at least one of the given tags.
-- \`--allow-local-plugins\` (or \`TALLYRELEASE_ALLOW_LOCAL_PLUGINS=true\`) only matters for \`pr\`, \`release\`, \`run\` and \`version\`. These commands never load local plugins on a pull request head.
+- \`--allow-local-plugins\` (or \`TALLYRELEASE_ALLOW_LOCAL_PLUGINS=true\`) only matters for \`pr\`, \`release\` and \`run\`. These commands never load local plugins on a pull request head.
 
 ## Exit codes
 

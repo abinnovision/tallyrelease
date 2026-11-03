@@ -49,7 +49,7 @@ export const createProgram = (deps: Deps): Command => {
 		.option("--verbose", "print debug output")
 		.option(
 			"--allow-local-plugins",
-			"let pr, release, run and version load plugins.<name>.path",
+			"let pr, release and run load plugins.<name>.path",
 		)
 		.exitOverride()
 		.configureOutput({
@@ -178,13 +178,11 @@ export const createProgram = (deps: Deps): Command => {
 
 	program
 		.command("version")
-		.description(
-			"write version files and changelogs of pending releases to the working tree",
-		)
+		.description("write the versions of the build at HEAD into version files")
 		.option("--branch <name>", "plan for this branch (default: current)")
 		.option("--dry-run", "print the files without writing them")
 		.action(async (flags: VersionFlags) => {
-			await applyVersions(session(true), flags);
+			await applyVersions(session(), flags);
 		});
 	program
 		.command("pr")

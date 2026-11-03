@@ -34,7 +34,7 @@ Fix: Correct the rule named in the message. Use either `unit` (ungrouped release
 
 ### E_BUILD_NUMBER_SHALLOW
 
-Cause: Build numbers count first-parent commits, which a shallow clone truncates. Raised by `run --github-output` when a unit sets `buildNumber`, before any effect.
+Cause: Prerelease numbers and build numbers count first-parent commits, which a shallow clone truncates. Raised by `run --github-output` when a unit sets `buildNumber`, and by `version`, before any effect.
 
 Fix: Fetch the full history, for example `fetch-depth: 0` in `actions/checkout` or `git fetch --unshallow`.
 
@@ -232,7 +232,7 @@ Fix: Check the path (relative to the repository root) or install the package at 
 
 ### E_PLUGIN_LOCAL
 
-Cause: A privileged command (`pr`, `release`, `run` or `version`) found a local plugin (`plugins.<name>.path`). These commands hold write tokens, so they load local plugins only when allowed with `--allow-local-plugins` or `TALLYRELEASE_ALLOW_LOCAL_PLUGINS`, and never on a pull request head: on `pull_request`, `pull_request_target` and `merge_group` events or with a `GITHUB_REF` under `refs/pull/`.
+Cause: A privileged command (`pr`, `release` or `run`) found a local plugin (`plugins.<name>.path`). These commands hold write tokens, so they load local plugins only when allowed with `--allow-local-plugins` or `TALLYRELEASE_ALLOW_LOCAL_PLUGINS`, and never on a pull request head: on `pull_request`, `pull_request_target` and `merge_group` events or with a `GITHUB_REF` under `refs/pull/`.
 
 Fix: Allow local plugins in jobs that run only on trusted branches (`--allow-local-plugins` or `TALLYRELEASE_ALLOW_LOCAL_PLUGINS=true`), or publish the plugin as a package (`plugins.<name>.package`).
 
