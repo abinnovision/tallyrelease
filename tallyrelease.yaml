@@ -7,7 +7,12 @@ defaults:
   initialVersion: 0.1.0
 units:
   packages/core: { id: core, release: true }
-  packages/cli: { id: cli, release: true }
+  packages/cli:
+    id: cli
+    release: true
+    versionFiles:
+      - file: packages/cli/src/version.ts
+        pattern: 'export const version = "{version}"'
   packages/plugins: { id: plugins, release: true }
 # core, cli and plugins always release with one version.
 groups:
