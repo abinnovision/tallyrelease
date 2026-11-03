@@ -12,11 +12,24 @@ export interface Commit {
 	error?: string;
 	/** Lane that starts below this commit. */
 	branchFrom?: string;
+	/** Lane merged into this commit; its line ends at its last earlier commit. */
+	mergeFrom?: string;
+	/** Neutral labels such as `merge base` or `HEAD`. */
+	markers?: string[];
+}
+
+export interface Step {
+	name: string;
+	/** Number of leading commits to show. */
+	commits: number;
+	/** Lanes to show; defaults to all. */
+	lanes?: string[];
 }
 
 export interface History {
 	lanes: string[];
 	commits: Commit[];
+	steps?: Step[];
 }
 
 export type Theme = "light" | "dark";
@@ -64,13 +77,30 @@ const esc = (s: string): string =>
 const rowY = (i: number): number => HEAD + ROW * i + ROW / 2;
 const pillW = (s: string): number => Math.round(s.length * MONO + 16);
 
+// Keeps the first `commits` commits and drops hidden lanes with their fork connectors.
+export const historyStep = (history: History, step: Step): History => {
+	const lanes = step.lanes ?? history.lanes;
+
+	return {
+		lanes: history.lanes.filter((lane) => lanes.includes(lane)),
+		commits: history.commits
+			.slice(0, step.commits)
+			.filter((c) => lanes.includes(c.lane))
+			.map(({ branchFrom, ...c }) =>
+				branchFrom && lanes.includes(branchFrom) ? { ...c, branchFrom } : c,
+			),
+	};
+};
+
 const describe = ({ lanes, commits }: History): string => {
 	const rows = commits.map((c, i) => {
 		const parts = [
 			c.tags && `tags ${c.tags.join(", ")}`,
-			c.versions && `builds ${c.versions.join(", ")}`,
+			c.versions && `plans ${c.versions.join(", ")}`,
 			c.floating && `moves ${c.floating.join(", ")}`,
 			c.branchFrom && `starts ${c.branchFrom}`,
+			c.mergeFrom && `merges ${c.mergeFrom}`,
+			c.markers && `marked ${c.markers.join(", ")}`,
 			c.error && `fails with ${c.error}`,
 			c.note,
 		].filter(Boolean);
@@ -84,11 +114,17 @@ const describe = ({ lanes, commits }: History): string => {
 export const renderHistory = (history: History, theme: Theme): string => {
 	const { lanes, commits } = history;
 	const t = palettes[theme];
-	const laneX = (lane: string): number =>
-		LANE0 + lanes.indexOf(lane) * LANE_GAP;
-	const subjectX = LANE0 + (lanes.length - 1) * LANE_GAP + 60;
+	// Widens the lane gap so adjacent lane labels do not touch.
+	const gap = Math.max(
+		LANE_GAP,
+		...lanes.slice(1).map((l, i) => (pillW(lanes[i] ?? "") + pillW(l)) / 2 + 8),
+	);
+	const laneX = (lane: string): number => LANE0 + lanes.indexOf(lane) * gap;
+	const subjectX = LANE0 + (lanes.length - 1) * gap + 60;
 	const resultX = subjectX + 220;
-	const height = HEAD + commits.length * ROW + 6;
+	// A fork on the last row needs room for its connector.
+	const height =
+		HEAD + commits.length * ROW + (commits.at(-1)?.branchFrom ? 28 : 6);
 	const out: string[] = [];
 
 	const pill = (
@@ -149,6 +185,29 @@ export const renderHistory = (history: History, theme: Theme): string => {
 		);
 	});
 
+	// Merge connectors.
+	commits.forEach((c, i) => {
+		if (!c.mergeFrom) {
+			return;
+		}
+
+		const prev = commits.findLastIndex(
+			(p, j) => j < i && p.lane === c.mergeFrom,
+		);
+		if (prev < 0) {
+			return;
+		}
+
+		const x1 = laneX(c.mergeFrom);
+		const x2 = laneX(c.lane);
+		const y1 = rowY(prev);
+		const y2 = rowY(i);
+		const mid = (y1 + y2) / 2;
+		out.push(
+			`<path d="M${x1} ${y1}C${x1} ${mid} ${x2} ${mid} ${x2} ${y2}" stroke="${t.border}" stroke-width="1.5" fill="none"/>`,
+		);
+	});
+
 	// Commit rows.
 	commits.forEach((c, i) => {
 		const x = laneX(c.lane);
@@ -193,6 +252,10 @@ export const renderHistory = (history: History, theme: Theme): string => {
 				fill: t.redTint,
 				color: t.red,
 			});
+		}
+
+		for (const s of c.markers ?? []) {
+			cx = pill(cx, y, { text: s, stroke: t.border, color: t.muted });
 		}
 
 		if (c.note) {
