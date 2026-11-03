@@ -1,0 +1,23 @@
+{
+	"lanes": ["main", "feature/orders"],
+	"commits": [
+		{
+			"lane": "main",
+			"subject": "chore: scaffold",
+			"tags": ["api-v1.0.0", "web-v1.0.0"],
+			"markers": ["merge base 547e10f"],
+			"branchFrom": "feature/orders"
+		},
+		{
+			"lane": "feature/orders",
+			"subject": "feat(db): add order lookup",
+			"note": "db changed, api affected via db"
+		},
+		{
+			"lane": "feature/orders",
+			"subject": "fix(web): correct cart total",
+			"markers": ["HEAD"],
+			"note": "web changed"
+		}
+	]
+}

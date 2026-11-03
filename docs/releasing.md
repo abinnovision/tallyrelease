@@ -15,6 +15,13 @@ When a release PR is merged, the next run recomputes the plan at the first paren
 
 <p align="center">
   <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/stale-release-pr-dark.svg">
+    <img src="assets/stale-release-pr-light.svg" alt="Release history where a release PR planned for api 1.1.0 is merged after feat(api)!: new auth landed on main. The merge commit is marked stale and untagged, and the next release PR is tagged api-v2.0.0.">
+  </picture>
+</p>
+
+<p align="center">
+  <picture>
     <source media="(prefers-color-scheme: dark)" srcset="assets/release-pr-dark.svg">
     <img src="assets/release-pr-light.svg" alt="Release history where a feature in db and a fix in web are released through a merged release PR tagged api-v1.0.1 and web-v1.0.1.">
   </picture>
@@ -70,6 +77,13 @@ error[E_CAP]: unit "api": 1.0.0 to 1.1.0 exceeds the patch limit of branch rule 
 ```
 
 A `feat!` on `release/1.x` fails the same way against the minor limit.
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/cap-patch-dark.svg">
+    <img src="assets/cap-patch-light.svg" alt="Release history where release/1.0.x starts at api-v1.0.0 and feat(api): add refunds fails with E_CAP: 1.0.0 to 1.1.0 exceeds the patch limit.">
+  </picture>
+</p>
 
 Floating tags move only when `tags.floating` is set. With `{id}-v{major}`, `api-v1` follows the highest 1.x release of `api` and never moves to 2.x. GitHub releases on a maintenance line are never marked latest.
 

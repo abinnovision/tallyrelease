@@ -1,0 +1,36 @@
+{
+	"lanes": ["main"],
+	"commits": [
+		{
+			"lane": "main",
+			"subject": "chore: scaffold",
+			"tags": ["api-v1.0.0"]
+		},
+		{
+			"lane": "main",
+			"subject": "feat(api): add search",
+			"versions": ["api 1.0.0 -> 1.1.0"],
+			"note": "release PR opens for 1.1.0"
+		},
+		{
+			"lane": "main",
+			"subject": "feat(api)!: new auth",
+			"versions": ["api 1.0.0 -> 2.0.0"],
+			"note": "lands before the merge"
+		},
+		{
+			"lane": "main",
+			"subject": "chore(release): main",
+			"kind": "merge",
+			"markers": ["stale"],
+			"note": "plan at the parent is 2.0.0, no tags"
+		},
+		{
+			"lane": "main",
+			"subject": "chore(release): main",
+			"kind": "merge",
+			"tags": ["api-v2.0.0"],
+			"note": "next release PR"
+		}
+	]
+}

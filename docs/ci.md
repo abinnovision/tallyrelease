@@ -19,6 +19,13 @@ The build base is the commit `affected` and `plan` diff against.
 - On GitHub Actions it comes from the event and the forge. A pull request uses the merge base with the target branch, and a merge group uses its base sha. A push uses the last successful run of the workflow on the branch when it is an ancestor of the event's `before` sha, else `before`. A `workflow_dispatch` run uses the last successful push run. A `schedule` run uses the last successful scheduled run, so a cron in the push workflow builds what changed since the previous scheduled run. When the branch rule sets `channels.nightly`, a `schedule` run, and a `workflow_dispatch` run that selects the nightly channel, use the newer of the last successful scheduled and manual runs instead. The forge lookup needs `GITHUB_TOKEN` with `actions: read`.
 - On other CI everything is built unless `--base` is given.
 
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/build-base-dark.svg">
+    <img src="assets/build-base-light.svg" alt="Release history on main with markers for the last scheduled run, the last successful push run, the push event's before sha and HEAD, and a pull request branch whose merge base with main is the build base of the pull request.">
+  </picture>
+</p>
+
 ## Affected builds
 
 Pin an exact version in workflows (`npx @tallyrelease/cli@<version>`), or install the cli as a devDependency and run `npx tallyrelease`. The snippets use the unpinned form for brevity.

@@ -124,6 +124,13 @@ dependent (1)
 3 of 3 units affected
 ```
 
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/feature-branch-dark.svg">
+    <img src="docs/assets/feature-branch-light.svg" alt="Release history where feature/orders branches from main at the merge base 547e10f, which carries api-v1.0.0 and web-v1.0.0, with feat(db): add order lookup and fix(web): correct cart total.">
+  </picture>
+</p>
+
 See what would release when it merges:
 
 ```text
