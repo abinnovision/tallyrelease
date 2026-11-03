@@ -1,6 +1,6 @@
 # Recipes
 
-These are step-by-step walkthroughs on the running example from [concepts.md](concepts.md); each step shows the git history after it (newest commit at the bottom), annotated with what tallyrelease does.
+These are step-by-step walkthroughs on the running example from [concepts.md](concepts.md); each step shows the git history after it, annotated with what tallyrelease does.
 
 ## Maintenance line
 
@@ -24,19 +24,23 @@ tags:
 
 Commit the rule on `main` before the release you want to maintain, so the maintenance branch carries it. `tallyrelease.yaml` is a global input, so every unit rebuilds, and a `chore` commit gives no bump.
 
-```text
-* chore: add maintenance rule   # every unit rebuilds, no bump
-```
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/maintenance-line-rule-dark.svg">
+    <img src="assets/maintenance-line-rule-light.svg" alt="Release history on main with one commit, chore: add maintenance rule. Every unit rebuilds and nothing is bumped.">
+  </picture>
+</p>
 
 ### Release 1.2.0
 
 A `feat` opens the release PR for 1.2.0. Merging it tags the merge commit.
 
-```text
-* chore: add maintenance rule   # every unit rebuilds, no bump
-* feat(api): add refunds        # api 1.1.0 -> 1.2.0
-* chore(release): main          # merge of the release PR => api-v1.2.0, api-v1, GitHub release (latest)
-```
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/maintenance-line-release-1-2-0-dark.svg">
+    <img src="assets/maintenance-line-release-1-2-0-light.svg" alt="Release history on main: the maintenance rule, feat(api): add refunds bumping api from 1.1.0 to 1.2.0, and the merged release PR tagged api-v1.2.0, moving api-v1 and creating the latest GitHub release.">
+  </picture>
+</p>
 
 ### Start the maintenance line
 
@@ -46,56 +50,45 @@ Push the last 1.x release as a branch. The branch matches `release/{major}.x`, s
 git push origin api-v1.2.0:refs/heads/release/1.x
 ```
 
-```text
-* chore: add maintenance rule   # every unit rebuilds, no bump
-* feat(api): add refunds        # api 1.1.0 -> 1.2.0
-* chore(release): main          # merge of the release PR => api-v1.2.0, api-v1, GitHub release (latest)
-|\                              # release/1.x starts at api-v1.2.0
-```
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/maintenance-line-branch-dark.svg">
+    <img src="assets/maintenance-line-branch-light.svg" alt="Release history where release/1.x starts at the release commit tagged api-v1.2.0 on main.">
+  </picture>
+</p>
 
 ### Release 2.0.0
 
 A breaking change on `main` gives a major. Merging its release PR tags 2.0.0 and creates the floating tag `api-v2`; `api-v1` stays at 1.2.0.
 
-```text
-* chore: add maintenance rule   # every unit rebuilds, no bump
-* feat(api): add refunds        # api 1.1.0 -> 1.2.0
-* chore(release): main          # merge of the release PR => api-v1.2.0, api-v1, GitHub release (latest)
-|\                              # release/1.x starts at api-v1.2.0
-* | feat(api)!: new auth        # api 1.2.0 -> 2.0.0
-* | chore(release): main        # merge of the release PR => api-v2.0.0, api-v2, GitHub release (latest)
-```
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/maintenance-line-major-dark.svg">
+    <img src="assets/maintenance-line-major-light.svg" alt="Release history where main continues with feat(api)!: new auth and a merged release PR tagged api-v2.0.0, creating api-v2, while release/1.x stays at api-v1.2.0.">
+  </picture>
+</p>
 
 ### Fix 1.x
 
 A `fix` on `release/1.x` opens a release PR on `tallyrelease/release/release/1.x/shared`. Merging it releases 1.2.1 and moves `api-v1`. The GitHub release is not marked latest, because it is on a maintenance line.
 
-```text
-* chore: add maintenance rule   # every unit rebuilds, no bump
-* feat(api): add refunds        # api 1.1.0 -> 1.2.0
-* chore(release): main          # merge of the release PR => api-v1.2.0, api-v1, GitHub release (latest)
-|\                              # release/1.x starts at api-v1.2.0
-* | feat(api)!: new auth        # api 1.2.0 -> 2.0.0
-* | chore(release): main        # merge of the release PR => api-v2.0.0, api-v2, GitHub release (latest)
-| * fix(api): token refresh     # api 1.2.0 -> 1.2.1
-| * chore(release): release/1.x # merge of the release PR => api-v1.2.1, api-v1 moves here, GitHub release
-```
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/maintenance-line-fix-dark.svg">
+    <img src="assets/maintenance-line-fix-light.svg" alt="Release history where release/1.x gets fix(api): token refresh and a merged release PR tagged api-v1.2.1, moving api-v1, with a GitHub release that is not latest.">
+  </picture>
+</p>
 
 ### A breaking change on 1.x
 
 A breaking change would leave the 1.x line. The plan fails with `E_CAP`, so `run` fails and no release PR is opened. Drop the commit by rewriting the branch and land it on `main` instead, or add a commit with a `Release-As: api@1.2.2` footer. A revert keeps the breaking commit in the range, so `E_CAP` stays.
 
-```text
-* chore: add maintenance rule   # every unit rebuilds, no bump
-* feat(api): add refunds        # api 1.1.0 -> 1.2.0
-* chore(release): main          # merge of the release PR => api-v1.2.0, api-v1, GitHub release (latest)
-|\                              # release/1.x starts at api-v1.2.0
-* | feat(api)!: new auth        # api 1.2.0 -> 2.0.0
-* | chore(release): main        # merge of the release PR => api-v2.0.0, api-v2, GitHub release (latest)
-| * fix(api): token refresh     # api 1.2.0 -> 1.2.1
-| * chore(release): release/1.x # merge of the release PR => api-v1.2.1, api-v1 moves here, GitHub release
-| * feat(api)!: drop v1 tokens  # E_CAP, nothing releases
-```
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/maintenance-line-cap-dark.svg">
+    <img src="assets/maintenance-line-cap-light.svg" alt="Release history where feat(api)!: drop v1 tokens on release/1.x fails with E_CAP: 1.2.1 to 2.0.0 exceeds the minor limit, so nothing releases.">
+  </picture>
+</p>
 
 ```text
 $ tallyrelease plan
@@ -121,11 +114,12 @@ branches:
 
 Each push builds a prerelease of the next version, numbered by the first-parent commits since `api-v1.0.0`. Nothing is tagged. `run` opens the release PR for 1.1.0 and the prerelease PR `chore(release): main rc` on `tallyrelease/prerelease/main/shared`.
 
-```text
-* chore: scaffold               # api-v1.0.0, web-v1.0.0
-* feat(api): add search         # api 1.1.0-beta.1
-* fix(api): fix paging          # api 1.1.0-beta.2
-```
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/prereleases-push-dark.svg">
+    <img src="assets/prereleases-push-light.svg" alt="Release history on main with api-v1.0.0 and web-v1.0.0, then feat(api): add search as api 1.1.0-beta.1 and fix(api): fix paging as api 1.1.0-beta.2. Nothing is tagged.">
+  </picture>
+</p>
 
 ```text
 $ tallyrelease plan --base HEAD~2
@@ -142,37 +136,34 @@ api   prerelease  1.0.0  minor  1.1.0  1.1.0-beta.2
 
 The prerelease PR was built on `fix(api): fix paging` (`N` = 2), so its version is `1.1.0-rc.3`. The next run tags the merge commit and creates a GitHub prerelease. The PR commit changes only `apps/api/CHANGELOG.md`; `package.json` stays at 1.0.0.
 
-```text
-* chore: scaffold               # api-v1.0.0, web-v1.0.0
-* feat(api): add search         # api 1.1.0-beta.1
-* fix(api): fix paging          # api 1.1.0-beta.2
-* chore(release): main rc       # merge of the prerelease PR => api-v1.1.0-rc.3, GitHub prerelease
-```
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/prereleases-cut-dark.svg">
+    <img src="assets/prereleases-cut-light.svg" alt="Release history where the merged prerelease PR is tagged api-v1.1.0-rc.3 and creates a GitHub prerelease.">
+  </picture>
+</p>
 
 ### Push another fix
 
 The counter keeps running from `api-v1.0.0`, because cut tags never become the line base. `run` opens a new prerelease PR, which would cut `1.1.0-rc.5`.
 
-```text
-* chore: scaffold               # api-v1.0.0, web-v1.0.0
-* feat(api): add search         # api 1.1.0-beta.1
-* fix(api): fix paging          # api 1.1.0-beta.2
-* chore(release): main rc       # merge of the prerelease PR => api-v1.1.0-rc.3, GitHub prerelease
-* fix(api): sort order          # api 1.1.0-beta.4
-```
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/prereleases-fix-dark.svg">
+    <img src="assets/prereleases-fix-light.svg" alt="Release history where fix(api): sort order after the prerelease PR gives api 1.1.0-beta.4.">
+  </picture>
+</p>
 
 ### Merge the release PR
 
 Merging the release PR releases 1.1.0. The next run closes the open prerelease PR.
 
-```text
-* chore: scaffold               # api-v1.0.0, web-v1.0.0
-* feat(api): add search         # api 1.1.0-beta.1
-* fix(api): fix paging          # api 1.1.0-beta.2
-* chore(release): main rc       # merge of the prerelease PR => api-v1.1.0-rc.3, GitHub prerelease
-* fix(api): sort order          # api 1.1.0-beta.4
-* chore(release): main          # merge of the release PR => api-v1.1.0, GitHub release
-```
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/prereleases-release-dark.svg">
+    <img src="assets/prereleases-release-light.svg" alt="Release history where the merged release PR is tagged api-v1.1.0 and creates a GitHub release.">
+  </picture>
+</p>
 
 ## Group with an internal library
 
@@ -195,10 +186,12 @@ groups:
 
 A `feat` in `db` is absorbed into `api` as a patch. The group releases `web` at the same version, although `web` has no change.
 
-```text
-* chore: scaffold               # api-v1.0.0, web-v1.0.0
-* feat(db): add order lookup    # api 1.0.0 -> 1.0.1 (absorbed via db), web 1.0.0 -> 1.0.1 (group shop)
-```
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/group-library-dark.svg">
+    <img src="assets/group-library-light.svg" alt="Release history where feat(db): add order lookup gives api 1.0.1 through db and web 1.0.1 through the group shop.">
+  </picture>
+</p>
 
 ```text
 $ tallyrelease plan --base HEAD~1
@@ -234,11 +227,12 @@ changes (1)
 
 A `fix` in `web` keeps the group at 1.0.1: the group version is the highest bump of its members.
 
-```text
-* chore: scaffold               # api-v1.0.0, web-v1.0.0
-* feat(db): add order lookup    # api 1.0.0 -> 1.0.1 (absorbed via db), web 1.0.0 -> 1.0.1 (group shop)
-* fix(web): correct cart total  # api and web stay at 1.0.1
-```
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/group-web-fix-dark.svg">
+    <img src="assets/group-web-fix-light.svg" alt="Release history where fix(web): correct cart total keeps api and web at 1.0.1.">
+  </picture>
+</p>
 
 ```text
 $ tallyrelease plan --base HEAD~2
@@ -257,9 +251,9 @@ web   shop   rebuild  1.0.0  patch  1.0.1  -
 
 The shared release PR holds both units. Merging it tags both and creates two GitHub releases.
 
-```text
-* chore: scaffold               # api-v1.0.0, web-v1.0.0
-* feat(db): add order lookup    # api 1.0.0 -> 1.0.1 (absorbed via db), web 1.0.0 -> 1.0.1 (group shop)
-* fix(web): correct cart total  # api and web stay at 1.0.1
-* chore(release): main          # merge of the release PR => api-v1.0.1, web-v1.0.1, GitHub releases
-```
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/group-release-dark.svg">
+    <img src="assets/group-release-light.svg" alt="Release history where the merged release PR is tagged api-v1.0.1 and web-v1.0.1, with two GitHub releases.">
+  </picture>
+</p>

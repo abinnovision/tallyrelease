@@ -1,7 +1,11 @@
 {
 	"lanes": ["main"],
 	"commits": [
-		{ "lane": "main", "subject": "chore: scaffold", "tags": ["api-v1.0.0"] },
+		{
+			"lane": "main",
+			"subject": "chore: scaffold",
+			"tags": ["api-v1.0.0", "web-v1.0.0"]
+		},
 		{
 			"lane": "main",
 			"subject": "feat(api): add search",
@@ -30,6 +34,24 @@
 			"kind": "merge",
 			"tags": ["api-v1.1.0"],
 			"note": "release PR, GitHub release"
+		}
+	],
+	"steps": [
+		{
+			"name": "push",
+			"commits": 3
+		},
+		{
+			"name": "cut",
+			"commits": 4
+		},
+		{
+			"name": "fix",
+			"commits": 5
+		},
+		{
+			"name": "release",
+			"commits": 6
 		}
 	]
 }

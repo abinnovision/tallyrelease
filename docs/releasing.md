@@ -76,11 +76,11 @@ Floating tags move only when `tags.floating` is set. With `{id}-v{major}`, `api-
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="assets/maintenance-line-dark.svg">
-    <img src="assets/maintenance-line-light.svg" alt="Release history where main moves to api-v2.0.0 while release/1.x starts at api-v1.2.0 and releases api-v1.2.1.">
+    <img src="assets/maintenance-line-light.svg" alt="Release history where main moves to api-v2.0.0 while release/1.x starts at api-v1.2.0 and releases api-v1.2.1, then rejects a breaking commit with E_CAP.">
   </picture>
 </p>
 
-`release/1.x` starts at the commit tagged `api-v1.2.0`. The breaking commit on `main` gives `api` 2.0.0, and the fix on `release/1.x` gives 1.2.1. With `tags.floating: ["{id}-v{major}"]`, `api-v1` moves to `api-v1.2.1` and `api-v2` points at `api-v2.0.0`. The GitHub release for `api-v1.2.1` is not marked latest.
+`release/1.x` starts at the commit tagged `api-v1.2.0`. The breaking commit on `main` gives `api` 2.0.0, and the fix on `release/1.x` gives 1.2.1. With `tags.floating: ["{id}-v{major}"]`, `api-v1` moves to `api-v1.2.1` and `api-v2` points at `api-v2.0.0`. The GitHub release for `api-v1.2.1` is not marked latest. A later `feat(api)!` on `release/1.x` fails with `E_CAP`, so nothing releases.
 
 ## Prereleases
 
@@ -218,6 +218,13 @@ web   shop   rebuild  1.0.0  patch  1.0.1  -
 ```
 
 Without the `fix(web)` commit, `web` would still release 1.0.1 with `api`, with the changelog entry `Synchronize shop versions`.
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/group-dark.svg">
+    <img src="assets/group-light.svg" alt="Release history where feat(db): add order lookup gives api and web 1.0.1, fix(web): correct cart total keeps them there, and the merged release PR is tagged api-v1.0.1 and web-v1.0.1.">
+  </picture>
+</p>
 
 ## Release PRs
 
