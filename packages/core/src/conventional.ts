@@ -34,6 +34,8 @@ export interface ParsedCommit {
 	subject: string;
 	body: string | undefined;
 	pr: number | undefined;
+	/** Last breaking-change footer value of either spelling, as in release-please. */
+	notes: string | undefined;
 	/** Lowercased footer key to values in message order. */
 	footers: Record<string, string[]>;
 }
@@ -53,6 +55,7 @@ export const parseCommit = (message: string): ParsedCommit => {
 
 	const footers = new Map<string, string[][]>();
 	let current: string[] | undefined;
+	let note: string[] | undefined;
 	let breaking = false;
 	for (const line of rest.slice(start)) {
 		const match = FOOTER.exec(line)?.groups;
@@ -65,6 +68,9 @@ export const parseCommit = (message: string): ParsedCommit => {
 		const key = match["key"].toLowerCase();
 		current = [(match["value"] ?? "").trim()];
 		footers.set(key, [...(footers.get(key) ?? []), current]);
+		if (BREAKING.has(key.toUpperCase())) {
+			note = current;
+		}
 	}
 
 	const body =
@@ -75,6 +81,7 @@ export const parseCommit = (message: string): ParsedCommit => {
 			.trimEnd() || undefined;
 	const common = {
 		body,
+		notes: note?.join("\n").trimEnd(),
 		footers: Object.fromEntries(
 			[...footers].map(([key, values]) => [
 				key,
@@ -109,11 +116,6 @@ export const conventionalCommits: IntentSource = {
 		commits.map((commit): Change => {
 			const parsed = parseCommit(commit.message);
 			const values = parsed.footers["release-as"] ?? [];
-			// The last breaking footer wins, as in release-please.
-			const notes = [
-				...(parsed.footers["breaking change"] ?? []),
-				...(parsed.footers["breaking-change"] ?? []),
-			].at(-1);
 
 			return {
 				sha: commit.sha,
@@ -122,7 +124,7 @@ export const conventionalCommits: IntentSource = {
 				...(parsed.scope === undefined ? {} : { scope: parsed.scope }),
 				subject: parsed.subject,
 				...(parsed.body === undefined ? {} : { body: parsed.body }),
-				...(notes === undefined ? {} : { notes }),
+				...(parsed.notes === undefined ? {} : { notes: parsed.notes }),
 				...(parsed.pr === undefined ? {} : { pr: parsed.pr }),
 				...(values.length === 0 ? {} : { releaseAs: values.map(releaseAs) }),
 			};
