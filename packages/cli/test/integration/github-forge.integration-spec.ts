@@ -74,7 +74,7 @@ describe("github forge", () => {
 		server.close();
 	});
 
-	it("lists successful push runs via GITHUB_API_URL (G14)", async () => {
+	it("lists successful runs of an event via GITHUB_API_URL (G14)", async () => {
 		routes = {
 			"GET /repos/acme/repo/actions/workflows/ci.yaml/runs": [
 				200,
@@ -86,9 +86,14 @@ describe("github forge", () => {
 			"GET /repos/acme/repo/actions/workflows/broken.yaml/runs": [502, {}],
 		};
 		const forge = githubForge({ token: "secret", baseUrl });
-		const query = { ...repo, workflow: "ci.yaml", branch: "main" };
+		const query = {
+			...repo,
+			workflow: "ci.yaml",
+			branch: "main",
+			event: "push",
+		};
 
-		expect(await forge.lastSuccessfulPushRuns(query)).toEqual(["b", "a"]);
+		expect(await forge.lastSuccessfulRuns(query)).toEqual(["b", "a"]);
 		expect(requests[0]?.query).toEqual({
 			branch: "main",
 			status: "success",
@@ -97,14 +102,17 @@ describe("github forge", () => {
 		});
 		expect(requests[0]?.headers.authorization).toBe("token secret");
 
+		await forge.lastSuccessfulRuns({ ...query, event: "schedule" });
+		expect(requests[1]?.query["event"]).toBe("schedule");
+
 		expect(
-			await forge.lastSuccessfulPushRuns({
+			await forge.lastSuccessfulRuns({
 				...query,
 				workflow: "renamed.yaml",
 			}),
 		).toEqual([]);
 
-		const broken = forge.lastSuccessfulPushRuns({
+		const broken = forge.lastSuccessfulRuns({
 			...query,
 			workflow: "broken.yaml",
 		});

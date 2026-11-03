@@ -97,6 +97,7 @@ describe("affected", () => {
 				repo: "repo",
 				workflow: "ci.yaml",
 				branch: "main",
+				event: "push",
 				page: 1,
 			},
 		]);
@@ -309,25 +310,23 @@ describe("affected", () => {
 		expect(result.build).toEqual({ base: "p1", source: "forge-last-success" });
 	});
 
-	it.each(["workflow_dispatch", "schedule"])(
-		"%s uses the last successful run",
-		async (name) => {
-			const event = { name, payload: {} };
-			const withForge = await affected([], {
-				event,
-				env: token,
-				forge: fakeForge(["p1"]),
-			});
-			expect(withForge.build).toEqual({
-				base: "p1",
-				source: "forge-last-success",
-			});
+	it.each([
+		["workflow_dispatch", "push"],
+		["schedule", "schedule"],
+	])("%s uses the last successful %s run", async (name, runEvent) => {
+		const event = { name, payload: {} };
+		const forge = fakeForge(["p1"]);
+		const withForge = await affected([], { event, env: token, forge });
+		expect(withForge.build).toEqual({
+			base: "p1",
+			source: "forge-last-success",
+		});
+		expect(forge.queries.map((q) => q.event)).toEqual([runEvent]);
 
-			const noToken = await affected([], { event });
-			expect(noToken.build).toEqual({ base: null, source: "none" });
-			expect(noToken.warnings).toEqual(["W_NO_FORGE"]);
-		},
-	);
+		const noToken = await affected([], { event });
+		expect(noToken.build).toEqual({ base: null, source: "none" });
+		expect(noToken.warnings).toEqual(["W_NO_FORGE"]);
+	});
 
 	it("pull_request_target builds everything", async () => {
 		const result = await affected([], {
@@ -342,7 +341,7 @@ describe("affected", () => {
 	it("forge errors warn and count as no last success", async () => {
 		const forge = {
 			...fakeForge(),
-			lastSuccessfulPushRuns: async () =>
+			lastSuccessfulRuns: async () =>
 				await Promise.reject(new ForgeError("Bad Gateway", 502)),
 		};
 		const result = await affected([], { event: push("p2"), env: token, forge });
@@ -361,6 +360,16 @@ describe("affected", () => {
 		});
 		expect(result.build).toEqual({ base: null, source: "none" });
 		expect(result.warnings).toEqual(["W_NO_WORKFLOW_CONTEXT"]);
+	});
+
+	it("schedule without a scheduled run builds everything", async () => {
+		const result = await affected([], {
+			event: { name: "schedule", payload: {} },
+			env: token,
+			forge: fakeForge([]),
+		});
+		expect(result.build).toEqual({ base: null, source: "none" });
+		expect(result.warnings).toEqual(["W_NO_LAST_SUCCESS"]);
 	});
 
 	it("token without a successful run uses before (G15)", async () => {

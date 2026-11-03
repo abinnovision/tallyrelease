@@ -456,7 +456,7 @@ Fix: Pass `--token` or set `GITHUB_TOKEN`, or pass `--base <ref>`.
 
 ### W_NO_LAST_SUCCESS
 
-Cause: The forge has no successful push run of this workflow on this branch that is an ancestor of HEAD, so there is no base.
+Cause: The forge has no successful run of this workflow on this branch that is an ancestor of HEAD, so there is no base. Push and manual runs build on push runs, scheduled runs on scheduled runs.
 
 Fix: Expected on the first run. Otherwise, check that the workflow succeeded on this branch before, or pass `--base <ref>`.
 

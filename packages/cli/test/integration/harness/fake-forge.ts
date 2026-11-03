@@ -78,7 +78,7 @@ export const fakeForge = (
 	return {
 		queries,
 		remote,
-		lastSuccessfulPushRuns: async (query) => {
+		lastSuccessfulRuns: async (query) => {
 			queries.push(query);
 
 			return await Promise.resolve((query.page ?? 1) === 1 ? runs : []);

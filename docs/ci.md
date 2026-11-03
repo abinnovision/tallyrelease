@@ -16,7 +16,7 @@ A shallow clone fails only when it lacks what a command needs:
 The build base is the commit `affected` and `plan` diff against.
 
 - Locally, it is the merge base with the default branch (`origin/HEAD`, else `main` or `master`).
-- On GitHub Actions it comes from the event and the forge. A pull request uses the merge base with the target branch, and a merge group uses its base sha. A push uses the last successful run of the workflow on the branch when it is an ancestor of the event's `before` sha, else `before`. The forge lookup needs `GITHUB_TOKEN` with `actions: read`.
+- On GitHub Actions it comes from the event and the forge. A pull request uses the merge base with the target branch, and a merge group uses its base sha. A push uses the last successful run of the workflow on the branch when it is an ancestor of the event's `before` sha, else `before`. A `workflow_dispatch` run uses the last successful push run, and a `schedule` run uses the last successful scheduled run, so a cron in the push workflow builds what changed since the previous scheduled run. The forge lookup needs `GITHUB_TOKEN` with `actions: read`.
 - On other CI everything is built unless `--base` is given.
 
 ## Affected builds
@@ -174,7 +174,7 @@ Calls behind these permissions:
 
 | Permission             | Calls                                                                                                                                                                                      |
 | :--------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Actions: read`        | `GET /actions/workflows/{workflow}/runs` (last successful push run)                                                                                                                        |
+| `Actions: read`        | `GET /actions/workflows/{workflow}/runs` (last successful push or scheduled run)                                                                                                           |
 | `Contents: read`       | `GET /git/ref/heads/{branch}` (branch tips), `GET /releases/tags/{tag}`                                                                                                                    |
 | `Contents: write`      | `git push` of release PR branches and tags, `POST /releases`                                                                                                                               |
 | `Pull requests: read`  | `GET /pulls`, `GET /pulls/{n}`, `GET /commits/{sha}/pulls`                                                                                                                                 |

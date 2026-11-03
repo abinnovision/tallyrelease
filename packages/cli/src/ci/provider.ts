@@ -8,8 +8,9 @@ export type CiEvent =
 	| { kind: "pull_request"; name: string; baseSha: () => string | undefined }
 	| { kind: "merge_group"; name: string; baseSha: () => string | undefined }
 	| { kind: "push"; name: string; before: () => string | undefined }
-	// workflow_dispatch and schedule.
+	// workflow_dispatch.
 	| { kind: "dispatch"; name: string }
+	| { kind: "schedule"; name: string }
 	| { kind: "other"; name: string };
 
 /** Output of a CI step. */
