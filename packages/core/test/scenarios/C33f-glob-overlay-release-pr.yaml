@@ -1,0 +1,38 @@
+description: >-
+  releasePr on a glob key applies to every matched unit, and an exact key
+  overrides it.
+plugins:
+  - name: stub
+    units:
+      - { id: a, root: packages/a }
+      - { id: b, root: packages/b }
+      - { id: c, root: packages/c }
+config:
+  plugins: { stub: {} }
+  defaults: { release: true }
+  units:
+    "packages/*": { releasePr: separate }
+    packages/c: { releasePr: shared }
+  branches:
+    - { name: main, line: default }
+git:
+  commits:
+    - id: c0
+      files:
+        { packages/a/i.ts: "0", packages/b/i.ts: "0", packages/c/i.ts: "0" }
+    - id: c1
+      message: "feat: all"
+      files:
+        { packages/a/i.ts: "1", packages/b/i.ts: "1", packages/c/i.ts: "1" }
+  tags:
+    - { name: a-v1.0.0, commit: c0 }
+    - { name: b-v1.0.0, commit: c0 }
+    - { name: c-v1.0.0, commit: c0 }
+base: c0
+plan: { all: true }
+release: {}
+expect:
+  items:
+    - { name: a, kind: unit, mode: separate, units: [a], version: 1.1.0 }
+    - { name: b, kind: unit, mode: separate, units: [b], version: 1.1.0 }
+    - { name: c, kind: unit, mode: shared, units: [c], version: 1.1.0 }

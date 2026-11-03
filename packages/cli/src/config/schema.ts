@@ -101,7 +101,7 @@ const unitOverlay = z.strictObject({
 	releasePr: releasePr
 		.meta({
 			description:
-				"Release PR of this ungrouped unit; set it on the group for grouped units. Defaults to defaults.releasePr.",
+				"Release PR of this ungrouped unit; set it on the group for grouped units. Glob keys may set it. Defaults to defaults.releasePr.",
 		})
 		.exactOptional(),
 	versionFiles: z
