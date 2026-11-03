@@ -1,0 +1,76 @@
+{
+	"lanes": ["main"],
+	"commits": [
+		{
+			"lane": "main",
+			"subject": "chore: scaffold",
+			"tags": ["mobile-v1.2.0"]
+		},
+		{
+			"lane": "main",
+			"subject": "feat(mobile): add login",
+			"versions": ["1.3.0-beta.1"],
+			"note": "buildNumber 2"
+		},
+		{
+			"lane": "main",
+			"subject": "chore(mobile): update icons",
+			"versions": ["1.3.0-beta.2"],
+			"note": "buildNumber 3"
+		},
+		{
+			"lane": "main",
+			"subject": "fix(deps): bump http",
+			"versions": ["1.3.0-beta.3"],
+			"note": "buildNumber 4"
+		},
+		{
+			"lane": "main",
+			"subject": "chore(release): main (#1)",
+			"kind": "merge",
+			"tags": ["mobile-v1.3.0"],
+			"note": "release entry, buildNumber 5"
+		},
+		{
+			"lane": "main",
+			"subject": "chore: bump lint rules",
+			"note": "no entry"
+		},
+		{
+			"lane": "main",
+			"subject": "fix(ui): spacing",
+			"versions": ["mobile 1.3.1-beta.2"],
+			"note": "buildNumber 7"
+		}
+	],
+	"steps": [
+		{
+			"name": "scaffold",
+			"commits": 1
+		},
+		{
+			"name": "feature",
+			"commits": 2
+		},
+		{
+			"name": "chore",
+			"commits": 3
+		},
+		{
+			"name": "deps",
+			"commits": 4
+		},
+		{
+			"name": "release",
+			"commits": 5
+		},
+		{
+			"name": "chore-after",
+			"commits": 6
+		},
+		{
+			"name": "absorbed",
+			"commits": 7
+		}
+	]
+}

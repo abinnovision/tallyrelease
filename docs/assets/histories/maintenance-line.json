@@ -3,11 +3,21 @@
 	"commits": [
 		{
 			"lane": "main",
+			"subject": "chore: add maintenance rule",
+			"note": "every unit rebuilds, no bump"
+		},
+		{
+			"lane": "main",
+			"subject": "feat(api): add refunds",
+			"versions": ["api 1.1.0 -> 1.2.0"]
+		},
+		{
+			"lane": "main",
 			"subject": "chore(release): main",
 			"kind": "merge",
 			"tags": ["api-v1.2.0"],
 			"floating": ["api-v1"],
-			"note": "release PR",
+			"note": "GitHub release (latest)",
 			"branchFrom": "release/1.x"
 		},
 		{
@@ -21,7 +31,7 @@
 			"kind": "merge",
 			"tags": ["api-v2.0.0"],
 			"floating": ["api-v2"],
-			"note": "release PR"
+			"note": "GitHub release (latest)"
 		},
 		{
 			"lane": "release/1.x",
@@ -34,7 +44,40 @@
 			"kind": "merge",
 			"tags": ["api-v1.2.1"],
 			"floating": ["api-v1"],
-			"note": "release PR, not latest"
+			"note": "GitHub release, not latest"
+		},
+		{
+			"lane": "release/1.x",
+			"subject": "feat(api)!: drop v1 tokens",
+			"error": "E_CAP: 1.2.1 to 2.0.0 exceeds the minor limit",
+			"note": "nothing releases"
+		}
+	],
+	"steps": [
+		{
+			"name": "rule",
+			"commits": 1
+		},
+		{
+			"name": "release-1-2-0",
+			"commits": 3,
+			"lanes": ["main"]
+		},
+		{
+			"name": "branch",
+			"commits": 3
+		},
+		{
+			"name": "major",
+			"commits": 5
+		},
+		{
+			"name": "fix",
+			"commits": 7
+		},
+		{
+			"name": "cap",
+			"commits": 8
 		}
 	]
 }

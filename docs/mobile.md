@@ -44,39 +44,45 @@ The version has no `+build` suffix. A version that changes on every push would r
 
 `mobile` is at 1.2.0, tagged `mobile-v1.2.0`, on the first commit of `main`. Each step shows the entry that `run --github-output` lists after the push.
 
-```text
-* chore: scaffold               # mobile-v1.2.0
-```
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/mobile-scaffold-dark.svg">
+    <img src="assets/mobile-scaffold-light.svg" alt="Release history with one commit on main, tagged mobile-v1.2.0.">
+  </picture>
+</p>
 
 ### A feature
 
 A `feat` gives a minor prerelease. The staging entry is `1.3.0-beta.1` with `buildNumber` 2.
 
-```text
-* chore: scaffold               # mobile-v1.2.0
-* feat(mobile): add login       # 1.3.0-beta.1, buildNumber 2
-```
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/mobile-feature-dark.svg">
+    <img src="assets/mobile-feature-light.svg" alt="Release history where feat(mobile): add login gives mobile 1.3.0-beta.1 with buildNumber 2.">
+  </picture>
+</p>
 
 ### A chore
 
 While a releasable commit is pending, every push that affects `mobile` gives a new entry. The `chore` adds no bump, but the prerelease stays, so it is `1.3.0-beta.2` with `buildNumber` 3.
 
-```text
-* chore: scaffold               # mobile-v1.2.0
-* feat(mobile): add login       # 1.3.0-beta.1, buildNumber 2
-* chore(mobile): update icons   # 1.3.0-beta.2, buildNumber 3
-```
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/mobile-chore-dark.svg">
+    <img src="assets/mobile-chore-light.svg" alt="Release history where chore(mobile): update icons gives mobile 1.3.0-beta.2 with buildNumber 3.">
+  </picture>
+</p>
 
 ### A dependency fix
 
 Configure Dependabot or Renovate to prefix runtime dependencies with `fix(deps)` and dev dependencies with `chore(deps)`. The `feat` already gives a minor, so the bump stays.
 
-```text
-* chore: scaffold               # mobile-v1.2.0
-* feat(mobile): add login       # 1.3.0-beta.1, buildNumber 2
-* chore(mobile): update icons   # 1.3.0-beta.2, buildNumber 3
-* fix(deps): bump http          # 1.3.0-beta.3, buildNumber 4
-```
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/mobile-deps-dark.svg">
+    <img src="assets/mobile-deps-light.svg" alt="Release history where fix(deps): bump http gives mobile 1.3.0-beta.3 with buildNumber 4.">
+  </picture>
+</p>
 
 ```text
 $ tallyrelease plan --base mobile-v1.2.0
@@ -93,30 +99,32 @@ mobile  prerelease  1.2.0  minor  1.3.0  1.3.0-beta.3
 
 Merging the release PR tags the merge commit. The entry is `kind: release`, `version: 1.3.0`, `buildNumber` 5, and has no prerelease entry next to it.
 
-```text
-* chore: scaffold               # mobile-v1.2.0
-* feat(mobile): add login       # 1.3.0-beta.1, buildNumber 2
-* chore(mobile): update icons   # 1.3.0-beta.2, buildNumber 3
-* fix(deps): bump http          # 1.3.0-beta.3, buildNumber 4
-* chore(release): main (#1)     # mobile-v1.3.0, release entry, buildNumber 5
-```
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/mobile-release-dark.svg">
+    <img src="assets/mobile-release-light.svg" alt="Release history where the merged release PR is tagged mobile-v1.3.0, a release entry with buildNumber 5.">
+  </picture>
+</p>
 
 ### After the release
 
 A `chore` after the release gives no entry, so nothing is built.
 
-```text
-* chore(release): main (#1)     # mobile-v1.3.0, release entry, buildNumber 5
-* chore: bump lint rules        # no entry
-```
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/mobile-chore-after-dark.svg">
+    <img src="assets/mobile-chore-after-light.svg" alt="Release history where chore: bump lint rules after the release gives no entry.">
+  </picture>
+</p>
 
 A `fix` in `packages/ui` is absorbed into `mobile` as a patch, because `ui` is build-only and `mobile` depends on it (see [concepts](concepts.md#released-and-build-only-units)). The entry is `1.3.1-beta.2` with `buildNumber` 7.
 
-```text
-* chore(release): main (#1)     # mobile-v1.3.0, release entry, buildNumber 5
-* chore: bump lint rules        # no entry
-* fix(ui): spacing              # mobile 1.3.1-beta.2, buildNumber 7
-```
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/mobile-absorbed-dark.svg">
+    <img src="assets/mobile-absorbed-light.svg" alt="Release history where fix(ui): spacing is absorbed into mobile and gives mobile 1.3.1-beta.2 with buildNumber 7.">
+  </picture>
+</p>
 
 ## Workflow
 
