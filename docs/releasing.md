@@ -92,11 +92,10 @@ branch  main (rule main, default line, channel beta)
 base    547e10f (--base HEAD~2)
 
 UNIT  KIND        FROM   BUMP   NEXT   VERSION
-db    rebuild     -      -      -      -
 api   prerelease  1.0.0  patch  1.0.1  1.0.1-beta.2
 web   prerelease  1.0.0  patch  1.0.1  1.0.1-beta.2
 
-3 units planned: 2 prerelease, 1 rebuild
+2 units planned: 2 prerelease
 ```
 
 Build prereleases are not tagged and nothing is written. The commit sha identifies the build, and the release list hands the version to your publishers.
@@ -122,6 +121,54 @@ branches:
 </p>
 
 The prerelease PR was built on `fix(api): fix paging` (`N` = 2), so the cut is `1.1.0-rc.3`. The counter keeps running after the cut, so the next build is `1.1.0-beta.4`.
+
+### Nightly prereleases
+
+A rule with `channels.nightly` can publish a nightly prerelease `{next}-{nightly}.{N}`. `N` is the same counter as for builds. Like a build, a nightly is not tagged and nothing is written. The distinct label keeps its version from colliding with the push build of the same commit.
+
+```yaml
+# tallyrelease.yaml
+plugins:
+  node: {}
+units:
+  apps/api: { release: true }
+  apps/web: { release: true }
+branches:
+  - {
+      name: main,
+      line: default,
+      channels: { build: beta, nightly: nightly, cut: rc },
+    }
+```
+
+The channel is selected in this order:
+
+1. `--channel <build|nightly>`.
+2. `TALLYRELEASE_CHANNEL`.
+3. `nightly` on a `schedule` event.
+4. Otherwise `build`.
+
+Preview a nightly locally with `--channel`. Two commits after `api-v1.0.0` and `web-v1.0.0`, both units render as `1.0.1-nightly.2`:
+
+```text
+$ tallyrelease plan --channel nightly --base HEAD~2
+branch  main (rule main, default line, channel nightly)
+base    547e10f (--base HEAD~2)
+
+UNIT  KIND        FROM   BUMP   NEXT   VERSION
+api   prerelease  1.0.0  patch  1.0.1  1.0.1-nightly.2
+web   prerelease  1.0.0  patch  1.0.1  1.0.1-nightly.2
+
+2 units planned: 2 prerelease
+```
+
+- A nightly run takes its [build base](ci.md#build-base) from the last successful scheduled or dispatched run of the workflow. Nights without new commits plan nothing.
+- A `schedule` run on a rule without `channels.nightly` keeps the build channel.
+- Selecting `nightly` with `--channel` or `TALLYRELEASE_CHANNEL` on such a rule fails with `E_CHANNEL_SELECT`.
+- The cut channel must sort above the nightly channel, or `W_CHANNEL_ORDER` warns. `rc` sorts above `nightly`, `alpha` does not.
+- `schedule` events run only on the default branch, so `channels.nightly` on a maintenance rule is never selected by a schedule.
+
+The workflow is in [CI](ci.md#nightly-prereleases).
 
 ## Groups and absorbed units
 
