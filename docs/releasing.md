@@ -126,6 +126,15 @@ The prerelease PR was built on `fix(api): fix paging` (`N` = 2), so the cut is `
 
 A rule with `channels.nightly` can publish a nightly prerelease `{next}-{nightly}.{N}`. `N` is the same counter as for builds. Like a build, a nightly is not tagged and nothing is written. The distinct label keeps its version from colliding with the push build of the same commit.
 
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/nightly-dark.svg">
+    <img src="assets/nightly-light.svg" alt="Release history with push builds, two nightly prereleases and a cut tagged api-v1.1.0-rc.5.">
+  </picture>
+</p>
+
+A nightly and a beta build share `N`, and a nightly includes every push build since the previous one.
+
 ```yaml
 # tallyrelease.yaml
 plugins:

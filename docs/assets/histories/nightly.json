@@ -1,0 +1,35 @@
+{
+	"lanes": ["main"],
+	"commits": [
+		{ "lane": "main", "subject": "chore: scaffold", "tags": ["api-v1.0.0"] },
+		{
+			"lane": "main",
+			"subject": "feat(api): add search",
+			"versions": ["api 1.1.0-beta.1"]
+		},
+		{
+			"lane": "main",
+			"subject": "fix(api): fix paging",
+			"versions": ["api 1.1.0-beta.2", "api 1.1.0-nightly.2"],
+			"note": "night 1; night 2 has no new commits and is skipped"
+		},
+		{
+			"lane": "main",
+			"subject": "fix(api): sort order",
+			"versions": ["api 1.1.0-beta.3"]
+		},
+		{
+			"lane": "main",
+			"subject": "feat(api): add filters",
+			"versions": ["api 1.1.0-beta.4", "api 1.1.0-nightly.4"],
+			"note": "night 3"
+		},
+		{
+			"lane": "main",
+			"subject": "chore(release): main rc",
+			"kind": "merge",
+			"tags": ["api-v1.1.0-rc.5"],
+			"note": "prerelease PR, GitHub prerelease"
+		}
+	]
+}
