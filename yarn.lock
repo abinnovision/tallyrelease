@@ -664,7 +664,7 @@ __metadata:
     "@internal/tsconfig": "workspace:*"
     "@tallyrelease/cli": "workspace:*"
     "@tallyrelease/core": "workspace:*"
-    "@types/node": "npm:^26.6.5"
+    "@types/node": "npm:^26.6.6"
     "@vitest/coverage-v8": "npm:^5.0.5"
     ajv: "npm:^8.20.0"
     eslint: "npm:^10.13.0"
@@ -1060,7 +1060,7 @@ __metadata:
     "@octokit/rest": "npm:^22.0.1"
     "@tallyrelease/core": "workspace:^"
     "@tallyrelease/plugins": "workspace:^"
-    "@types/node": "npm:^26.6.5"
+    "@types/node": "npm:^26.6.6"
     "@types/picomatch": "npm:^4.0.3"
     "@vitest/coverage-v8": "npm:^5.0.5"
     ajv: "npm:^8.20.0"
@@ -1088,7 +1088,7 @@ __metadata:
     "@abinnovision/prettier-config": "npm:^2.2.0"
     "@internal/tsconfig": "workspace:*"
     "@standard-schema/spec": "npm:^1.1.0"
-    "@types/node": "npm:^26.6.5"
+    "@types/node": "npm:^26.6.6"
     "@types/picomatch": "npm:^4.0.3"
     "@types/semver": "npm:^7.8.0"
     "@vitest/coverage-v8": "npm:^5.0.5"
@@ -1116,7 +1116,7 @@ __metadata:
     "@abinnovision/prettier-config": "npm:^2.2.0"
     "@internal/tsconfig": "workspace:*"
     "@tallyrelease/core": "workspace:^"
-    "@types/node": "npm:^26.6.5"
+    "@types/node": "npm:^26.6.6"
     "@vitest/coverage-v8": "npm:^5.0.5"
     eslint: "npm:^10.13.0"
     prettier: "npm:^3.9.10"
@@ -1251,12 +1251,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:^26.6.5":
-  version: 26.6.5
-  resolution: "@types/node@npm:26.6.5"
+"@types/node@npm:^26.6.6":
+  version: 26.6.6
+  resolution: "@types/node@npm:26.6.6"
   dependencies:
     undici-types: "npm:~8.9.0"
-  checksum: 10/03780cc68280b566af47c0f673318e665258dbdcc953737a83c11593424d55aecb8b2642a573da33f76cb4dd5457379548388b78ab284cb3b762030e5d58b252
+  checksum: 10/07c6c6fc1f5cc89c700ac9ebcebd42b000fef234bf0b80e9461a8f077105f15faf16df95b83745e0c0e37338d1fbc28cb402ef27b5787fd7a57b492c926ff7ae
   languageName: node
   linkType: hard
 
