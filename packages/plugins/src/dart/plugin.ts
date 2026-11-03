@@ -1,16 +1,15 @@
 import { defaultUnitId, definePlugin } from "@tallyrelease/core";
 import { parse as parseYaml } from "yaml";
-import { z } from "zod";
 
 import { edgeBetween, unitsByPackage } from "../_kit/edges.js";
+import { NO_OPTIONS } from "../_kit/options.js";
 import { joinRoot, rootOf } from "../_kit/paths.js";
 import { BUILD, NUMBERS, PRERELEASE } from "../_kit/semver.js";
 
 import type { Ctx, EdgeDraft, UnitDraft } from "@tallyrelease/core";
+import type { z } from "zod";
 
-const optionsSchema = z.strictObject({});
-
-type Options = z.infer<typeof optionsSchema>;
+type Options = z.infer<typeof NO_OPTIONS>;
 
 type Pubspec = Record<string, unknown>;
 
@@ -140,7 +139,7 @@ const rewritePins = (
 export const dartPlugin = definePlugin<Options>({
 	apiVersion: 1,
 	name: "dart",
-	options: optionsSchema,
+	options: NO_OPTIONS,
 	discover: (ctx) =>
 		pubspecRoots(ctx).map((root): UnitDraft => {
 			const pubspec = readPubspec(ctx, root) ?? {};

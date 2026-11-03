@@ -2,6 +2,7 @@ import { defaultUnitId, definePlugin } from "@tallyrelease/core";
 
 import { dependencyEdges, unitsByPackage } from "../_kit/edges.js";
 import { readManifest } from "../_kit/manifest.js";
+import { NO_OPTIONS } from "../_kit/options.js";
 import { globIn, rootOf } from "../_kit/paths.js";
 import { NUMBERS, PRERELEASE } from "../_kit/semver.js";
 
@@ -37,6 +38,7 @@ const pathRepoGlobs = (composer: Composer): string[] => {
 export const phpPlugin = definePlugin({
 	apiVersion: 1,
 	name: "php",
+	options: NO_OPTIONS,
 	discover: (ctx) => {
 		const rootComposer = readComposer(ctx, ".");
 		if (!rootComposer) {

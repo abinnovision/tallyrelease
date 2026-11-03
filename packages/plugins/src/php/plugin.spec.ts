@@ -94,4 +94,11 @@ describe("php plugin", () => {
 		});
 		expect(phpPlugin.versionFiles).toBeUndefined();
 	});
+
+	it("rejects unknown options", async () => {
+		const result = await phpPlugin.options?.["~standard"].validate({
+			typo: true,
+		});
+		expect(result?.issues).toBeDefined();
+	});
 });

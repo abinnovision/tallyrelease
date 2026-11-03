@@ -3,6 +3,7 @@ import { parse as parseYaml } from "yaml";
 
 import { dependencyEdges, unitsByPackage } from "../_kit/edges.js";
 import { parseJson, readManifest } from "../_kit/manifest.js";
+import { NO_OPTIONS } from "../_kit/options.js";
 import { globIn, joinRoot, rootOf } from "../_kit/paths.js";
 import { BUILD, NUMBERS, PRERELEASE } from "../_kit/semver.js";
 
@@ -64,6 +65,7 @@ const packageRoots = (ctx: Ctx, patterns: string[]): string[] => {
 export const nodePlugin = definePlugin({
 	apiVersion: 1,
 	name: "node",
+	options: NO_OPTIONS,
 	discover: (ctx) => {
 		const patterns = workspacePatterns(ctx);
 		const roots =

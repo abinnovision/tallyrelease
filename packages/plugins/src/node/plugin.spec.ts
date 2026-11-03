@@ -75,6 +75,13 @@ describe("node discovery", () => {
 	it("finds nothing without package.json", async () => {
 		expect(await discover({})).toEqual([]);
 	});
+
+	it("rejects unknown options", async () => {
+		const result = await nodePlugin.options?.["~standard"].validate({
+			typo: true,
+		});
+		expect(result?.issues).toBeDefined();
+	});
 });
 
 describe("node edges", () => {
