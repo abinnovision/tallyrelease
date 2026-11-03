@@ -95,7 +95,7 @@ interface Scenario {
 	release?: {
 		markers?: Record<string, MarkerRelease[]>;
 		changelog?: { date: string; repoUrl?: string };
-		files?: { date: string; repoUrl?: string };
+		files?: { date?: string; repoUrl?: string; changelogs?: boolean };
 		/**
 		 * Cut items, `cutWarnings` and `previousCut` from `cutChanges`;
 		 * `changelog` renders the `releaseFiles` cut sections as
@@ -348,8 +348,7 @@ const run = async (s: Scenario) => {
 			? await releaseFiles(workspace, plan, {
 					fs,
 					items,
-					repoUrl: files.repoUrl ?? null,
-					date: files.date,
+					...files,
 					...(cutRun && { cut: cutRun.changes }),
 				})
 			: undefined;
