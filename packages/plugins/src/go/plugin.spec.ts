@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import { goPlugin } from "./plugin.js";
 
-import type { Unit } from "@tallyrelease/core";
+import type { Plugin, Unit } from "@tallyrelease/core";
 
 const unit = (id: string, root: string): Unit => ({
 	id,
@@ -89,7 +89,7 @@ describe("go plugin", () => {
 			const fs = memoryFs(git.tree("c1"));
 			const workspace = await loadWorkspace({
 				config: { plugins: { go: {} }, defaults: { release: true } },
-				plugins: [goPlugin],
+				plugins: [goPlugin as Plugin],
 				fs,
 				repo: { name: "mono" },
 			});
@@ -138,5 +138,12 @@ describe("go plugin", () => {
 			const v1 = await plan("example.com/mono", "v1.2.3", "feat: add");
 			expect(v1.units[0]?.next).toBe("1.3.0");
 		});
+	});
+
+	it("rejects unknown options", async () => {
+		const result = await goPlugin.options?.["~standard"].validate({
+			typo: true,
+		});
+		expect(result?.issues).toBeDefined();
 	});
 });

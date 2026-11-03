@@ -1,6 +1,7 @@
 import { defaultUnitId, definePlugin } from "@tallyrelease/core";
 
 import { edgeBetween } from "../_kit/edges.js";
+import { NO_OPTIONS } from "../_kit/options.js";
 import { joinRoot, rootOf } from "../_kit/paths.js";
 
 import type { Ctx, EdgeDraft, Plan, UnitDraft } from "@tallyrelease/core";
@@ -101,6 +102,7 @@ const checkMajorPaths = (ctx: Ctx, plan: Plan): void => {
 export const goPlugin = definePlugin({
 	apiVersion: 1,
 	name: "go",
+	options: NO_OPTIONS,
 	discover: (ctx) => {
 		const roots = new Set(
 			ctx.fs
