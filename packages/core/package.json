@@ -62,7 +62,7 @@
 		"@abinnovision/eslint-config-base": "^3.4.2",
 		"@abinnovision/prettier-config": "^2.2.0",
 		"@internal/tsconfig": "workspace:*",
-		"@types/node": "^26.6.5",
+		"@types/node": "^26.6.6",
 		"@types/picomatch": "^4.0.3",
 		"@types/semver": "^7.8.0",
 		"@vitest/coverage-v8": "^5.0.5",
