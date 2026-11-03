@@ -7,6 +7,8 @@ export interface WorkflowRunQuery extends RepoRef {
 	/** Workflow file name, for example `ci.yaml`. */
 	workflow: string;
 	branch: string;
+	/** Trigger event of the runs, for example `push` or `schedule`. */
+	event: string;
 	/** 1-based page of runs, defaults to 1. */
 	page?: number;
 }
@@ -58,8 +60,8 @@ export interface NewRelease {
 
 /** Code host API used by the cli. */
 export interface Forge {
-	/** Head shas of successful push runs of a workflow on a branch, newest first; empty past the last page. */
-	lastSuccessfulPushRuns: (query: WorkflowRunQuery) => Promise<string[]>;
+	/** Head shas of successful runs of a workflow on a branch for one event, newest first; empty past the last page. */
+	lastSuccessfulRuns: (query: WorkflowRunQuery) => Promise<string[]>;
 	/** PRs labelled `tallyrelease: pending` on a base branch, from heads in this repository. */
 	releasePrs: (repo: RepoRef, query: ReleasePrQuery) => Promise<ReleasePr[]>;
 	/** Open PR from `head` in this repository into `base`, whatever its labels. */

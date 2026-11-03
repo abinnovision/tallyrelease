@@ -69,8 +69,9 @@ const ciEvent = (
 		case "push":
 			return { kind: name, name, before: () => str(payload()["before"]) };
 		case "workflow_dispatch":
-		case "schedule":
 			return { kind: "dispatch", name };
+		case "schedule":
+			return { kind: name, name };
 		default:
 			return { kind: "other", name };
 	}

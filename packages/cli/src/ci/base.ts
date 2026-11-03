@@ -3,7 +3,7 @@ import { ForgeError } from "../forge/errors.js";
 
 import type { Env } from "./env.js";
 import type { BaseInputs, CiEvent } from "./provider.js";
-import type { Forge } from "../forge/forge.js";
+import type { Forge, WorkflowRunQuery } from "../forge/forge.js";
 import type { RepoGit } from "../git/reader.js";
 import type { Paint } from "../output/paint.js";
 import type { BaseSource, Warning } from "@tallyrelease/core";
@@ -56,7 +56,7 @@ const forgeError = (error: unknown): Warning => {
 
 const noLastSuccess: Warning = cliCodes.warning(
 	"W_NO_LAST_SUCCESS",
-	"no successful push run of this workflow on this branch",
+	"no successful run of this workflow on this branch",
 );
 
 export interface BuildBase {
@@ -126,22 +126,17 @@ export const resolveBuildBase = async (
 		}
 	};
 
-	/** The newest usable successful run, or the warning why there is none. */
-	const lastSuccess = async (from: Forge): Promise<string | Warning> => {
-		if (!baseInputs?.repository || !baseInputs.workflow || !baseInputs.ref) {
-			return noWorkflowContext;
-		}
-
+	/** The newest usable successful run of one event, or the warning why there is none. */
+	const lastRun = async (
+		from: Forge,
+		query: Omit<WorkflowRunQuery, "event" | "page">,
+		event: string,
+	): Promise<string | Warning> => {
 		for (let page = 1; page <= RUN_PAGES; page++) {
 			let shas: string[];
 			try {
 				// eslint-disable-next-line no-await-in-loop -- older pages only while no run is usable
-				shas = await from.lastSuccessfulPushRuns({
-					...baseInputs.repository,
-					workflow: baseInputs.workflow,
-					branch: baseInputs.ref,
-					page,
-				});
+				shas = await from.lastSuccessfulRuns({ ...query, event, page });
 			} catch (error) {
 				return forgeError(error);
 			}
@@ -163,18 +158,55 @@ export const resolveBuildBase = async (
 		return noLastSuccess;
 	};
 
+	/** The newest usable successful run of `events`; of several, the one that descends from the others. */
+	const lastSuccess = async (
+		from: Forge,
+		events: readonly string[],
+	): Promise<string | Warning> => {
+		if (!baseInputs?.repository || !baseInputs.workflow || !baseInputs.ref) {
+			return noWorkflowContext;
+		}
+
+		const query = {
+			...baseInputs.repository,
+			workflow: baseInputs.workflow,
+			branch: baseInputs.ref,
+		};
+		let newest: string | undefined;
+		for (const event of events) {
+			// eslint-disable-next-line no-await-in-loop -- one forge query per event
+			const sha = await lastRun(from, query, event);
+			if (sha === noLastSuccess) {
+				continue;
+			}
+
+			if (typeof sha !== "string") {
+				return sha;
+			}
+
+			// eslint-disable-next-line no-await-in-loop -- one ancestry check per event
+			if (newest === undefined || (await git.isAncestor(newest, sha))) {
+				newest = sha;
+			}
+		}
+
+		return newest ?? noLastSuccess;
+	};
+
 	const result = (
 		base: string | null,
 		source: BaseSource,
 		...warnings: Warning[]
 	): BuildBase => ({ base, source, warnings });
 
-	const fromLastSuccess = async (): Promise<BuildBase> => {
+	const fromLastSuccess = async (
+		events: readonly string[],
+	): Promise<BuildBase> => {
 		if (!forge) {
 			return result(null, "none", noForge);
 		}
 
-		const last = await lastSuccess(forge);
+		const last = await lastSuccess(forge, events);
 
 		return typeof last === "string"
 			? result(last, "forge-last-success")
@@ -251,7 +283,7 @@ export const resolveBuildBase = async (
 					return result(before, "push-before", noForge);
 				}
 
-				const last = await lastSuccess(forge);
+				const last = await lastSuccess(forge, ["push"]);
 				if (typeof last !== "string") {
 					return result(before, "push-before", last);
 				}
@@ -265,12 +297,15 @@ export const resolveBuildBase = async (
 				await shallowBase(before, "push before");
 			}
 
-			return await fromLastSuccess();
+			return await fromLastSuccess(["push"]);
 		}
 
 		case "dispatch":
-			return await fromLastSuccess();
-		default:
+			return await fromLastSuccess(["push"]);
+		case "schedule":
+			return await fromLastSuccess(["schedule"]);
+		case "other":
+		case undefined:
 			return result(null, "none");
 	}
 };

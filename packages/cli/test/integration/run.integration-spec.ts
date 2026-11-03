@@ -218,7 +218,7 @@ describe("run", () => {
 
 		const failing = {
 			...fakeForge([], remote),
-			lastSuccessfulPushRuns: async () =>
+			lastSuccessfulRuns: async () =>
 				await Promise.reject(new Error("forge down")),
 		};
 		for (let i = 0; i < 2; i++) {
