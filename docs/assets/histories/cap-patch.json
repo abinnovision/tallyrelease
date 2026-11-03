@@ -1,0 +1,17 @@
+{
+	"lanes": ["main", "release/1.0.x"],
+	"commits": [
+		{
+			"lane": "main",
+			"subject": "chore: scaffold",
+			"tags": ["api-v1.0.0"],
+			"branchFrom": "release/1.0.x"
+		},
+		{
+			"lane": "release/1.0.x",
+			"subject": "feat(api): add refunds",
+			"error": "E_CAP: 1.0.0 to 1.1.0 exceeds the patch limit",
+			"note": "nothing releases"
+		}
+	]
+}

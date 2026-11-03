@@ -98,6 +98,13 @@ dependent (1)
 3 of 3 units affected
 ```
 
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/feature-branch-dark.svg">
+    <img src="assets/feature-branch-light.svg" alt="Release history where feature/orders branches from main at the merge base 547e10f, which carries api-v1.0.0 and web-v1.0.0, with feat(db): add order lookup and fix(web): correct cart total.">
+  </picture>
+</p>
+
 Outside CI the base is the merge base with the default branch: `origin/HEAD`, else `main` or `master`. `--base <ref>` picks another base. The `db` and `web` units changed directly, and `api` is affected through `db`. See [CI](ci.md#build-base) for the base in CI.
 
 For scripts, `--format tsv` prints one row per unit with a header:

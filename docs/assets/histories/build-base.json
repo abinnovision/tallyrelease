@@ -1,0 +1,40 @@
+{
+	"lanes": ["main", "feature/orders"],
+	"commits": [
+		{
+			"lane": "main",
+			"subject": "chore: scaffold",
+			"tags": ["api-v1.0.0"],
+			"markers": ["last scheduled run"],
+			"note": "base of a schedule run"
+		},
+		{
+			"lane": "main",
+			"subject": "feat(api): add search",
+			"markers": ["last push run"],
+			"note": "base of the push, an ancestor of before"
+		},
+		{
+			"lane": "main",
+			"subject": "fix(web): fix cart total",
+			"markers": ["merge base"],
+			"branchFrom": "feature/orders",
+			"note": "base of the pull request"
+		},
+		{
+			"lane": "feature/orders",
+			"subject": "feat(db): add order lookup",
+			"markers": ["PR HEAD"]
+		},
+		{
+			"lane": "main",
+			"subject": "feat(api): add refunds",
+			"markers": ["before"]
+		},
+		{
+			"lane": "main",
+			"subject": "fix(web): correct total",
+			"markers": ["HEAD"]
+		}
+	]
+}

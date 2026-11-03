@@ -27,16 +27,16 @@ Every other unit is build-only: it is built when affected but never versioned. A
 
 ## Edges and propagation
 
-An edge `db -> api` says that `api` depends on `db`. Plugins create edges from manifests, and `deps` in the config adds more. An edge is pinned when the dependent's published manifest must change with the dependency's version, for example an exact version in `dependencies`. `api` depends on `@acme/db` with the range `*`, so its edge is not pinned.
+An edge `db -> api` says that `api` depends on `db`. Plugins create edges from manifests, and `deps` in the config adds more. An edge is pinned when the dependent's published manifest must change with the dependency's version, for example an exact version in `dependencies`. `api` depends on `@acme/db` with the range `*`, which counts as pinned.
 
-When a released unit releases, its released dependents follow their `propagate` policy: `auto` (the default) gives a patch when the edge is pinned and only a rebuild otherwise, `patch` always gives a patch, `rebuild` never bumps. Propagation runs between released units only; changes of build-only units reach released units through absorption. If `db` were released, this config would release `api` with every `db` release:
+When a released unit releases, its released dependents follow their `propagate` policy: `auto` (the default) gives a patch when the edge is pinned and only a rebuild otherwise, `patch` always gives a patch, `rebuild` never bumps. Propagation runs between released units only; changes of build-only units reach released units through absorption. If `db` were released, `api` would follow every `db` release with a patch, because its edge is pinned. This config stops that:
 
 ```yaml
 # tallyrelease.yaml
 plugins:
   node: {}
 units:
-  apps/api: { release: true, propagate: patch }
+  apps/api: { release: true, propagate: rebuild }
   apps/web: { release: true }
   packages/db: { release: true }
 branches:
@@ -83,13 +83,20 @@ branches:
 
 ## Tags
 
-A release is tagged with the unit's `tagFormat`: `{id}-v{version}` by default (`api-v1.0.1`), or `v{version}` for a unit at the repository root. The base tag of a unit is its highest stable tag reachable from HEAD; its version is the `from` of the next release. The line base, defined above, can differ from the base tag.
+A release is tagged with the unit's `tagFormat`: `{id}-v{version}` by default (`api-v1.0.1`), or `v{version}` for a unit at the repository root. The base tag of a unit is its highest stable tag reachable from HEAD; its version is the `from` of the next release. The line base, defined above, can differ from the base tag. When `release/1.x` releases `api-v1.2.1` and is merged into `main`, whose first-parent history has `api-v1.2.0`, the base tag is `api-v1.2.1` and the line base is `api-v1.2.0`, so `N` counts from 1.2.0.
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/line-base-dark.svg">
+    <img src="assets/line-base-light.svg" alt="Release history where release/1.x releases api-v1.2.1 and is merged into main, whose first-parent history has api-v1.2.0. The base tag is api-v1.2.1 and the line base is api-v1.2.0, so N counts from 1.2.0.">
+  </picture>
+</p>
 
 Floating tags are opt-in. With `tags.floating: ["{id}-v{major}"]`, each release also moves `api-v1` to the highest stable 1.x release of `api`. A format without `{id}`, such as `v{major}`, fits a repository with one released unit.
 
 ## Build base and build set
 
-The build base is the commit tallyrelease diffs HEAD against. `--base` sets it. Without it, a local run uses the merge base with the default branch, and a run on GitHub Actions uses the event: the last successful run of the workflow on the branch (or the push's `before`) for pushes, the merge base with the target branch for pull requests.
+The build base is the commit tallyrelease diffs HEAD against. `--base` sets it. Without it, a local run uses the merge base with the default branch, and a run on GitHub Actions uses the event: the last successful run of the workflow on the branch (or the push's `before`) for pushes, the merge base with the target branch for pull requests. [CI](ci.md#build-base) shows these bases on a history.
 
 The build set is every unit owning a file changed since the base, plus their dependents and the mates of affected group members. A change to a global input marks every unit affected: `tallyrelease.yaml`, the globs in `globalInputs` and the defaults of each plugin, such as lockfiles. For node the defaults are `yarn.lock`, `package-lock.json`, `pnpm-lock.yaml`, `pnpm-workspace.yaml`, `.yarnrc.yml`, `.yarn/patches/**`, `tsconfig*.json`, `turbo.json` and the root `package.json` when the repository has workspaces. `plugins.<name>.globalInputs: false` drops the defaults of a plugin. Global inputs never count towards a release. Files matching `ignore` globs are dropped from both the build set and release attribution.
 

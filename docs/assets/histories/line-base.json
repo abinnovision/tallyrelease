@@ -1,0 +1,37 @@
+{
+	"lanes": ["main", "release/1.x"],
+	"commits": [
+		{
+			"lane": "main",
+			"subject": "chore(release): main",
+			"kind": "merge",
+			"tags": ["api-v1.2.0"],
+			"markers": ["line base"],
+			"branchFrom": "release/1.x"
+		},
+		{
+			"lane": "release/1.x",
+			"subject": "fix(api): token refresh"
+		},
+		{
+			"lane": "release/1.x",
+			"subject": "chore(release): release/1.x",
+			"kind": "merge",
+			"tags": ["api-v1.2.1"],
+			"markers": ["base tag"]
+		},
+		{
+			"lane": "main",
+			"subject": "fix(api): retry requests",
+			"versions": ["api 1.2.1 -> 1.2.2"]
+		},
+		{
+			"lane": "main",
+			"subject": "Merge release/1.x",
+			"kind": "merge",
+			"mergeFrom": "release/1.x",
+			"markers": ["HEAD"],
+			"note": "N = 2 since api-v1.2.0, 1.2.2-beta.2"
+		}
+	]
+}
