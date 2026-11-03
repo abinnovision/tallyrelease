@@ -70,6 +70,12 @@ jobs:
 | `base`           | The resolved base sha, empty when there is none.                                           |
 | `base-source`    | Where the base came from.                                                                  |
 
+`plan --github-output` writes one output:
+
+| Output | Value                                                                       |
+| :----- | :-------------------------------------------------------------------------- |
+| `plan` | Path of the plan JSON: `--out`, else `$RUNNER_TEMP/tallyrelease-plan.json`. |
+
 ## Stamp before build
 
 Run `tallyrelease version` in the build job, after a full checkout and before the build, so built artifacts carry the prerelease of the commit (see [releasing.md](releasing.md#build-versions)). It writes only the working tree and needs no token.
@@ -155,6 +161,8 @@ Tags and PRs created with `GITHUB_TOKEN` trigger no workflows. Publishing theref
 ## Token
 
 The token comes from `--token` or `GITHUB_TOKEN`. It authenticates two things: REST calls to the forge, and `git push` to `origin` or `--remote` (sent as an `Authorization` header that replaces persisted checkout credentials). Names below are fine-grained token and GitHub App permissions. `Metadata: read` is always granted.
+
+Inside a GitHub Actions event (`GITHUB_EVENT_NAME` set), REST calls go to `GITHUB_API_URL`, so GitHub Enterprise Server works without extra configuration.
 
 ### Permissions per command
 
