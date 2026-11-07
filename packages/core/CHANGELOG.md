@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.6.0](https://github.com/abinnovision/tallyrelease/compare/core-v0.5.0...core-v0.6.0) (2026-11-07)
+
+
+### Features
+
+* **cli:** accept buildNumber unit overlays ([#175](https://github.com/abinnovision/tallyrelease/issues/175)) ([08260b4](https://github.com/abinnovision/tallyrelease/commit/08260b4a3cfb3a0aba9df26880f33905b2b710a3))
+* **core,cli:** add the nightly prerelease channel ([#206](https://github.com/abinnovision/tallyrelease/issues/206)) ([ffc48ca](https://github.com/abinnovision/tallyrelease/commit/ffc48ca23f80f7d242ce60ddb75628b1f8822163))
+* **core:** add scope-based attribution ([#180](https://github.com/abinnovision/tallyrelease/issues/180)) ([fef96fd](https://github.com/abinnovision/tallyrelease/commit/fef96fdc4b3b455557da02ab440889cd80358b72))
+* **core:** compute build numbers for release list entries ([#176](https://github.com/abinnovision/tallyrelease/issues/176)) ([6663687](https://github.com/abinnovision/tallyrelease/commit/66636870a8536a63d8627de092b48a336614cc78))
+* **core:** write version files without changelogs ([#198](https://github.com/abinnovision/tallyrelease/issues/198)) ([90cec17](https://github.com/abinnovision/tallyrelease/commit/90cec17cc9ae6c9d482ea7043e0b17026f8ba008))
+* open prerelease PRs and reconcile them into GitHub prereleases ([#163](https://github.com/abinnovision/tallyrelease/issues/163)) ([a82f58c](https://github.com/abinnovision/tallyrelease/commit/a82f58ca529979f60abe8c466b2dd60934f428bc))
+* plan prerelease cuts ([#162](https://github.com/abinnovision/tallyrelease/issues/162)) ([59423ae](https://github.com/abinnovision/tallyrelease/commit/59423aecf0e2fb596c6a78d53d042444919fd840))
+
+
+### Bug Fixes
+
+* **core:** apply releasePr set on glob unit keys ([#203](https://github.com/abinnovision/tallyrelease/issues/203)) ([f8e542d](https://github.com/abinnovision/tallyrelease/commit/f8e542d7349a0c58bf929d8738d71783d2d3ba64))
+* **core:** name all plugins in E_PLUGIN_UNKNOWN and keep breaking footer order ([#201](https://github.com/abinnovision/tallyrelease/issues/201)) ([3634620](https://github.com/abinnovision/tallyrelease/commit/3634620a5423c25f5a42909a50a8ae71e53d53e1))
+
 ## [0.5.0](https://github.com/abinnovision/tallyrelease/compare/core-v0.4.1...core-v0.5.0) (2026-11-01)
 
 

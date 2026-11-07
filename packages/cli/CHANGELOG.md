@@ -1,5 +1,36 @@
 # Changelog
 
+## [0.6.0](https://github.com/abinnovision/tallyrelease/compare/cli-v0.5.0...cli-v0.6.0) (2026-11-07)
+
+
+### Features
+
+* **cli:** accept buildNumber unit overlays ([#175](https://github.com/abinnovision/tallyrelease/issues/175)) ([08260b4](https://github.com/abinnovision/tallyrelease/commit/08260b4a3cfb3a0aba9df26880f33905b2b710a3))
+* **cli:** add line to release list entries ([#174](https://github.com/abinnovision/tallyrelease/issues/174)) ([695ff9f](https://github.com/abinnovision/tallyrelease/commit/695ff9f5cc72abc7f07dd4ff3bf2aaacd05cfa4d))
+* **cli:** base scheduled runs on the last scheduled run ([#205](https://github.com/abinnovision/tallyrelease/issues/205)) ([d7b3c4c](https://github.com/abinnovision/tallyrelease/commit/d7b3c4c523704f4cfb8bca9a011053e4e5bd152b))
+* **cli:** emit build numbers in the release list ([#177](https://github.com/abinnovision/tallyrelease/issues/177)) ([61b6183](https://github.com/abinnovision/tallyrelease/commit/61b6183fbb2186bce8f81364fff1ae621b8e5f3e))
+* **cli:** stamp build versions with the version command ([#196](https://github.com/abinnovision/tallyrelease/issues/196)) ([1baf026](https://github.com/abinnovision/tallyrelease/commit/1baf026d84bfbced39a4a4fe423d7af0df47ef91))
+* **core,cli:** add the nightly prerelease channel ([#206](https://github.com/abinnovision/tallyrelease/issues/206)) ([ffc48ca](https://github.com/abinnovision/tallyrelease/commit/ffc48ca23f80f7d242ce60ddb75628b1f8822163))
+* **core:** add scope-based attribution ([#180](https://github.com/abinnovision/tallyrelease/issues/180)) ([fef96fd](https://github.com/abinnovision/tallyrelease/commit/fef96fdc4b3b455557da02ab440889cd80358b72))
+* open prerelease PRs and reconcile them into GitHub prereleases ([#163](https://github.com/abinnovision/tallyrelease/issues/163)) ([a82f58c](https://github.com/abinnovision/tallyrelease/commit/a82f58ca529979f60abe8c466b2dd60934f428bc))
+* plan prerelease cuts ([#162](https://github.com/abinnovision/tallyrelease/issues/162)) ([59423ae](https://github.com/abinnovision/tallyrelease/commit/59423aecf0e2fb596c6a78d53d042444919fd840))
+* **plugins:** add pub workspace edges and melos inputs to the dart plugin ([#169](https://github.com/abinnovision/tallyrelease/issues/169)) ([f57b14a](https://github.com/abinnovision/tallyrelease/commit/f57b14ac4c24273715f641727c15f7dc5bd5b603))
+* **plugins:** version dart units with semver and drop buildOffset ([#166](https://github.com/abinnovision/tallyrelease/issues/166)) ([f1fd1d4](https://github.com/abinnovision/tallyrelease/commit/f1fd1d44d85d250bb4a915fed72851f4495bc5bb))
+
+
+### Bug Fixes
+
+* **cli:** keep the cli version in a tallyrelease version file ([#199](https://github.com/abinnovision/tallyrelease/issues/199)) ([e67848e](https://github.com/abinnovision/tallyrelease/commit/e67848e0c5868b339ece93fbbdb9e263e6b3c4ef))
+* **core:** apply releasePr set on glob unit keys ([#203](https://github.com/abinnovision/tallyrelease/issues/203)) ([f8e542d](https://github.com/abinnovision/tallyrelease/commit/f8e542d7349a0c58bf929d8738d71783d2d3ba64))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @tallyrelease/core bumped to 0.6.0
+    * @tallyrelease/plugins bumped to 0.6.0
+
 ## [0.5.0](https://github.com/abinnovision/tallyrelease/compare/cli-v0.4.1...cli-v0.5.0) (2026-11-01)
 
 
