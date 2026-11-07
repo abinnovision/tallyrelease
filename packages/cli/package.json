@@ -1,6 +1,6 @@
 {
 	"name": "@tallyrelease/cli",
-	"version": "0.5.0",
+	"version": "0.6.0",
 	"description": "Know what changed, release what matters: affected builds and release plans for monorepos and single repos",
 	"repository": {
 		"type": "git",
