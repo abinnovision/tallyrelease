@@ -68,7 +68,7 @@ When no rule matches, the build set is still computed, but `plan` has no version
 
 ## Channels and prereleases
 
-A line has prereleases only when its rule sets `channels`. `channels.build` labels the build prerelease of every push: `{next}-{build}.{N}`, for example `1.0.1-beta.2`, where `N` is the number of first-parent commits since the line base (the highest stable tag of the unit on HEAD's first-parent chain; without one, since the unit's introduction). A build prerelease is never tagged and nothing is written; the commit sha identifies the build. `channels.cut` labels cut prereleases: `pr` opens a prerelease PR, and merging it tags `{next}-{cut}.{K}` and creates a GitHub prerelease. `channel` is a deprecated alias of `channels.build`. See [releasing.md](releasing.md#prereleases).
+A line has prereleases only when its rule sets `channels`. `channels.build` labels the build prerelease of every push: `{next}-{build}.{N}`, for example `1.0.1-beta.2`, where `N` is the number of first-parent commits since the line base (the highest stable tag of the unit on HEAD's first-parent chain; without one, since the unit's introduction). A build prerelease is never tagged and nothing is written; the commit sha identifies the build. `channels.nightly` labels the build prerelease of runs that select the nightly channel, such as scheduled runs: `{next}-{nightly}.{N}` with the same `N`, also untagged. `channels.cut` labels cut prereleases: `pr` opens a prerelease PR, and merging it tags `{next}-{cut}.{K}` and creates a GitHub prerelease. `channel` is a deprecated alias of `channels.build`. See [releasing.md](releasing.md#prereleases).
 
 ```yaml
 # tallyrelease.yaml
@@ -83,7 +83,7 @@ branches:
 
 ## Tags
 
-A release is tagged with the unit's `tagFormat`: `{id}-v{version}` by default (`api-v1.0.1`), or `v{version}` for a unit at the repository root. The base tag of a unit is its highest stable tag reachable from HEAD; its version is the `from` of the next release. The line base, defined above, can differ from the base tag. When `release/1.x` releases `api-v1.2.1` and is merged into `main`, whose first-parent history has `api-v1.2.0`, the base tag is `api-v1.2.1` and the line base is `api-v1.2.0`, so `N` counts from 1.2.0.
+A release is tagged with the unit's `tagFormat`: `{id}-v{version}` by default (`api-v1.0.1`), or `v{version}` for a unit at the repository root. Build and nightly prereleases are never tagged. A cut prerelease is tagged like a release (`api-v1.1.0-rc.3`) but never becomes a base tag or line base. The base tag of a unit is its highest stable tag reachable from HEAD; its version is the `from` of the next release. The line base, defined above, can differ from the base tag. When `release/1.x` releases `api-v1.2.1` and is merged into `main`, whose first-parent history has `api-v1.2.0`, the base tag is `api-v1.2.1` and the line base is `api-v1.2.0`, so `N` counts from 1.2.0.
 
 <p align="center">
   <picture>

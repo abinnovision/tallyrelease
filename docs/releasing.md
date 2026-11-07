@@ -112,7 +112,7 @@ web   prerelease  1.0.0  patch  1.0.1  1.0.1-beta.2
 2 units planned: 2 prerelease
 ```
 
-Build prereleases are not tagged and nothing is written. The commit sha identifies the build, and the release list hands the version to your publishers.
+Build prereleases are not tagged and nothing is written. The commit sha identifies the build, and the release list hands the version to your publishers. tallyrelease needs no tag to find a build again: any later run recomputes its `N` from the first-parent history and the stable tags. A cut's `K` depends on the commit its PR was built on, so later runs read it only from the cut tag.
 
 With `channels.cut`, `pr` (and `run`) also opens a prerelease PR on `tallyrelease/prerelease/<branch>/shared` (or `/<item>` for `releasePr: separate`), next to the release PR. It changes only changelogs. Merging it tags the merge commit `{next}-{cut}.{K}` and creates a GitHub prerelease. `K` is one more than the `N` of the commit the PR was built on. Once the stable release PR is merged, the next run closes open prerelease PRs.
 
@@ -135,6 +135,14 @@ branches:
 </p>
 
 The prerelease PR was built on `fix(api): fix paging` (`N` = 2), so the cut is `1.1.0-rc.3`. The counter keeps running after the cut, so the next build is `1.1.0-beta.4`.
+
+With nightlies (next section), a rule has up to three prerelease kinds:
+
+| Prerelease | Made by                                                                                              | Version                | Tag and GitHub prerelease | Release list entry                                                              |
+| :--------- | :--------------------------------------------------------------------------------------------------- | :--------------------- | :------------------------ | :------------------------------------------------------------------------------ |
+| build      | every other run (push, dispatch, a `schedule` run on a rule without `channels.nightly`)              | `{next}-{build}.{N}`   | none                      | `tag: null`, `releaseSha` = HEAD; none when the unit is released or cut at HEAD |
+| nightly    | a run with the nightly channel selected (`schedule` by default, `--channel`, `TALLYRELEASE_CHANNEL`) | `{next}-{nightly}.{N}` | none                      | as build                                                                        |
+| cut        | merging a prerelease PR                                                                              | `{next}-{cut}.{K}`     | on the merge commit       | `tag` set, `releaseSha` = merge commit                                          |
 
 ### Nightly prereleases
 

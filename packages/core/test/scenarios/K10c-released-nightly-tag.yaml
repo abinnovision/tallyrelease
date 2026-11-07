@@ -1,0 +1,43 @@
+description: >-
+  A tag of the nightly label stays out of the released list, the previous cut
+  and the warnings, and does not move the nightly or cut versions.
+plugins:
+  - name: stub
+    units:
+      - { id: a, root: packages/a }
+config:
+  plugins: { stub: {} }
+  defaults: { release: true }
+  branches:
+    - name: main
+      line: default
+      channels: { build: beta, cut: rc, nightly: nightly }
+git:
+  commits:
+    - id: c0
+      files: { packages/a/index.ts: "0" }
+    - id: c1
+      message: "feat: one"
+      files: { packages/a/index.ts: "1" }
+    - id: c2
+      message: "fix: two"
+      files: { packages/a/index.ts: "2" }
+  tags:
+    - { name: a-v1.0.0, commit: c0 }
+    - { name: a-v1.1.0-nightly.1, commit: c1 }
+base: c0
+plan: { buildChannel: nightly, released: true }
+release:
+  cut: true
+expect:
+  plan:
+    units:
+      - id: a
+        kind: prerelease
+        from: 1.0.0
+        next: 1.1.0
+        version: 1.1.0-nightly.2
+        cut: 1.1.0-rc.3
+    released: []
+    warnings: []
+  previousCut: { a: null }
