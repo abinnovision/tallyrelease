@@ -27,12 +27,12 @@ Without workspace patterns, a root `package.json` is the single unit `.`. Withou
 
 Edges connect units by package name. Dependencies on packages outside the repository are ignored.
 
-| Field                  | Pinned                                                |
-| :--------------------- | :---------------------------------------------------- |
-| `dependencies`         | When the range is an exact version or `*`, see below. |
-| `optionalDependencies` | Same as `dependencies`.                               |
-| `peerDependencies`     | Never.                                                |
-| `devDependencies`      | Never.                                                |
+| Field                  | Dependency kind | Pinned                                                |
+| :--------------------- | :-------------- | :---------------------------------------------------- |
+| `dependencies`         | `runtime`       | When the range is an exact version or `*`, see below. |
+| `optionalDependencies` | `runtime`       | Same as `dependencies`.                               |
+| `peerDependencies`     | `peer`          | Never.                                                |
+| `devDependencies`      | `dev`           | Never.                                                |
 
 A range is pinned when it is `*`, or `X.Y.Z` with an optional prerelease and build suffix, optionally prefixed with `=` or `v`; each of these may also start with `workspace:`. Ranges such as `^1.2.0`, `~1.2.0` and `workspace:^` are unpinned. The edge reason is `<field>: <package>`.
 

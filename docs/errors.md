@@ -104,6 +104,12 @@ Cause: Two units resolve to the same id.
 
 Fix: Give one of them a distinct `id` in `units.<root>`.
 
+### E_EDGE_KIND
+
+Cause: A dependency edge has a dependency kind other than `runtime`, `peer` or `dev`. The message names the source, either a plugin or `config` (a `deps` entry).
+
+Fix: Use `runtime`, `peer` or `dev` as the dependency kind, or fix the plugin that emits the edge.
+
 ### E_EDGE_SELF
 
 Cause: A dependency edge points from a unit to itself. The message names the source, either a plugin or `config` (a `deps` entry).

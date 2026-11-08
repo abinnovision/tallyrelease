@@ -28,6 +28,7 @@ export const graph = async (
 		from: e.from,
 		to: e.to,
 		pinned: e.pinned,
+		kinds: e.kinds,
 		reasons: e.reasons,
 	}));
 

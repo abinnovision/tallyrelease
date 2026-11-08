@@ -1,0 +1,37 @@
+description: >-
+  A pinned dev first hop through an unreleased unit is no edge between items in
+  different release PRs.
+plugins:
+  - name: stub
+    units:
+      - { id: a, root: packages/a }
+      - { id: u, root: packages/u }
+      - { id: b, root: packages/b }
+    edges:
+      - { from: a, to: u, reason: dependencies, pinned: true, kind: dev }
+      - { from: u, to: b, reason: dependencies, pinned: false }
+config:
+  plugins: { stub: {} }
+  defaults: { release: true, releasePr: separate }
+  units:
+    packages/u: { release: false }
+    packages/b: { propagate: patch }
+  branches:
+    - { name: main, line: default }
+git:
+  commits:
+    - id: c0
+      files:
+        { packages/a/i.ts: "0", packages/u/i.ts: "0", packages/b/i.ts: "0" }
+    - id: c1
+      message: "fix: a"
+      files: { packages/a/i.ts: "1" }
+  tags:
+    - { name: a-v1.0.0, commit: c0 }
+    - { name: b-v1.0.0, commit: c0 }
+base: c0
+plan: { all: true }
+release: {}
+expect:
+  items:
+    - { name: a, mode: separate, version: 1.0.1 }

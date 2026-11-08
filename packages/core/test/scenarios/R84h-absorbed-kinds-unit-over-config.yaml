@@ -1,0 +1,47 @@
+description: >-
+  units.<root>.absorbedKinds wins over bumps.absorbedKinds: the unit absorbs a
+  peer edge that the config default excludes.
+plugins:
+  - name: stub
+    units:
+      - { id: app, root: apps/app }
+      - { id: testkit, root: packages/testkit }
+    edges:
+      - {
+          from: testkit,
+          to: app,
+          reason: peerDependencies,
+          pinned: false,
+          kind: peer,
+        }
+config:
+  plugins: { stub: {} }
+  units:
+    apps/app: { release: true, absorbedKinds: [runtime, peer] }
+  bumps: { absorbedKinds: [runtime] }
+  branches:
+    - { name: main, line: default }
+git:
+  commits:
+    - id: c0
+      files: { apps/app/index.ts: "0", packages/testkit/index.ts: "0" }
+    - id: c1
+      message: "fix: testkit"
+      files: { packages/testkit/index.ts: "1" }
+  tags:
+    - { name: app-v1.0.0, commit: c0 }
+base: c0
+plan: {}
+expect:
+  plan:
+    units:
+      - { id: testkit, bump: null, next: null }
+      - {
+          id: app,
+          affected: { reason: dependent },
+          bump: patch,
+          next: 1.0.1,
+          absorbedFrom: [testkit],
+          changes: [{ sha: c1, type: fix, via: testkit }],
+        }
+    warnings: []

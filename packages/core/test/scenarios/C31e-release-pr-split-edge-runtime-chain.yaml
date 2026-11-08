@@ -1,0 +1,32 @@
+description: >-
+  A pinned runtime first hop through an unreleased unit is an edge between
+  items in different release PRs and is rejected.
+plugins:
+  - name: stub
+    units:
+      - { id: a, root: packages/a }
+      - { id: u, root: packages/u }
+      - { id: b, root: packages/b }
+    edges:
+      - { from: a, to: u, reason: dependencies, pinned: true }
+      - { from: u, to: b, reason: dependencies, pinned: false }
+config:
+  plugins: { stub: {} }
+  defaults: { release: true, releasePr: separate }
+  units:
+    packages/u: { release: false }
+    packages/b: { propagate: patch }
+git:
+  commits:
+    - id: c0
+      files:
+        { packages/a/i.ts: "0", packages/u/i.ts: "0", packages/b/i.ts: "0" }
+    - id: c1
+      message: "fix: a"
+      files: { packages/a/i.ts: "1" }
+base: c0
+plan: { fails: true }
+expect:
+  planError:
+    code: E_RELEASE_PR_SPLIT_EDGE
+    details: { from: a, to: b, items: [a, b] }

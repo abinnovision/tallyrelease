@@ -97,6 +97,11 @@ export const coreCodes = defineCodes({
 			"A dependency edge points from a unit to itself. The message names the source, either a plugin or `config` (a `deps` entry).",
 		fix: "Remove the edge, or correct `from` or `to` in the `deps` entry.",
 	},
+	E_EDGE_KIND: {
+		cause:
+			"A dependency edge has a dependency kind other than `runtime`, `peer` or `dev`. The message names the source, either a plugin or `config` (a `deps` entry).",
+		fix: "Use `runtime`, `peer` or `dev` as the dependency kind, or fix the plugin that emits the edge.",
+	},
 	E_EDGE_UNKNOWN_UNIT: {
 		cause:
 			"A dependency edge names a unit id that does not exist. The message names the source, either a plugin or `config` (a `deps` entry).",

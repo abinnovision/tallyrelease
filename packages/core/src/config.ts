@@ -1,4 +1,9 @@
-import type { BumpLevel, Propagate, VersionSource } from "./plugin.js";
+import type {
+	BumpLevel,
+	EdgeKind,
+	Propagate,
+	VersionSource,
+} from "./plugin.js";
 
 /** Release PR of a release item: the shared PR or its own. */
 export type ReleasePrMode = "shared" | "separate";
@@ -25,6 +30,12 @@ export interface UnitOverlay {
 	initialVersion?: string;
 	/** Ungrouped released units only; default `defaults.releasePr`. */
 	releasePr?: ReleasePrMode;
+	/**
+	 * Dependency kinds of this unit's own dependencies that count as part of it
+	 * for absorption and propagation through unreleased units. Allowed on glob
+	 * keys; default `bumps.absorbedKinds`.
+	 */
+	absorbedKinds?: EdgeKind[];
 	/** Templated text replacements written on release. */
 	versionFiles?: VersionTemplate[];
 	/**
@@ -71,6 +82,8 @@ export interface BumpsConfig {
 	preMajor?: { breaking?: BumpLevel; feat?: BumpLevel };
 	/** Level of changes absorbed from unreleased dependencies, default `patch`. */
 	absorbed?: "patch" | "minor";
+	/** Dependency kinds absorbed by default, default `[runtime, peer]`. */
+	absorbedKinds?: EdgeKind[];
 }
 
 /** A fixed group: members share one version. Selections are unioned. */
@@ -98,6 +111,8 @@ export interface DepConfig {
 	from: string;
 	to: string;
 	pinned?: boolean;
+	/** Dependency kind, default `runtime`. */
+	kind?: EdgeKind;
 	reason?: string;
 }
 

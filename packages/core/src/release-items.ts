@@ -245,7 +245,11 @@ export const validateReleaseItems = (workspace: Workspace): void => {
 	const policies = new Map(workspace.units.map((u) => [u.id, u.propagate]));
 	const pr = (item: ItemShape) =>
 		item.mode === "shared" ? "shared" : item.name;
-	const edges = releasedEdges(workspace.graph.edges, new Set(byUnit.keys()));
+	const edges = releasedEdges(
+		workspace.graph.edges,
+		new Set(byUnit.keys()),
+		workspace.release,
+	);
 	for (const [to, incoming] of edges) {
 		const policy = policies.get(to) ?? "auto";
 		for (const [from, pinned] of incoming) {

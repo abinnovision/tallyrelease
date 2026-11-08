@@ -1,0 +1,40 @@
+description: >-
+  A config deps edge with kind dev is not absorbed.
+plugins:
+  - name: stub
+    units:
+      - { id: app, root: apps/app }
+      - { id: testkit, root: packages/testkit }
+config:
+  plugins: { stub: {} }
+  deps:
+    - { from: testkit, to: app, kind: dev }
+  units:
+    apps/app: { release: true }
+  branches:
+    - { name: main, line: default }
+git:
+  commits:
+    - id: c0
+      files: { apps/app/index.ts: "0", packages/testkit/index.ts: "0" }
+    - id: c1
+      message: "fix: testkit"
+      files: { packages/testkit/index.ts: "1" }
+  tags:
+    - { name: app-v1.0.0, commit: c0 }
+base: c0
+plan: {}
+expect:
+  plan:
+    units:
+      - { id: testkit, bump: null, next: null }
+      - {
+          id: app,
+          affected: { reason: dependent },
+          kind: rebuild,
+          bump: null,
+          next: null,
+          absorbedFrom: [],
+          changes: [],
+        }
+    warnings: []

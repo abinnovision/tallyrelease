@@ -1,0 +1,48 @@
+description: >-
+  A dev edge between unreleased units is not followed: only the change of the
+  unit with a runtime edge to the released dependent is absorbed.
+plugins:
+  - name: stub
+    units:
+      - { id: app, root: apps/app }
+      - { id: ui, root: packages/ui }
+      - { id: db, root: packages/db }
+    edges:
+      - { from: db, to: ui, reason: devDependencies, pinned: false, kind: dev }
+      - { from: ui, to: app, reason: dependencies, pinned: false }
+config:
+  plugins: { stub: {} }
+  units:
+    apps/app: { release: true }
+  branches:
+    - { name: main, line: default }
+git:
+  commits:
+    - id: c0
+      files:
+        apps/app/index.ts: "0"
+        packages/ui/index.ts: "0"
+        packages/db/index.ts: "0"
+    - id: c1
+      message: "fix: db"
+      files: { packages/db/index.ts: "1" }
+    - id: c2
+      message: "fix: ui"
+      files: { packages/ui/index.ts: "2" }
+  tags:
+    - { name: app-v1.0.0, commit: c0 }
+base: c0
+plan: {}
+expect:
+  plan:
+    units:
+      - { id: db, bump: null, next: null, absorbedFrom: [] }
+      - { id: ui, bump: null, next: null, absorbedFrom: [] }
+      - {
+          id: app,
+          bump: patch,
+          next: 1.0.1,
+          absorbedFrom: [ui],
+          changes: [{ sha: c2, type: fix, via: ui }],
+        }
+    warnings: []

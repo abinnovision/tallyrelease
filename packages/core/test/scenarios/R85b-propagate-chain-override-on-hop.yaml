@@ -1,0 +1,52 @@
+description: >-
+  absorbedKinds with dev on the unreleased unit lets its dev first hop propagate.
+plugins:
+  - name: stub
+    units:
+      - { id: core, root: packages/core }
+      - { id: adapter, root: packages/adapter }
+      - { id: app, root: apps/app }
+    edges:
+      - {
+          from: core,
+          to: adapter,
+          reason: dependencies,
+          pinned: true,
+          kind: dev,
+        }
+      - {
+          from: adapter,
+          to: app,
+          reason: dependencies,
+          pinned: false,
+          kind: runtime,
+        }
+config:
+  plugins: { stub: {} }
+  defaults: { release: true }
+  units:
+    packages/adapter: { release: false, absorbedKinds: [runtime, peer, dev] }
+  branches:
+    - { name: main, line: default }
+git:
+  commits:
+    - id: c0
+      files:
+        packages/core/index.ts: "0"
+        packages/adapter/index.ts: "0"
+        apps/app/index.ts: "0"
+    - id: c1
+      message: "fix: core"
+      files: { packages/core/index.ts: "1" }
+  tags:
+    - { name: core-v1.0.0, commit: c0 }
+    - { name: app-v1.0.0, commit: c0 }
+base: c0
+plan: {}
+expect:
+  plan:
+    units:
+      - { id: core, bump: patch, next: 1.0.1 }
+      - { id: adapter, bump: null, next: null, propagatedFrom: [] }
+      - { id: app, bump: patch, next: 1.0.1, propagatedFrom: [core] }
+    warnings: []

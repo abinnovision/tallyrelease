@@ -7,7 +7,7 @@ export const compare = (a: string, b: string): number =>
 	a < b ? -1 : a > b ? 1 : 0;
 
 /** Sorted distinct values. */
-export const uniqueSorted = (values: Iterable<string>): string[] =>
+export const uniqueSorted = <T extends string>(values: Iterable<T>): T[] =>
 	[...new Set(values)].sort(compare);
 
 /** The higher of two levels; null is lowest. */

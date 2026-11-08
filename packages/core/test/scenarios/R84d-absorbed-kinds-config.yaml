@@ -1,0 +1,48 @@
+description: >-
+  bumps.absorbedKinds replaces the default kinds: a peer edge is no longer
+  absorbed.
+plugins:
+  - name: stub
+    units:
+      - { id: app, root: apps/app }
+      - { id: testkit, root: packages/testkit }
+    edges:
+      - {
+          from: testkit,
+          to: app,
+          reason: peerDependencies,
+          pinned: false,
+          kind: peer,
+        }
+config:
+  plugins: { stub: {} }
+  units:
+    apps/app: { release: true }
+  bumps: { absorbedKinds: [runtime] }
+  branches:
+    - { name: main, line: default }
+git:
+  commits:
+    - id: c0
+      files: { apps/app/index.ts: "0", packages/testkit/index.ts: "0" }
+    - id: c1
+      message: "fix: testkit"
+      files: { packages/testkit/index.ts: "1" }
+  tags:
+    - { name: app-v1.0.0, commit: c0 }
+base: c0
+plan: {}
+expect:
+  plan:
+    units:
+      - { id: testkit, bump: null, next: null }
+      - {
+          id: app,
+          affected: { reason: dependent },
+          kind: rebuild,
+          bump: null,
+          next: null,
+          absorbedFrom: [],
+          changes: [],
+        }
+    warnings: []

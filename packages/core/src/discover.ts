@@ -5,7 +5,7 @@ import { compare, uniqueSorted } from "./util.js";
 
 import type { ReleasePrMode, UnitOverlay } from "./config.js";
 import type { Warning } from "./errors.js";
-import type { Unit, UnitDraft } from "./plugin.js";
+import type { EdgeKind, Unit, UnitDraft } from "./plugin.js";
 import type { ActivePlugin } from "./plugins.js";
 import type { WorkspaceInput } from "./workspace.js";
 
@@ -26,6 +26,8 @@ interface Entry {
 	buildNumber?: { offset?: number } | undefined;
 	/** From the config overlay only. */
 	releasePr?: ReleasePrMode | undefined;
+	/** From the config overlay only. */
+	absorbedKinds?: EdgeKind[] | undefined;
 }
 
 /** Escapes glob metacharacters so a root matches literally. */
@@ -81,7 +83,7 @@ const globMatches = (segments: readonly string[], root: string): boolean => {
 
 /**
  * Merges draft fields; sets `release`, `tags`, `initialVersion`,
- * `buildNumber` and `releasePr` when defined.
+ * `buildNumber`, `releasePr` and `absorbedKinds` when defined.
  */
 const applyOverlay = (
 	entry: Entry,
@@ -91,6 +93,7 @@ const applyOverlay = (
 		initialVersion,
 		buildNumber,
 		releasePr,
+		absorbedKinds,
 		...overlay
 	}: UnitOverlay,
 ): void => {
@@ -113,6 +116,10 @@ const applyOverlay = (
 
 	if (releasePr !== undefined) {
 		entry.releasePr = releasePr;
+	}
+
+	if (absorbedKinds !== undefined) {
+		entry.absorbedKinds = absorbedKinds;
 	}
 };
 
@@ -271,6 +278,7 @@ export const discoverUnits = async (
 				initialVersion,
 				buildNumber,
 				releasePr,
+				absorbedKinds,
 			}): Unit => {
 				const { root } = draft;
 				const nested = roots
@@ -303,6 +311,9 @@ export const discoverUnits = async (
 						buildNumber: Object.freeze({ offset: buildNumber.offset ?? 0 }),
 					}),
 					...(releasePr && { releasePr }),
+					...(absorbedKinds && {
+						absorbedKinds: Object.freeze([...absorbedKinds]),
+					}),
 					meta: Object.freeze(meta),
 				});
 			},

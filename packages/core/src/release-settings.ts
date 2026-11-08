@@ -7,7 +7,7 @@ import type {
 	VersionTemplate,
 } from "./config.js";
 import type { BranchRule } from "./model/branch-types.js";
-import type { BumpLevel, Unit } from "./plugin.js";
+import type { BumpLevel, EdgeKind, Unit } from "./plugin.js";
 
 const DEFAULT_TYPES: Readonly<Record<string, BumpLevel>> = {
 	feat: "minor",
@@ -35,6 +35,11 @@ export interface ReleaseSettings {
 	readonly preMajor: { readonly breaking: BumpLevel; readonly feat: BumpLevel };
 	/** Level cap of absorbed changes with a bump. */
 	readonly absorbed: "patch" | "minor";
+	readonly absorbedKinds: {
+		readonly default: readonly EdgeKind[];
+		/** Set by unit overlays, glob keys included, by unit id. */
+		readonly units: ReadonlyMap<string, readonly EdgeKind[]>;
+	};
 	/** In config order. */
 	readonly branches: readonly BranchRule[];
 	readonly releasePr: {
@@ -62,6 +67,14 @@ export const releaseSettings = (
 			Object.entries({ ...DEFAULT_TYPES, ...config.bumps?.types }),
 		),
 		absorbed: config.bumps?.absorbed ?? "patch",
+		absorbedKinds: {
+			default: config.bumps?.absorbedKinds ?? ["runtime", "peer"],
+			units: new Map(
+				units.flatMap((u) =>
+					u.absorbedKinds ? [[u.id, u.absorbedKinds] as const] : [],
+				),
+			),
+		},
 		preMajor: {
 			breaking: config.bumps?.preMajor?.breaking ?? "minor",
 			feat: config.bumps?.preMajor?.feat ?? "minor",

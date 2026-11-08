@@ -7,7 +7,7 @@ import { NO_OPTIONS } from "../_kit/options.js";
 import { globIn, joinRoot, rootOf } from "../_kit/paths.js";
 import { BUILD, NUMBERS, PRERELEASE } from "../_kit/semver.js";
 
-import type { Ctx, EdgeDraft, UnitDraft } from "@tallyrelease/core";
+import type { Ctx, EdgeDraft, EdgeKind, UnitDraft } from "@tallyrelease/core";
 
 interface Manifest {
 	name?: string;
@@ -17,6 +17,10 @@ interface Manifest {
 
 const PINNED_FIELDS = ["dependencies", "optionalDependencies"] as const;
 const UNPINNED_FIELDS = ["peerDependencies", "devDependencies"] as const;
+const KINDS: Readonly<Record<string, EdgeKind>> = {
+	peerDependencies: "peer",
+	devDependencies: "dev",
+};
 const EXACT = new RegExp(
 	`^(workspace:)?(\\*|=?v?${NUMBERS}${PRERELEASE}${BUILD})$`,
 );
@@ -102,7 +106,14 @@ export const nodePlugin = definePlugin({
 			];
 			for (const [field, exact] of fields) {
 				const deps = (manifest[field] ?? {}) as Record<string, string>;
-				edges.push(...dependencyEdges(byName, to, { field, deps, exact }));
+				edges.push(
+					...dependencyEdges(byName, to, {
+						field,
+						deps,
+						exact,
+						kind: KINDS[field] ?? "runtime",
+					}),
+				);
 			}
 		}
 

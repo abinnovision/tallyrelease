@@ -1,6 +1,6 @@
 import { computeAffected } from "./affected.js";
 import { channelWarnings, checkLimits, matchBranch } from "./branches.js";
-import { changeLevel, reach } from "./bump.js";
+import { absorbedDependencies, changeLevel, reach } from "./bump.js";
 import { coreCodes } from "./codes.js";
 import { collectPlanFacts } from "./facts.js";
 import { pluginCtx, runHook } from "./plugins.js";
@@ -105,6 +105,10 @@ const releaseInputs = (
 		return unit && scheme && range ? [{ unit, scheme, unitFacts, range }] : [];
 	});
 	const released = new Set(entries.map((e) => e.unit.id));
+	const dependencies = absorbedDependencies(
+		workspace.graph.edges,
+		workspace.release,
+	);
 
 	return new Map(
 		entries.map(({ unit, scheme, unitFacts, range }) => [
@@ -115,7 +119,7 @@ const releaseInputs = (
 				settings: workspace.release,
 				facts: unitFacts,
 				range,
-				absorbed: reach(unit.id, workspace.graph.dependencies, released),
+				absorbed: reach(unit.id, dependencies, released),
 				head: facts.head,
 				...(facts.date === undefined ? {} : { date: facts.date }),
 				channel: line?.channel ?? null,
@@ -394,8 +398,7 @@ const resolveReleases = (
 		workspace.groups.flatMap((g) => g.members.map((id) => [id, g.name])),
 	);
 	const propagated = propagate(
-		workspace.graph,
-		workspace.units,
+		workspace,
 		new Map(
 			[...intents].map(([id, i]) => {
 				const group = groupOf.get(id);

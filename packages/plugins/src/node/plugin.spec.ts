@@ -98,21 +98,21 @@ describe("node edges", () => {
 		);
 
 	it.each([
-		["dependencies", "1.2.3", true],
-		["dependencies", "workspace:*", true],
-		["dependencies", "workspace:1.2.3", true],
-		["dependencies", "=1.2.3", true],
-		["dependencies", "v1.2.3", true],
-		["dependencies", "^1.2.3", false],
-		["dependencies", "workspace:^", false],
-		["dependencies", "~1.2.3", false],
-		["optionalDependencies", "1.2.3", true],
-		["peerDependencies", "1.2.3", false],
-		["devDependencies", "workspace:*", false],
-	])("%s %s pinned=%s", async (field, range, pinned) => {
+		["dependencies", "1.2.3", true, "runtime"],
+		["dependencies", "workspace:*", true, "runtime"],
+		["dependencies", "workspace:1.2.3", true, "runtime"],
+		["dependencies", "=1.2.3", true, "runtime"],
+		["dependencies", "v1.2.3", true, "runtime"],
+		["dependencies", "^1.2.3", false, "runtime"],
+		["dependencies", "workspace:^", false, "runtime"],
+		["dependencies", "~1.2.3", false, "runtime"],
+		["optionalDependencies", "1.2.3", true, "runtime"],
+		["peerDependencies", "1.2.3", false, "peer"],
+		["devDependencies", "workspace:*", false, "dev"],
+	])("%s %s pinned=%s kind=%s", async (field, range, pinned, kind) => {
 		const edges = await edgesFor({ [field]: { "@s/a": range } });
 		expect(edges).toEqual([
-			{ from: "a", to: "b", reason: `${field}: @s/a`, pinned },
+			{ from: "a", to: "b", reason: `${field}: @s/a`, pinned, kind },
 		]);
 	});
 
