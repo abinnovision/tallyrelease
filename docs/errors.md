@@ -340,7 +340,7 @@ Fix: Set `tagFormat` (on the unit or in `defaults`) or `releaseTag` to a templat
 
 ### E_TAG_FORMAT_OVERLAP
 
-Cause: Two released units render the same tag format, one existing tag matches the format of more than one released unit, or a group's `releaseTag` renders like a released unit's tag format or another group's `releaseTag`.
+Cause: Two released units render the same tag format, one existing tag matches the format of more than one released unit, or a group's `releaseTag` renders like another group's `releaseTag` or renders tags that a released unit's tag format parses.
 
 Fix: Give the units distinct `tagFormat` values and the groups distinct `releaseTag` values, usually by including `{id}`.
 

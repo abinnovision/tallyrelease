@@ -3,7 +3,12 @@ import { coreCodes } from "./codes.js";
 import { validateFloating } from "./floating.js";
 import { validateReleaseItems } from "./release-items.js";
 import { assertSchemes } from "./schemes.js";
-import { compileTagFormat, matchUnitTags, noMatchingTag } from "./tags.js";
+import {
+	compileTagFormat,
+	matchUnitTags,
+	noMatchingTag,
+	renderTag,
+} from "./tags.js";
 import { uniqueSorted } from "./util.js";
 import { validateTemplates } from "./version-files.js";
 
@@ -16,19 +21,22 @@ const TOKEN = /\{([^{}]*)\}/gu;
 /**
  * Group release tags: `E_CONFIG` for a token other than `{id}` and
  * `{version}`, `E_TAG_FORMAT` unless `{version}` occurs once and
- * `E_TAG_FORMAT_OVERLAP` when one renders like a released unit's tag format
- * or another group's release tag.
+ * `E_TAG_FORMAT_OVERLAP` when another group's release tag renders the same or
+ * a released unit's tag format parses a sample tag of the group: the initial
+ * version of the members' scheme and, when the scheme parses it, that version
+ * with `-rc.1`.
  */
 const validateReleaseTags = (workspace: Workspace): void => {
-	const owners = new Map(
-		workspace.units
-			.filter((u) => u.version !== "none")
-			.map((u) => [
-				compileTagFormat(u.tagFormat, u.id).rendered,
-				`unit "${u.id}"`,
-			]),
-	);
-	for (const { name, releaseTag } of workspace.groups) {
+	const units = new Map(workspace.units.map((u) => [u.id, u]));
+	const released = workspace.units
+		.filter((u) => u.version !== "none")
+		.map((u) => ({
+			unit: u,
+			format: compileTagFormat(u.tagFormat, u.id),
+			scheme: workspace.schemes.get(u.scheme),
+		}));
+	const groups = new Map<string, string>();
+	for (const { name, members, releaseTag } of workspace.groups) {
 		if (releaseTag === null) {
 			continue;
 		}
@@ -53,16 +61,42 @@ const validateReleaseTags = (workspace: Workspace): void => {
 		}
 
 		const rendered = releaseTag.replaceAll("{id}", name);
-		const other = owners.get(rendered);
+		const other = groups.get(rendered);
 		if (other !== undefined) {
 			throw coreCodes.error(
 				"E_TAG_FORMAT_OVERLAP",
-				`release tag "${rendered}" of group "${name}" renders like the tags of ${other}`,
+				`release tag "${rendered}" of group "${name}" renders like the tags of group "${other}"`,
 				{ group: name, format: rendered },
 			);
 		}
 
-		owners.set(rendered, `group "${name}"`);
+		groups.set(rendered, name);
+
+		const scheme = workspace.schemes.get(
+			units.get(members[0] ?? "")?.scheme ?? "",
+		);
+		if (!scheme) {
+			continue;
+		}
+
+		const initial = scheme.format(scheme.initial());
+		const samples = [initial, `${initial}-rc.1`]
+			.filter((v) => scheme.parse(v) !== undefined)
+			.map((v) => renderTag({ id: name, tagFormat: releaseTag }, v));
+		const clash = released.find(({ format, scheme: s }) =>
+			samples.some((tag) => {
+				const raw = format.match(tag);
+
+				return raw !== undefined && s?.parse(raw) !== undefined;
+			}),
+		);
+		if (clash) {
+			throw coreCodes.error(
+				"E_TAG_FORMAT_OVERLAP",
+				`release tag "${rendered}" of group "${name}" renders tags that match the tag format of unit "${clash.unit.id}"`,
+				{ group: name, format: rendered, unit: clash.unit.id },
+			);
+		}
 	}
 };
 
@@ -170,7 +204,7 @@ export const validateTags = (
 	const matched = matchUnitTags(workspace.units, tags, workspace.schemes);
 
 	return noMatchingTag(
-		workspace.units,
+		workspace,
 		[...matched].map(([id, m]) => ({ id, tags: m.tags })),
 		uniqueSorted(tags.map((t) => t.name)),
 	);

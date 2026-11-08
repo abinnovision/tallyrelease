@@ -2,6 +2,7 @@ import { coreCodes } from "./codes.js";
 import { compare } from "./util.js";
 
 import type { Warning } from "./errors.js";
+import type { Group } from "./groups.js";
 import type { TagRef, Unit, VersionScheme } from "./plugin.js";
 
 const SPECIAL = /[\\^$.*+?()[\]{}|/]/gu;
@@ -146,16 +147,21 @@ export const matchUnitTags = (
 
 /**
  * Released units without a matching tag while some tag not matched by a
- * released unit contains their id, delimited by non-alphanumeric characters
- * or the tag's ends.
+ * released unit or a group's release tag contains their id, delimited by
+ * non-alphanumeric characters or the tag's ends.
  */
 export const noMatchingTag = (
-	units: readonly Unit[],
+	{ units, groups }: { units: readonly Unit[]; groups: readonly Group[] },
 	matched: readonly { id: string; tags: readonly { name: string }[] }[],
 	tagNames: readonly string[],
 ): Warning[] => {
+	const ignore = groups.flatMap((g) =>
+		g.releaseTag === null ? [] : [compileTagFormat(g.releaseTag, g.name)],
+	);
 	const names = new Set(matched.flatMap((m) => m.tags.map((t) => t.name)));
-	const tags = tagNames.filter((t) => !names.has(t));
+	const tags = tagNames.filter(
+		(t) => !names.has(t) && !ignore.some((f) => f.match(t) !== undefined),
+	);
 
 	return matched.flatMap((m) => {
 		const unit = units.find((u) => u.id === m.id);
