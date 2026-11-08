@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.7.0](https://github.com/abinnovision/tallyrelease/compare/plugins-v0.6.0...plugins-v0.7.0) (2026-11-08)
+
+
+### Features
+
+* filter absorption by dependency kind ([#215](https://github.com/abinnovision/tallyrelease/issues/215)) ([101307a](https://github.com/abinnovision/tallyrelease/commit/101307abc915fa17088a83fa172c6919a72fa7e4))
+* group tagFormat replaces member tags ([#218](https://github.com/abinnovision/tallyrelease/issues/218)) ([19306a5](https://github.com/abinnovision/tallyrelease/commit/19306a5734eff7dd89ecb95661ec28aad2110601))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @tallyrelease/core bumped to 0.7.0
+
 ## [0.6.0](https://github.com/abinnovision/tallyrelease/compare/plugins-v0.5.0...plugins-v0.6.0) (2026-11-07)
 
 
