@@ -1,4 +1,5 @@
 import {
+	compileTagFormat,
 	computePlan,
 	cutChanges,
 	cutEquals,
@@ -104,10 +105,18 @@ const createReleases = async (
 		}
 
 		const [first] = entries as [ReleasedUnit, ...ReleasedUnit[]];
-		const group =
-			tag === first.tag
+		const owner = workspace.groups.find((g) => g.members.includes(first.id));
+		const shared =
+			owner?.tagFormat === null || owner?.tagFormat === undefined
 				? undefined
-				: workspace.groups.find((g) => g.members.includes(first.id));
+				: compileTagFormat(owner.tagFormat, owner.name);
+		// A legacy member tag of a group with tagFormat stays a unit release.
+		const group =
+			entries.length > 1 ||
+			tag !== first.tag ||
+			shared?.match(tag) !== undefined
+				? owner
+				: undefined;
 		try {
 			const release = await forge.createRelease(repo, {
 				tag,
@@ -487,7 +496,8 @@ export const reconcile = async (
 			continue;
 		}
 
-		const tags = marker.releases.map((r) => r.tag);
+		// Members of a group with tagFormat share a tag.
+		const tags = [...new Set(marker.releases.map((r) => r.tag))];
 		const current = await Promise.all(
 			tags.map(async (t) => await git.resolve(t)),
 		);

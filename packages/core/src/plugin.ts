@@ -117,6 +117,8 @@ export interface UnitDraft {
 	version?: VersionSource;
 	scheme?: string;
 	tagFormat?: string;
+	/** The unit needs tags in its own format, so a group `tagFormat` cannot replace them. */
+	ownTags?: boolean;
 	propagate?: Propagate;
 	/** Stored at `unit.meta[plugin.name]`. */
 	meta?: Record<string, unknown>;
@@ -132,6 +134,8 @@ export interface Unit {
 	readonly version: VersionMode;
 	readonly scheme: string;
 	readonly tagFormat: string;
+	/** From the draft; absent when false. */
+	readonly ownTags?: boolean;
 	readonly propagate: Propagate;
 	/** From the config overlay; sorted, unique. */
 	readonly tags: readonly string[];

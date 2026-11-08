@@ -1,0 +1,28 @@
+description: A member whose plugin requires its own tags cannot be in a group with tagFormat.
+plugins:
+  - name: stub
+    units:
+      - { id: a, root: packages/a, ownTags: true }
+      - { id: b, root: packages/b }
+      - { id: c, root: packages/c, tagFormat: "v{version}" }
+config:
+  plugins: { stub: {} }
+  defaults: { release: true }
+  groups:
+    sdk: { units: [a, b], tagFormat: "{id}-v{version}" }
+git:
+  commits:
+    - id: c0
+      files:
+        {
+          packages/a/index.ts: "0",
+          packages/b/index.ts: "0",
+          packages/c/index.ts: "0",
+        }
+base: c0
+plan: { fails: true }
+expect:
+  affected: { units: [] }
+  planError:
+    code: E_GROUP_OWN_TAGS
+    details: { group: sdk, unit: a }

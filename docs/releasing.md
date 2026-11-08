@@ -257,6 +257,19 @@ groups:
 
 Reconcile then also pushes `shop-v1.0.1` at the merge commit and creates one release `shop: v1.0.1` on it, with the changelog sections of `api` and `web`, each version heading naming its unit. Member tags, changelogs and floating tags stay as they are, and planning never reads the group tag. The tag must not render like a unit's `tagFormat`. Releases made before the setting keep their per-unit GitHub releases, which `plan` and `run` still report.
 
+To replace the member tags with one tag per group version, set `tagFormat` on the group instead of `releaseTag`:
+
+```yaml
+groups:
+  shop: { units: [api, web], tagFormat: "v{version}" }
+```
+
+Every member is then tagged and planned with `v1.0.1`, reconcile pushes that tag once and creates one release `shop: v1.0.1`, and floating tags render with the group name for `{id}`. The group tag must not match the tags of a unit outside the group.
+
+- **Migration:** the members' own tags stay candidates, so the first release continues from the highest member tag, for example `api-v1.2.0`.
+- **Leaving the group:** a member that leaves falls back to its own tags from before the group. Push a baseline tag in its own format at the last group release, for example `api-v1.4.0`.
+- **Go modules:** `go get` resolves a module only by its own tags, so a group with `tagFormat` and a Go member fails with `E_GROUP_OWN_TAGS`. Use `releaseTag` for these groups.
+
 ## Release PRs
 
 By default all release items share one release PR on `tallyrelease/release/<branch>/shared`. `releasePr: separate` (in `defaults`, on an ungrouped unit or on a group) gives an item its own PR on `tallyrelease/release/<branch>/<item>`. The PR commit updates version files and changelogs. The body has one `<details>` section per unit with its changelog section, followed by a hidden marker with the planned versions, which reconcile compares on merge. When the changelogs are too long for a PR body, whole unit sections are left out with a note; the files in the PR hold all of it.

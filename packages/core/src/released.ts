@@ -1,7 +1,12 @@
 import { coreCodes } from "./codes.js";
 import { isCutVersion } from "./cut.js";
 import { renderFloatingTags } from "./floating.js";
-import { matchUnitTags, renderTag } from "./tags.js";
+import {
+	compileTagFormat,
+	matchUnitTags,
+	renderTag,
+	tagOwner,
+} from "./tags.js";
 import { compare } from "./util.js";
 
 import type { Warning } from "./errors.js";
@@ -30,11 +35,7 @@ const releasedEntries = async (
 		keep,
 	}: { git: GitReader; keep: (tag: UnitTag) => MaybePromise<boolean> },
 ): Promise<ReleasedUnit[]> => {
-	const matched = matchUnitTags(
-		workspace.units,
-		await git.tags(),
-		workspace.schemes,
-	);
+	const matched = matchUnitTags(workspace, await git.tags());
 	const line = plan.line?.kind ?? "default";
 	const cut = plan.line?.cut ?? null;
 	const built = new Set(
@@ -54,6 +55,8 @@ const releasedEntries = async (
 		}
 
 		const group = releaseTags.get(unit.id);
+		const owner = tagOwner(workspace.groups, unit);
+		const ownerFormat = compileTagFormat(owner.tagFormat, owner.id);
 
 		const { scheme } = m;
 		const names = m.tags.map((t) => t.name);
@@ -79,11 +82,16 @@ const releasedEntries = async (
 					releaseTag: group ? renderTag(group, tag.version) : tag.name,
 					floatingTags: prerelease
 						? []
-						: renderFloatingTags(unit, tag.version, {
-								tags: names,
-								scheme,
-								formats: workspace.release.floating,
-							}),
+						: renderFloatingTags(
+								// Floating tags follow the format of the matched tag.
+								ownerFormat.match(tag.name) === undefined ? unit : owner,
+								tag.version,
+								{
+									tags: names,
+									scheme,
+									formats: workspace.release.floating,
+								},
+							),
 					releaseSha: tag.sha,
 					catchUp: tag.sha !== plan.head || !built.has(unit.id),
 					forge: null,

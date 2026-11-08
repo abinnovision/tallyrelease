@@ -215,7 +215,8 @@ export const releaseGroup = <V>(
 		.map((t) => t.name);
 	const ctx = ctxOf(first.input.unit, first.input, {
 		baseTag: group.baseTag,
-		tags,
+		// Members of a group with tagFormat share tags.
+		tags: [...new Set(tags)],
 		sinceLineBase: group.sinceLineBase,
 		total: Math.max(...members.map((m) => m.input.facts.total)),
 	});

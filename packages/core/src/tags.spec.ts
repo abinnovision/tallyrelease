@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { semver } from "./semver.js";
 import { compileTagFormat, matchUnitTags } from "./tags.js";
 
+import type { Group } from "./groups.js";
 import type { Unit } from "./plugin.js";
 
 const unit = (id: string, tagFormat: string, released = true): Unit => ({
@@ -22,12 +23,11 @@ const unit = (id: string, tagFormat: string, released = true): Unit => ({
 
 const schemes = new Map([["semver", semver]]);
 const tag = (name: string) => ({ name, sha: "c0" });
-const names = (units: Unit[], tags: string[]) =>
+const names = (units: Unit[], tags: string[], groups: Group[] = []) =>
 	Object.fromEntries(
-		[...matchUnitTags(units, tags.map(tag), schemes)].map(([id, list]) => [
-			id,
-			list.tags.map((t) => t.name),
-		]),
+		[...matchUnitTags({ units, schemes, groups }, tags.map(tag))].map(
+			([id, list]) => [id, list.tags.map((t) => t.name)],
+		),
 	);
 
 describe("compileTagFormat", () => {
@@ -78,5 +78,21 @@ describe("matchUnitTags", () => {
 				details: { units: ["a", "b"], format: "v{version}" },
 			}),
 		);
+	});
+
+	it("gives members of a group with tagFormat the group tags and their own", () => {
+		const group: Group = {
+			name: "sdk",
+			members: ["a", "b"],
+			releaseTag: null,
+			tagFormat: "v{version}",
+		};
+		expect(
+			names(
+				[unit("a", "{id}-v{version}"), unit("b", "{id}-v{version}")],
+				["v1.1.0", "a-v1.0.0"],
+				[group],
+			),
+		).toEqual({ a: ["a-v1.0.0", "v1.1.0"], b: ["v1.1.0"] });
 	});
 });

@@ -39,6 +39,7 @@ describe("go plugin", () => {
 				root: ".",
 				version: "tag",
 				tagFormat: "v{version}",
+				ownTags: true,
 				meta: { modulePath: "example.com/mono" },
 			},
 			{
@@ -46,6 +47,7 @@ describe("go plugin", () => {
 				root: "mod/a",
 				version: "tag",
 				tagFormat: "mod/a/v{version}",
+				ownTags: true,
 				meta: { modulePath: "example.com/mono/mod/a" },
 			},
 		]);

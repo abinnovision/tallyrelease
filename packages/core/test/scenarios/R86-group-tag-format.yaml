@@ -1,0 +1,39 @@
+description: >-
+  Members of a group with tagFormat read their version from the group tag
+  and release under it.
+plugins:
+  - name: stub
+    units:
+      - { id: a, root: packages/a }
+      - { id: b, root: packages/b }
+config:
+  plugins: { stub: {} }
+  defaults: { release: true }
+  groups:
+    sdk: { units: [a, b], tagFormat: "v{version}" }
+  branches:
+    - { name: main, line: default }
+git:
+  commits:
+    - id: c0
+      files: { packages/a/index.ts: "0", packages/b/index.ts: "0" }
+    - id: c1
+      message: "feat: a"
+      files: { packages/a/index.ts: "1" }
+  tags:
+    - { name: v1.0.0, commit: c0 }
+base: c0
+plan: {}
+release: {}
+expect:
+  plan:
+    units:
+      - { id: a, group: sdk, from: 1.0.0, baseTag: v1.0.0, next: 1.1.0 }
+      - { id: b, group: sdk, from: 1.0.0, baseTag: v1.0.0, next: 1.1.0 }
+    warnings: []
+  items:
+    - name: sdk
+      version: 1.1.0
+      tags:
+        - { id: a, tag: v1.1.0 }
+        - { id: b, tag: v1.1.0 }

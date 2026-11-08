@@ -1,4 +1,4 @@
-import { renderTag } from "./tags.js";
+import { renderTag, tagOwner } from "./tags.js";
 import { compare } from "./util.js";
 
 import type { PlanChange, Plan } from "./model/plan-types.js";
@@ -307,7 +307,7 @@ export const changelogSection = (
 		date: opts.date,
 		repoUrl: opts.repoUrl,
 		baseTag: cut ? (cut.previousCut?.name ?? entry.baseTag) : entry.baseTag,
-		tag: renderTag(unit, version),
+		tag: renderTag(tagOwner(workspace.groups, unit), version),
 		changes: cut?.changes ?? entry.changes,
 		dependencies,
 		...(entry.group === null

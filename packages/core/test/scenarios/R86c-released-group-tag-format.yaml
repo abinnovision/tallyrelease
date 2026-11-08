@@ -1,0 +1,41 @@
+description: >-
+  Members of a group with tagFormat are released under the shared group tag,
+  which is also their release tag; floating tags render with the group name.
+plugins:
+  - name: stub
+    units:
+      - { id: a, root: packages/a }
+      - { id: b, root: packages/b }
+config:
+  plugins: { stub: {} }
+  defaults: { release: true }
+  branches:
+    - { name: main, line: default }
+  groups:
+    sdk: { units: [a, b], tagFormat: "{id}-v{version}" }
+  tags:
+    floating: ["{id}-v{major}"]
+git:
+  commits:
+    - id: c0
+      files: { packages/a/index.ts: "0", packages/b/index.ts: "0" }
+  tags:
+    - { name: sdk-v1.0.0, commit: c0 }
+base: null
+plan: { released: true }
+expect:
+  plan:
+    released:
+      - {
+          id: a,
+          tag: sdk-v1.0.0,
+          releaseTag: sdk-v1.0.0,
+          floatingTags: [sdk-v1],
+        }
+      - {
+          id: b,
+          tag: sdk-v1.0.0,
+          releaseTag: sdk-v1.0.0,
+          floatingTags: [sdk-v1],
+        }
+    warnings: []

@@ -76,7 +76,7 @@ Fix: Remove the `*` from the rule `name`, or remove the channels from that rule.
 
 ### E_CONFIG
 
-Cause: The config file is not valid YAML, does not match the schema (unknown key, wrong type), or fails a semantic check: a unit sets `releasePr` while being in a group, a `tags.floating` format uses a token other than `{id}`, `{major}` or `{minor}`, a `versionFiles` entry has a bad `file` or `pattern`, or a `branches` rule sets both `channel` and `channels.build`.
+Cause: The config file is not valid YAML, does not match the schema (unknown key, wrong type), or fails a semantic check: a unit sets `releasePr` while being in a group, a `tags.floating` format uses a token other than `{id}`, `{major}` or `{minor}`, a `versionFiles` entry has a bad `file` or `pattern`, or a `branches` rule sets both `channel` and `channels.build`, or a group sets both `releaseTag` and `tagFormat`.
 
 Fix: Fix the key named in the message. Replace the deprecated `channel` with `channels.build`. A `versionFiles` `pattern` needs literal text and either `{version}` or the `{major}`, `{minor}`, `{patch}` tokens (not mixed), and `file` must be a repo-relative path without `..`. Set `releasePr` on the group instead of on its members.
 
@@ -157,6 +157,12 @@ Fix: Set `release: true` on the unit (or `defaults.release: true`), or remove it
 Cause: A unit is a member of two groups.
 
 Fix: Adjust `groups.<name>.units` and `groups.<name>.tags` so every unit belongs to at most one group.
+
+### E_GROUP_OWN_TAGS
+
+Cause: A group sets `tagFormat`, but one of its members needs tags in its own format, for example a Go module, which `go get` resolves only by its own tags.
+
+Fix: Remove `tagFormat` from the group and use `releaseTag` for one release per group, or move the member out of the group.
 
 ### E_GROUP_SCHEME
 
@@ -334,15 +340,15 @@ Fix: Check whether the release was already tagged by another commit. Delete or m
 
 ### E_TAG_FORMAT
 
-Cause: A unit's `tagFormat` or a group's `releaseTag` does not contain `{version}` exactly once.
+Cause: A unit's `tagFormat` or a group's `releaseTag` or `tagFormat` does not contain `{version}` exactly once.
 
-Fix: Set `tagFormat` (on the unit or in `defaults`) or `releaseTag` to a template with a single `{version}`, for example `{id}-v{version}`.
+Fix: Set `tagFormat` (on the unit, the group or in `defaults`) or `releaseTag` to a template with a single `{version}`, for example `{id}-v{version}`.
 
 ### E_TAG_FORMAT_OVERLAP
 
-Cause: Two released units render the same tag format, one existing tag matches the format of more than one released unit, or a group's `releaseTag` renders like another group's `releaseTag` or renders tags that a released unit's tag format parses.
+Cause: Two released units render the same tag format, one existing tag matches the format of more than one released unit, or a group's `releaseTag` or `tagFormat` renders like another group's or renders tags that a released unit's tag format parses (for `tagFormat`, a unit outside the group).
 
-Fix: Give the units distinct `tagFormat` values and the groups distinct `releaseTag` values, usually by including `{id}`.
+Fix: Give the units distinct `tagFormat` values and the groups distinct `releaseTag` and `tagFormat` values, usually by including `{id}`.
 
 ### E_UNIT_GLOB
 

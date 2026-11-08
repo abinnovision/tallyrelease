@@ -37,6 +37,10 @@ const escapeGlob = (path: string): string =>
 const isInside = (path: string, root: string): boolean =>
 	path !== root && (root === "." || path.startsWith(`${root}/`));
 
+/** `ownTags` of a unit: set only when true. */
+const ownTagsOf = (draft: Pick<UnitDraft, "ownTags">) =>
+	draft.ownTags === true ? { ownTags: true } : {};
+
 /** Fields a glob overlay cannot set. */
 const GLOB_REJECTED = ["id", "include", "exclude", "versionFiles"] as const;
 
@@ -304,6 +308,7 @@ export const discoverUnits = async (
 						draft.tagFormat ??
 						defaults?.tagFormat ??
 						(root === "." ? "v{version}" : "{id}-v{version}"),
+					...ownTagsOf(draft),
 					propagate: draft.propagate ?? defaults?.propagate ?? "auto",
 					tags: Object.freeze(uniqueSorted(tags ?? [])),
 					initialVersion: initialVersion ?? defaults?.initialVersion ?? null,

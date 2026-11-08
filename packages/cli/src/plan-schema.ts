@@ -146,13 +146,13 @@ export const releaseEntrySchema = z
 			.string()
 			.nullable()
 			.describe(
-				"Version tag of a release or cut prerelease, null for a build prerelease.",
+				"Version tag of a release or cut prerelease, null for a build prerelease. Members of a group with `tagFormat` share the group tag, so it repeats across their entries.",
 			),
 		releaseTag: z
 			.string()
 			.nullable()
 			.describe(
-				"Tag of the forge release: the group's `releaseTag` for a member of a group that sets it, else `tag`; null for a build prerelease.",
+				"Tag of the forge release: the group's `releaseTag` for a member of a group that sets it, else `tag` (also for a group with `tagFormat`); null for a build prerelease.",
 			),
 		releaseSha: z
 			.string()

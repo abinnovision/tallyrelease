@@ -562,6 +562,29 @@ branches:
 		);
 	});
 
+	it("tags and releases a group with tagFormat once", async () => {
+		const yaml = config(`
+groups:
+  sdk: { units: [a, b], tagFormat: "v{version}" }
+`);
+		const dag = repo(yaml, { ids: ["a", "b"] });
+		const { remote, run, merge, release } = setup(dag);
+		await run("pr", dag);
+
+		expect((await release(merge(dag, 1))).stdout).toBe(
+			[
+				"PR #1: tagged v1.1.0 at merge-1",
+				"PR #1: created releases v1.1.0",
+				"PR #1: labelled released",
+				"",
+			].join("\n"),
+		);
+		expect([...remote.tags]).toEqual([["v1.1.0", "merge-1"]]);
+		expect(remote.releases).toEqual([
+			expect.objectContaining({ tag: "v1.1.0", name: "sdk: v1.1.0" }),
+		]);
+	});
+
 	it("reconciles two merged PRs oldest first (E29)", async () => {
 		const dag = repo(config("", "release: true, releasePr: separate"));
 		const { remote, run, merge, release } = setup(dag);

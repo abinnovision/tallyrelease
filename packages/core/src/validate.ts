@@ -19,12 +19,14 @@ import type { Workspace } from "./workspace.js";
 const TOKEN = /\{([^{}]*)\}/gu;
 
 /**
- * Group release tags: `E_CONFIG` for a token other than `{id}` and
- * `{version}`, `E_TAG_FORMAT` unless `{version}` occurs once and
- * `E_TAG_FORMAT_OVERLAP` when another group's release tag renders the same or
- * a released unit's tag format parses a sample tag of the group: the initial
- * version of the members' scheme and, when the scheme parses it, that version
- * with `-rc.1`.
+ * Group release tags and tag formats: `E_CONFIG` when a group sets both or
+ * for a token other than `{id}` and `{version}`, `E_TAG_FORMAT` unless
+ * `{version}` occurs once, `E_GROUP_OWN_TAGS` for a member with `ownTags` in a
+ * group with `tagFormat` and `E_TAG_FORMAT_OVERLAP` when another group's
+ * format renders the same or a released unit's tag format parses a sample tag
+ * of the group: the initial version of the members' scheme and, when the
+ * scheme parses it, that version with `-rc.1`. Members are exempt for their
+ * group's `tagFormat`.
  */
 const validateReleaseTags = (workspace: Workspace): void => {
 	const units = new Map(workspace.units.map((u) => [u.id, u]));
@@ -36,36 +38,60 @@ const validateReleaseTags = (workspace: Workspace): void => {
 			scheme: workspace.schemes.get(u.scheme),
 		}));
 	const groups = new Map<string, string>();
-	for (const { name, members, releaseTag } of workspace.groups) {
-		if (releaseTag === null) {
+	for (const { name, members, releaseTag, tagFormat } of workspace.groups) {
+		if (releaseTag !== null && tagFormat !== null) {
+			throw coreCodes.error(
+				"E_CONFIG",
+				`group "${name}" sets both releaseTag and tagFormat; use one`,
+				{ group: name },
+			);
+		}
+
+		const ownTags =
+			tagFormat === null
+				? undefined
+				: members.find((id) => units.get(id)?.ownTags === true);
+		if (ownTags !== undefined) {
+			throw coreCodes.error(
+				"E_GROUP_OWN_TAGS",
+				`unit "${ownTags}" of group "${name}" needs its own tags; group tagFormat cannot replace them`,
+				{ group: name, unit: ownTags },
+			);
+		}
+
+		const [label, format] =
+			tagFormat === null
+				? ["release tag", releaseTag]
+				: ["tag format", tagFormat];
+		if (format === null) {
 			continue;
 		}
 
-		const unknown = [...releaseTag.matchAll(TOKEN)].find(
+		const unknown = [...format.matchAll(TOKEN)].find(
 			([, token]) => token !== "id" && token !== "version",
 		);
 		if (unknown) {
 			throw coreCodes.error(
 				"E_CONFIG",
-				`release tag "${releaseTag}" of group "${name}" uses unknown token "${unknown[0]}"; use {id} or {version}`,
-				{ group: name, format: releaseTag },
+				`${label} "${format}" of group "${name}" uses unknown token "${unknown[0]}"; use {id} or {version}`,
+				{ group: name, format },
 			);
 		}
 
-		if (releaseTag.split("{version}").length !== 2) {
+		if (format.split("{version}").length !== 2) {
 			throw coreCodes.error(
 				"E_TAG_FORMAT",
-				`release tag "${releaseTag}" of group "${name}" must contain {version} exactly once`,
-				{ group: name, format: releaseTag },
+				`${label} "${format}" of group "${name}" must contain {version} exactly once`,
+				{ group: name, format },
 			);
 		}
 
-		const rendered = releaseTag.replaceAll("{id}", name);
+		const rendered = format.replaceAll("{id}", name);
 		const other = groups.get(rendered);
 		if (other !== undefined) {
 			throw coreCodes.error(
 				"E_TAG_FORMAT_OVERLAP",
-				`release tag "${rendered}" of group "${name}" renders like the tags of group "${other}"`,
+				`${label} "${rendered}" of group "${name}" renders like the tags of group "${other}"`,
 				{ group: name, format: rendered },
 			);
 		}
@@ -82,18 +108,20 @@ const validateReleaseTags = (workspace: Workspace): void => {
 		const initial = scheme.format(scheme.initial());
 		const samples = [initial, `${initial}-rc.1`]
 			.filter((v) => scheme.parse(v) !== undefined)
-			.map((v) => renderTag({ id: name, tagFormat: releaseTag }, v));
-		const clash = released.find(({ format, scheme: s }) =>
-			samples.some((tag) => {
-				const raw = format.match(tag);
+			.map((v) => renderTag({ id: name, tagFormat: format }, v));
+		const clash = released.find(
+			({ unit, format: f, scheme: s }) =>
+				!(tagFormat !== null && members.includes(unit.id)) &&
+				samples.some((tag) => {
+					const raw = f.match(tag);
 
-				return raw !== undefined && s?.parse(raw) !== undefined;
-			}),
+					return raw !== undefined && s?.parse(raw) !== undefined;
+				}),
 		);
 		if (clash) {
 			throw coreCodes.error(
 				"E_TAG_FORMAT_OVERLAP",
-				`release tag "${rendered}" of group "${name}" renders tags that match the tag format of unit "${clash.unit.id}"`,
+				`${label} "${rendered}" of group "${name}" renders tags that match the tag format of unit "${clash.unit.id}"`,
 				{ group: name, format: rendered, unit: clash.unit.id },
 			);
 		}
@@ -201,7 +229,7 @@ export const validateTags = (
 	workspace: Workspace,
 	tags: readonly TagRef[],
 ): Warning[] => {
-	const matched = matchUnitTags(workspace.units, tags, workspace.schemes);
+	const matched = matchUnitTags(workspace, tags);
 
 	return noMatchingTag(
 		workspace,
