@@ -1,6 +1,6 @@
 import { coreCodes } from "./codes.js";
 import { releasedEdges } from "./propagate.js";
-import { renderTag } from "./tags.js";
+import { renderTag, tagOwner } from "./tags.js";
 
 import type { ReleasePrMode } from "./config.js";
 import type { Warning } from "./errors.js";
@@ -131,7 +131,14 @@ export const releaseItems = (
 			tags: item.units.flatMap((u) => {
 				const unit = units.get(u);
 
-				return unit ? [{ id: u, tag: renderTag(unit, version) }] : [];
+				return unit
+					? [
+							{
+								id: u,
+								tag: renderTag(tagOwner(workspace.groups, unit), version),
+							},
+						]
+					: [];
 			}),
 		});
 	}

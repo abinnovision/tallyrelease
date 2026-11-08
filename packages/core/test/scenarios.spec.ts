@@ -76,11 +76,11 @@ interface Scenario {
 	/** Defaults to `main`. */
 	branch?: string;
 	/**
-	 * Collects plan facts and computes the plan when set; with `fails` a plan
-	 * error is returned as `planError`; `released` fills `plan.released`;
-	 * `buildNumbers` numbers the releases, then the prereleases not released at
-	 * HEAD, in the order of the release list; `buildChannel` selects the
-	 * build prerelease channel.
+	 * Collects plan facts and computes the plan when set; with `fails` only the
+	 * plan, whose error is returned as `planError`; `released` fills
+	 * `plan.released`; `buildNumbers` numbers the releases, then the
+	 * prereleases not released at HEAD, in the order of the release list;
+	 * `buildChannel` selects the build prerelease channel.
 	 */
 	plan?: {
 		all?: boolean;
@@ -283,9 +283,11 @@ const run = async (s: Scenario) => {
 	};
 	const affected = await computeAffected(workspace, git, opts);
 
-	const facts = s.plan
-		? await collectPlanFacts(workspace, git, { head, fs })
-		: undefined;
+	// computePlan validates before it collects facts.
+	const facts =
+		s.plan && !s.plan.fails
+			? await collectPlanFacts(workspace, git, { head, fs })
+			: undefined;
 	let planError: unknown;
 	const plan = s.plan
 		? await computePlan(workspace, git, {

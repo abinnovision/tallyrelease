@@ -499,7 +499,7 @@ const resolveReleases = (
 		},
 	);
 
-	warnings.push(...noMatchingTag(workspace.units, facts.units, facts.tagNames));
+	warnings.push(...noMatchingTag(workspace, facts.units, facts.tagNames));
 
 	return {
 		plan: { ...doc, line, units, groups, released: [], warnings },

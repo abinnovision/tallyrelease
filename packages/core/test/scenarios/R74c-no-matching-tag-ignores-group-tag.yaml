@@ -1,0 +1,27 @@
+description: >-
+  A group release tag that contains a unit's id does not warn
+  W_NO_MATCHING_TAG for that unit.
+plugins:
+  - name: stub
+    units:
+      - { id: api, root: packages/api }
+      - { id: b, root: packages/b }
+config:
+  plugins: { stub: {} }
+  defaults: { release: true }
+  branches:
+    - { name: main, line: default }
+  groups:
+    api-sdk: { units: [b], releaseTag: "{id}-v{version}" }
+git:
+  commits:
+    - id: c0
+      files: { packages/api/index.ts: "0", packages/b/index.ts: "0" }
+  tags:
+    - { name: b-v1.0.0, commit: c0 }
+    - { name: api-sdk-v1.0.0, commit: c0 }
+base: null
+plan: { released: true }
+expect:
+  plan:
+    warnings: []

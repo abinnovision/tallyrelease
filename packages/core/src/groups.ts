@@ -12,6 +12,8 @@ export interface Group {
 	readonly members: readonly string[];
 	/** Tag format of the group's forge release, else null. */
 	readonly releaseTag: string | null;
+	/** Tag format shared by the members in place of their own, else null. */
+	readonly tagFormat: string | null;
 }
 
 /**
@@ -32,6 +34,7 @@ export const resolveGroups = (
 			units: ids = [],
 			tags = [],
 			releaseTag = null,
+			tagFormat = null,
 		} = config?.[name] ?? {};
 		const unknown = ids.find((id) => !known.has(id));
 		if (unknown !== undefined) {
@@ -70,7 +73,7 @@ export const resolveGroups = (
 			owner.set(id, name);
 		}
 
-		groups.push({ name, members, releaseTag });
+		groups.push({ name, members, releaseTag, tagFormat });
 	}
 
 	return groups;

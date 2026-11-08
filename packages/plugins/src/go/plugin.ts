@@ -118,6 +118,7 @@ export const goPlugin = definePlugin({
 				root,
 				version: "tag",
 				tagFormat: root === "." ? "v{version}" : `${root}/v{version}`,
+				ownTags: true,
 				meta: module === undefined ? {} : { modulePath: module },
 			};
 		});

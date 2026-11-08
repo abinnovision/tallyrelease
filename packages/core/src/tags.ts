@@ -2,6 +2,7 @@ import { coreCodes } from "./codes.js";
 import { compare } from "./util.js";
 
 import type { Warning } from "./errors.js";
+import type { Group } from "./groups.js";
 import type { TagRef, Unit, VersionScheme } from "./plugin.js";
 
 const SPECIAL = /[\\^$.*+?()[\]{}|/]/gu;
@@ -61,6 +62,20 @@ export const renderTag = (
 		.replaceAll("{id}", unit.id)
 		.replace("{version}", () => version);
 
+/** The group of a member of a group with `tagFormat`, else the unit; its format renders the unit's tags. */
+export const tagOwner = (
+	groups: readonly Group[],
+	unit: Pick<Unit, "id" | "tagFormat">,
+): Pick<Unit, "id" | "tagFormat"> => {
+	const group = groups.find(
+		(g) => g.tagFormat !== null && g.members.includes(unit.id),
+	);
+
+	return group?.tagFormat
+		? { id: group.name, tagFormat: group.tagFormat }
+		: unit;
+};
+
 /** Tags of a released unit and its scheme. */
 export interface UnitTags {
 	readonly scheme: VersionScheme<any>;
@@ -70,13 +85,22 @@ export interface UnitTags {
 
 /**
  * Tags of each released unit, sorted by scheme order, then name. Unreleased
- * units never match. Throws `E_TAG_FORMAT_OVERLAP` if two released units render
- * the same format or a tag parses for more than one of them.
+ * units never match. A member of a group with `tagFormat` matches the group's
+ * format, then its own. Throws `E_TAG_FORMAT_OVERLAP` if two released units
+ * render the same format or a tag parses for more than one of them, unless
+ * all of them are members of the same group with `tagFormat`.
  */
 export const matchUnitTags = (
-	units: readonly Unit[],
+	{
+		units,
+		schemes,
+		groups,
+	}: {
+		units: readonly Unit[];
+		schemes: ReadonlyMap<string, VersionScheme<any>>;
+		groups: readonly Group[];
+	},
 	tags: readonly TagRef[],
-	schemes: ReadonlyMap<string, VersionScheme<any>>,
 ): Map<string, UnitTags> => {
 	const released = units
 		.filter((u) => u.version !== "none")
@@ -90,22 +114,37 @@ export const matchUnitTags = (
 				);
 			}
 
+			const owner = tagOwner(groups, unit);
+			const formats = [owner, unit]
+				.map((u) => compileTagFormat(u.tagFormat, u.id))
+				.filter(
+					(f, i, all) => all.findIndex((o) => o.rendered === f.rendered) === i,
+				);
+
 			return {
 				unit,
 				scheme,
-				format: compileTagFormat(unit.tagFormat, unit.id),
+				key: owner === unit ? unit.id : `group:${owner.id}`,
+				formats,
 			};
 		});
 
-	const rendered = new Map<string, string>();
-	for (const { unit, format } of released) {
-		const other = rendered.get(format.rendered);
-		if (other !== undefined) {
-			throw overlap([other, unit.id], { format: format.rendered });
-		}
+	const rendered = new Map<string, { key: string; id: string }>();
+	for (const { unit, key, formats } of released) {
+		for (const format of formats) {
+			const other = rendered.get(format.rendered);
+			if (other !== undefined && other.key !== key) {
+				throw overlap([other.id, unit.id], { format: format.rendered });
+			}
 
-		rendered.set(format.rendered, unit.id);
+			rendered.set(format.rendered, { key, id: unit.id });
+		}
 	}
+
+	const versionOf = (r: (typeof released)[number], tag: string) =>
+		r.formats
+			.map((f) => f.match(tag))
+			.find((raw) => raw !== undefined && r.scheme.parse(raw) !== undefined);
 
 	const matched = new Map(
 		released.map((r): [string, UnitTags] => [
@@ -114,22 +153,19 @@ export const matchUnitTags = (
 		]),
 	);
 	for (const tag of tags) {
-		const owners = released.filter((r) => {
-			const raw = r.format.match(tag.name);
-
-			return raw !== undefined && r.scheme.parse(raw) !== undefined;
-		});
-		if (owners.length > 1) {
+		const owners = released.filter((r) => versionOf(r, tag.name) !== undefined);
+		if (new Set(owners.map((r) => r.key)).size > 1) {
 			throw overlap(
 				owners.map((r) => r.unit.id),
 				{ tag: tag.name },
 			);
 		}
 
-		const [owner] = owners;
-		const version = owner?.format.match(tag.name);
-		if (owner && version !== undefined) {
-			matched.get(owner.unit.id)?.tags.push({ ...tag, version });
+		for (const owner of owners) {
+			const version = versionOf(owner, tag.name);
+			if (version !== undefined) {
+				matched.get(owner.unit.id)?.tags.push({ ...tag, version });
+			}
 		}
 	}
 
@@ -146,16 +182,21 @@ export const matchUnitTags = (
 
 /**
  * Released units without a matching tag while some tag not matched by a
- * released unit contains their id, delimited by non-alphanumeric characters
- * or the tag's ends.
+ * released unit or a group's release tag contains their id, delimited by
+ * non-alphanumeric characters or the tag's ends.
  */
 export const noMatchingTag = (
-	units: readonly Unit[],
+	{ units, groups }: { units: readonly Unit[]; groups: readonly Group[] },
 	matched: readonly { id: string; tags: readonly { name: string }[] }[],
 	tagNames: readonly string[],
 ): Warning[] => {
+	const ignore = groups.flatMap((g) =>
+		g.releaseTag === null ? [] : [compileTagFormat(g.releaseTag, g.name)],
+	);
 	const names = new Set(matched.flatMap((m) => m.tags.map((t) => t.name)));
-	const tags = tagNames.filter((t) => !names.has(t));
+	const tags = tagNames.filter(
+		(t) => !names.has(t) && !ignore.some((f) => f.match(t) !== undefined),
+	);
 
 	return matched.flatMap((m) => {
 		const unit = units.find((u) => u.id === m.id);
@@ -168,10 +209,12 @@ export const noMatchingTag = (
 			return [];
 		}
 
+		const owner = tagOwner(groups, unit);
+
 		return [
 			coreCodes.warning(
 				"W_NO_MATCHING_TAG",
-				`released unit "${m.id}" has no tag matching "${unit.tagFormat.replaceAll("{id}", m.id)}", but "${similar}" contains its id`,
+				`released unit "${m.id}" has no tag matching "${owner.tagFormat.replaceAll("{id}", owner.id)}", but "${similar}" contains its id`,
 				{ unit: m.id },
 			),
 		];

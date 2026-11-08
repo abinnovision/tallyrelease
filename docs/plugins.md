@@ -153,7 +153,7 @@ Every hook receives a frozen `Ctx`:
 
 ### Units and edges
 
-`discover` returns `UnitDraft` objects: `id` and `root` are required; `include`, `exclude`, `version` (`file` or `tag`, default `tag`), `scheme`, `tagFormat` and `propagate` fill in defaults that the config overlay `units.<root>` can override field by field. `meta` is stored at `unit.meta[plugin.name]` for your other hooks to read. Duplicate ids or roots fail with `E_DUPLICATE_UNIT` and `E_DUPLICATE_ROOT`.
+`discover` returns `UnitDraft` objects: `id` and `root` are required; `include`, `exclude`, `version` (`file` or `tag`, default `tag`), `scheme`, `tagFormat` and `propagate` fill in defaults that the config overlay `units.<root>` can override field by field. Set `ownTags: true` when the unit's tags must keep its own format, as Go modules do: a group with `tagFormat` then fails with `E_GROUP_OWN_TAGS` instead of replacing them. `meta` is stored at `unit.meta[plugin.name]` for your other hooks to read. Duplicate ids or roots fail with `E_DUPLICATE_UNIT` and `E_DUPLICATE_ROOT`.
 
 `edges` returns `{ from, to, reason, pinned }`, meaning `to` depends on `from`. Set `pinned` when the published manifest of `to` changes with the version of `from`; the propagation policy uses it. Edges from all plugins and `deps` in the config are merged and deduplicated.
 

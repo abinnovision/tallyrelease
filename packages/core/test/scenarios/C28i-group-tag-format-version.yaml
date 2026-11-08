@@ -1,0 +1,28 @@
+description: A group tagFormat without {version} fails release validation.
+plugins:
+  - name: stub
+    units:
+      - { id: a, root: packages/a }
+      - { id: b, root: packages/b }
+      - { id: c, root: packages/c, tagFormat: "v{version}" }
+config:
+  plugins: { stub: {} }
+  defaults: { release: true }
+  groups:
+    sdk: { units: [a, b], tagFormat: "{id}-latest" }
+git:
+  commits:
+    - id: c0
+      files:
+        {
+          packages/a/index.ts: "0",
+          packages/b/index.ts: "0",
+          packages/c/index.ts: "0",
+        }
+base: c0
+plan: { fails: true }
+expect:
+  affected: { units: [] }
+  planError:
+    code: E_TAG_FORMAT
+    details: { group: sdk, format: "{id}-latest" }

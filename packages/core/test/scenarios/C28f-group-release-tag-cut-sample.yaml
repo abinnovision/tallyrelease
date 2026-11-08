@@ -1,0 +1,24 @@
+description: >-
+  A group release tag whose cut tags a released unit's tag format parses is
+  an overlap.
+plugins:
+  - name: stub
+    units:
+      - { id: root, root: ., tagFormat: "v{version}" }
+      - { id: a, root: packages/a }
+config:
+  plugins: { stub: {} }
+  defaults: { release: true }
+  groups:
+    sdk: { units: [a], releaseTag: "v{version}.sdk" }
+git:
+  commits:
+    - id: c0
+      files: { index.ts: "0", packages/a/index.ts: "0" }
+base: c0
+plan: { fails: true }
+expect:
+  affected: { units: [] }
+  planError:
+    code: E_TAG_FORMAT_OVERLAP
+    details: { group: sdk, format: "v{version}.sdk", unit: root }

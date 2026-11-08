@@ -67,11 +67,7 @@ export const previousCut = async (
 		return result;
 	}
 
-	const matched = matchUnitTags(
-		workspace.units,
-		await git.tags(),
-		workspace.schemes,
-	);
+	const matched = matchUnitTags(workspace, await git.tags());
 	const byName = new Map(
 		[...matched.values()].flatMap((m) =>
 			m.tags.map((tag) => [tag.name, { tag, scheme: m.scheme }] as const),

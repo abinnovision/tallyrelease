@@ -39,18 +39,25 @@ const groupReleaseTag = z.string().meta({
 		"Tag format of one GitHub release for the whole group, pushed at the release commit next to the member tags; tokens {id} (the group name) and {version}. Default: one release per member tag.",
 });
 
+const groupTagFormat = z.string().meta({
+	description:
+		"Tag format shared by all members in place of their own tags: one tag, and one GitHub release, per group version; tokens {id} (the group name) and {version}. Members keep their own tags as candidates, so the first release continues from the highest of them. Not for Go modules. Exclusive with releaseTag. Default: member tags.",
+});
+
 const groupUnion = z.union([
 	z.strictObject({
 		units: groupUnits,
 		tags: groupTags.exactOptional(),
 		releasePr: releasePr.exactOptional(),
 		releaseTag: groupReleaseTag.exactOptional(),
+		tagFormat: groupTagFormat.exactOptional(),
 	}),
 	z.strictObject({
 		units: groupUnits.exactOptional(),
 		tags: groupTags,
 		releasePr: releasePr.exactOptional(),
 		releaseTag: groupReleaseTag.exactOptional(),
+		tagFormat: groupTagFormat.exactOptional(),
 	}),
 ]);
 

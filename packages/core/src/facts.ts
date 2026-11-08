@@ -146,9 +146,8 @@ export const tagFacts = async (
 	line: LineFacts,
 ) => {
 	const { head } = line;
-	const { schemes } = workspace;
 	const allTags = await git.tags();
-	const tags = matchUnitTags(workspace.units, allTags, schemes);
+	const tags = matchUnitTags(workspace, allTags);
 	const merged = new Set((await git.tagsMerged(head)).map((t) => t.name));
 
 	const ancestry = new Map<string, boolean>();
