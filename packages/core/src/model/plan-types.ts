@@ -72,6 +72,8 @@ export interface ReleasedUnit {
 	path: string;
 	version: string;
 	tag: string;
+	/** Tag of the forge release: the group's `releaseTag` when its group sets one, else `tag`. */
+	releaseTag: string;
 	floatingTags: string[];
 	releaseSha: string;
 	/** Not built from HEAD by this run (release sha differs from HEAD, or the unit is outside the build set). */

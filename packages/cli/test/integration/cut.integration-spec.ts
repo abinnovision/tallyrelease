@@ -226,6 +226,7 @@ describe("prerelease PRs", () => {
 				path: "packages/a",
 				version: "1.1.0-beta.2",
 				tag: "a-v1.1.0-beta.2",
+				releaseTag: "a-v1.1.0-beta.2",
 				floatingTags: [],
 				releaseSha: "merge-2",
 				catchUp: false,

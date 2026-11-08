@@ -11,11 +11,66 @@ import type { Warning } from "./errors.js";
 import type { TagRef } from "./plugin.js";
 import type { Workspace } from "./workspace.js";
 
+const TOKEN = /\{([^{}]*)\}/gu;
+
+/**
+ * Group release tags: `E_CONFIG` for a token other than `{id}` and
+ * `{version}`, `E_TAG_FORMAT` unless `{version}` occurs once and
+ * `E_TAG_FORMAT_OVERLAP` when one renders like a released unit's tag format
+ * or another group's release tag.
+ */
+const validateReleaseTags = (workspace: Workspace): void => {
+	const owners = new Map(
+		workspace.units
+			.filter((u) => u.version !== "none")
+			.map((u) => [
+				compileTagFormat(u.tagFormat, u.id).rendered,
+				`unit "${u.id}"`,
+			]),
+	);
+	for (const { name, releaseTag } of workspace.groups) {
+		if (releaseTag === null) {
+			continue;
+		}
+
+		const unknown = [...releaseTag.matchAll(TOKEN)].find(
+			([, token]) => token !== "id" && token !== "version",
+		);
+		if (unknown) {
+			throw coreCodes.error(
+				"E_CONFIG",
+				`release tag "${releaseTag}" of group "${name}" uses unknown token "${unknown[0]}"; use {id} or {version}`,
+				{ group: name, format: releaseTag },
+			);
+		}
+
+		if (releaseTag.split("{version}").length !== 2) {
+			throw coreCodes.error(
+				"E_TAG_FORMAT",
+				`release tag "${releaseTag}" of group "${name}" must contain {version} exactly once`,
+				{ group: name, format: releaseTag },
+			);
+		}
+
+		const rendered = releaseTag.replaceAll("{id}", name);
+		const other = owners.get(rendered);
+		if (other !== undefined) {
+			throw coreCodes.error(
+				"E_TAG_FORMAT_OVERLAP",
+				`release tag "${rendered}" of group "${name}" renders like the tags of ${other}`,
+				{ group: name, format: rendered },
+			);
+		}
+
+		owners.set(rendered, `group "${name}"`);
+	}
+};
+
 /**
  * Release-only checks, never run by `affected`: scheme registry, schemes, tag
- * formats and initial versions of released units, group members, branch rules,
- * their absolute check targets and channels, release items, floating tag
- * formats and version file templates.
+ * formats and initial versions of released units, group members and release
+ * tags, branch rules, their absolute check targets and channels, release
+ * items, floating tag formats and version file templates.
  */
 export const validateRelease = (workspace: Workspace): void => {
 	const { schemes } = workspace;
@@ -70,6 +125,7 @@ export const validateRelease = (workspace: Workspace): void => {
 		}
 	}
 
+	validateReleaseTags(workspace);
 	validateBranches(workspace.release.branches);
 	const groupOf = new Map(
 		workspace.groups.flatMap((g) => g.members.map((id) => [id, g.name])),

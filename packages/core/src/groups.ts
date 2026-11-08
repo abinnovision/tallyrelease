@@ -10,6 +10,8 @@ export interface Group {
 	readonly name: string;
 	/** Sorted unit ids. */
 	readonly members: readonly string[];
+	/** Tag format of the group's forge release, else null. */
+	readonly releaseTag: string | null;
 }
 
 /**
@@ -26,7 +28,11 @@ export const resolveGroups = (
 	const owner = new Map<string, string>();
 	const groups: Group[] = [];
 	for (const name of Object.keys(config ?? {}).sort(compare)) {
-		const { units: ids = [], tags = [] } = config?.[name] ?? {};
+		const {
+			units: ids = [],
+			tags = [],
+			releaseTag = null,
+		} = config?.[name] ?? {};
 		const unknown = ids.find((id) => !known.has(id));
 		if (unknown !== undefined) {
 			throw coreCodes.error(
@@ -64,7 +70,7 @@ export const resolveGroups = (
 			owner.set(id, name);
 		}
 
-		groups.push({ name, members });
+		groups.push({ name, members, releaseTag });
 	}
 
 	return groups;

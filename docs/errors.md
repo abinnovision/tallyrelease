@@ -334,15 +334,15 @@ Fix: Check whether the release was already tagged by another commit. Delete or m
 
 ### E_TAG_FORMAT
 
-Cause: A unit's `tagFormat` does not contain `{version}` exactly once.
+Cause: A unit's `tagFormat` or a group's `releaseTag` does not contain `{version}` exactly once.
 
-Fix: Set `tagFormat` (on the unit or in `defaults`) to a template with a single `{version}`, for example `{id}-v{version}`.
+Fix: Set `tagFormat` (on the unit or in `defaults`) or `releaseTag` to a template with a single `{version}`, for example `{id}-v{version}`.
 
 ### E_TAG_FORMAT_OVERLAP
 
-Cause: Two released units render the same tag format, or one existing tag matches the format of more than one released unit.
+Cause: Two released units render the same tag format, one existing tag matches the format of more than one released unit, or a group's `releaseTag` renders like a released unit's tag format or another group's `releaseTag`.
 
-Fix: Give the units distinct `tagFormat` values, usually by including `{id}`.
+Fix: Give the units distinct `tagFormat` values and the groups distinct `releaseTag` values, usually by including `{id}`.
 
 ### E_UNIT_GLOB
 
