@@ -23,20 +23,46 @@ const TOKEN = /\{([^{}]*)\}/gu;
  * for a token other than `{id}` and `{version}`, `E_TAG_FORMAT` unless
  * `{version}` occurs once, `E_GROUP_OWN_TAGS` for a member with `ownTags` in a
  * group with `tagFormat` and `E_TAG_FORMAT_OVERLAP` when another group's
- * format renders the same or a released unit's tag format parses a sample tag
- * of the group: the initial version of the members' scheme and, when the
- * scheme parses it, that version with `-rc.1`. Members are exempt for their
- * group's `tagFormat`.
+ * format renders the same or a released unit's tag format or another group's
+ * `tagFormat` parses a sample tag of the group: the initial version of the
+ * members' scheme and, when the scheme parses it, that version with `-rc.1`.
+ * Members are exempt for their group's `tagFormat`.
  */
 const validateReleaseTags = (workspace: Workspace): void => {
 	const units = new Map(workspace.units.map((u) => [u.id, u]));
-	const released = workspace.units
-		.filter((u) => u.version !== "none")
-		.map((u) => ({
-			unit: u,
-			format: compileTagFormat(u.tagFormat, u.id),
-			scheme: workspace.schemes.get(u.scheme),
-		}));
+	const schemeOf = (id: string | undefined) =>
+		workspace.schemes.get(units.get(id ?? "")?.scheme ?? "");
+	// Formats planning parses: released units and groups with `tagFormat`.
+	const parsed = [
+		...workspace.units
+			.filter((u) => u.version !== "none")
+			.map((u) => ({
+				label: `unit "${u.id}"`,
+				detail: { unit: u.id },
+				exempt: (group: string) =>
+					workspace.groups.some(
+						(g) =>
+							g.name === group &&
+							g.tagFormat !== null &&
+							g.members.includes(u.id),
+					),
+				format: compileTagFormat(u.tagFormat, u.id),
+				scheme: workspace.schemes.get(u.scheme),
+			})),
+		...workspace.groups.flatMap((g) =>
+			g.tagFormat === null || g.tagFormat.split("{version}").length !== 2
+				? []
+				: [
+						{
+							label: `group "${g.name}"`,
+							detail: { other: g.name },
+							exempt: (group: string) => group === g.name,
+							format: compileTagFormat(g.tagFormat, g.name),
+							scheme: schemeOf(g.members[0]),
+						},
+					],
+		),
+	];
 	const groups = new Map<string, string>();
 	for (const { name, members, releaseTag, tagFormat } of workspace.groups) {
 		if (releaseTag !== null && tagFormat !== null) {
@@ -98,9 +124,7 @@ const validateReleaseTags = (workspace: Workspace): void => {
 
 		groups.set(rendered, name);
 
-		const scheme = workspace.schemes.get(
-			units.get(members[0] ?? "")?.scheme ?? "",
-		);
+		const scheme = schemeOf(members[0]);
 		if (!scheme) {
 			continue;
 		}
@@ -109,9 +133,9 @@ const validateReleaseTags = (workspace: Workspace): void => {
 		const samples = [initial, `${initial}-rc.1`]
 			.filter((v) => scheme.parse(v) !== undefined)
 			.map((v) => renderTag({ id: name, tagFormat: format }, v));
-		const clash = released.find(
-			({ unit, format: f, scheme: s }) =>
-				!(tagFormat !== null && members.includes(unit.id)) &&
+		const clash = parsed.find(
+			({ exempt, format: f, scheme: s }) =>
+				!exempt(name) &&
 				samples.some((tag) => {
 					const raw = f.match(tag);
 
@@ -121,8 +145,8 @@ const validateReleaseTags = (workspace: Workspace): void => {
 		if (clash) {
 			throw coreCodes.error(
 				"E_TAG_FORMAT_OVERLAP",
-				`${label} "${rendered}" of group "${name}" renders tags that match the tag format of unit "${clash.unit.id}"`,
-				{ group: name, format: rendered, unit: clash.unit.id },
+				`${label} "${rendered}" of group "${name}" renders tags that match the tag format of ${clash.label}`,
+				{ group: name, format: rendered, ...clash.detail },
 			);
 		}
 	}

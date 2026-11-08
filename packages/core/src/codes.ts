@@ -81,7 +81,7 @@ export const coreCodes = defineCodes({
 	},
 	E_CONFIG: {
 		cause:
-			"The config file is not valid YAML, does not match the schema (unknown key, wrong type), or fails a semantic check: a unit sets `releasePr` while being in a group, a `tags.floating` format uses a token other than `{id}`, `{major}` or `{minor}`, a `versionFiles` entry has a bad `file` or `pattern`, or a `branches` rule sets both `channel` and `channels.build`, or a group sets both `releaseTag` and `tagFormat`.",
+			"The config file is not valid YAML, does not match the schema (unknown key, wrong type), or fails a semantic check: a unit sets `releasePr` while being in a group, a `tags.floating` format uses a token other than `{id}`, `{major}` or `{minor}`, a `versionFiles` entry has a bad `file` or `pattern`, a `branches` rule sets both `channel` and `channels.build`, or a group sets both `releaseTag` and `tagFormat`.",
 		fix: "Fix the key named in the message. Replace the deprecated `channel` with `channels.build`. A `versionFiles` `pattern` needs literal text and either `{version}` or the `{major}`, `{minor}`, `{patch}` tokens (not mixed), and `file` must be a repo-relative path without `..`. Set `releasePr` on the group instead of on its members.",
 	},
 	E_DUPLICATE_ROOT: {

@@ -255,7 +255,7 @@ groups:
   shop: { units: [api, web], releaseTag: "{id}-v{version}" }
 ```
 
-Reconcile then also pushes `shop-v1.0.1` at the merge commit and creates one release `shop: v1.0.1` on it, with the changelog sections of `api` and `web`, each version heading naming its unit. Member tags, changelogs and floating tags stay as they are, and planning never reads the group tag. The tag must not render like a unit's `tagFormat`. Releases made before the setting keep their per-unit GitHub releases, which `plan` and `run` still report.
+Reconcile then also pushes `shop-v1.0.1` at the merge commit and creates one release `shop: v1.0.1` on it, with the changelog sections of `api` and `web`, each version heading naming its unit. Member tags, changelogs and floating tags stay as they are, and planning never reads the group tag. A released unit's `tagFormat` must not parse the tag as one of its versions, stable or cut. Releases made before the setting keep their per-unit GitHub releases, which `plan` and `run` still report.
 
 To replace the member tags with one tag per group version, set `tagFormat` on the group instead of `releaseTag`:
 
