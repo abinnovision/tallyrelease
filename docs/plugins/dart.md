@@ -24,13 +24,13 @@ A pubspec with invalid YAML fails the command with a message that names the file
 
 Edges connect units by package name. Dependencies on packages outside the repository are ignored. The edge reason is `<field>: <package>`.
 
-| Field                  | Entry                                                    | Pinned |
-| :--------------------- | :------------------------------------------------------- | :----- |
-| `dependencies`         | `path:` map naming a unit                                | Yes    |
-| `dependencies`         | exact version such as `1.2.0` or `1.2.0-rc.1+3`          | Yes    |
-| `dependencies`         | range (`^1.0.0`, `any`, `>=1.0.0 <2.0.0`) or empty value | No     |
-| `dev_dependencies`     | any `path:` map, version or empty value                  | No     |
-| `dependency_overrides` | any `path:` map, version or empty value                  | No     |
+| Field                  | Dependency kind | Entry                                                    | Pinned |
+| :--------------------- | :-------------- | :------------------------------------------------------- | :----- |
+| `dependencies`         | `runtime`       | `path:` map naming a unit                                | Yes    |
+| `dependencies`         | `runtime`       | exact version such as `1.2.0` or `1.2.0-rc.1+3`          | Yes    |
+| `dependencies`         | `runtime`       | range (`^1.0.0`, `any`, `>=1.0.0 <2.0.0`) or empty value | No     |
+| `dev_dependencies`     | `dev`           | any `path:` map, version or empty value                  | No     |
+| `dependency_overrides` | `dev`           | any `path:` map, version or empty value                  | No     |
 
 The empty value is the `shared:` form used by pub workspace members. Other maps (`git:`, `hosted:`, `sdk:`) and YAML numbers such as `shared: 1.0` add no edge.
 

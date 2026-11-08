@@ -1,0 +1,22 @@
+description: >-
+  absorbedKinds on a glob key applies to every matched unit, and an exact key
+  overrides it.
+plugins:
+  - name: stub
+    units:
+      - { id: a, root: apps/a }
+      - { id: b, root: apps/b }
+config:
+  plugins: { stub: {} }
+  units:
+    "apps/*": { absorbedKinds: [runtime, dev] }
+    apps/b: { absorbedKinds: [runtime] }
+git:
+  commits:
+    - id: c0
+      files: { apps/a/i.ts: "1", apps/b/i.ts: "1" }
+base: null
+expect:
+  units:
+    - { id: a, absorbedKinds: [runtime, dev] }
+    - { id: b, absorbedKinds: [runtime] }

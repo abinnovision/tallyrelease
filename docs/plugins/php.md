@@ -22,10 +22,10 @@ Every `repositories` entry of the root manifest with `type: path` adds the units
 
 Edges connect units by package name; packages outside the repository are ignored.
 
-| Field         | Pinned                                   |
-| :------------ | :--------------------------------------- |
-| `require`     | When the constraint is exact, see below. |
-| `require-dev` | Never.                                   |
+| Field         | Dependency kind | Pinned                                   |
+| :------------ | :-------------- | :--------------------------------------- |
+| `require`     | `runtime`       | When the constraint is exact, see below. |
+| `require-dev` | `dev`           | Never.                                   |
 
 A constraint is pinned when it is `self.version`, or `X.Y.Z` (also `X.Y.Z.W`) with an optional prerelease suffix, optionally prefixed with `=` or `v`. Constraints such as `^1.2`, `~1.2` and `*` are unpinned. The edge reason is `<field>: <package>`.
 

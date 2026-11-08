@@ -1,7 +1,7 @@
 import { maxLevel } from "./util.js";
 
 import type { RangeFacts } from "./model/facts-types.js";
-import type { BumpLevel, Change } from "./plugin.js";
+import type { BumpLevel, Change, Edge } from "./plugin.js";
 import type { ReleaseSettings } from "./release-settings.js";
 
 /**
@@ -12,6 +12,31 @@ export interface UnitChange {
 	readonly change: Change;
 	readonly via?: string;
 }
+
+/** Whether the dependency kinds of `e` count for its dependent `e.to`. */
+export const absorbs = (
+	e: Pick<Edge, "to" | "kinds">,
+	{ absorbedKinds }: Pick<ReleaseSettings, "absorbedKinds">,
+): boolean => {
+	const kinds = absorbedKinds.units.get(e.to) ?? absorbedKinds.default;
+
+	return e.kinds.some((k) => kinds.includes(k));
+};
+
+/** Unit id to the ids of the dependencies it absorbs. */
+export const absorbedDependencies = (
+	edges: readonly Edge[],
+	settings: Pick<ReleaseSettings, "absorbedKinds">,
+): Map<string, string[]> => {
+	const result = new Map<string, string[]>();
+	for (const e of edges.filter((x) => absorbs(x, settings))) {
+		const list = result.get(e.to) ?? [];
+		list.push(e.from);
+		result.set(e.to, list);
+	}
+
+	return result;
+};
 
 /**
  * Unreleased units reachable over `id`'s dependencies, never stepping into or

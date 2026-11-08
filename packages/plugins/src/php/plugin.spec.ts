@@ -65,7 +65,13 @@ describe("php plugin", () => {
 		expect(
 			await edges({ name: "v/mono", require: { "v/x": "1.2.3" } }),
 		).toEqual([
-			{ from: "x", to: "mono", reason: "require: v/x", pinned: true },
+			{
+				from: "x",
+				to: "mono",
+				reason: "require: v/x",
+				pinned: true,
+				kind: "runtime",
+			},
 		]);
 		for (const constraint of ["self.version", "1.2.3.4", "=v1.2.3"]) {
 			// eslint-disable-next-line no-await-in-loop -- sequential cases
@@ -74,17 +80,37 @@ describe("php plugin", () => {
 				require: { "v/x": constraint },
 			});
 			expect(pinned).toEqual([
-				{ from: "x", to: "mono", reason: "require: v/x", pinned: true },
+				{
+					from: "x",
+					to: "mono",
+					reason: "require: v/x",
+					pinned: true,
+					kind: "runtime",
+				},
 			]);
 		}
 
 		expect(await edges({ name: "v/mono", require: { "v/x": "^1.2" } })).toEqual(
-			[{ from: "x", to: "mono", reason: "require: v/x", pinned: false }],
+			[
+				{
+					from: "x",
+					to: "mono",
+					reason: "require: v/x",
+					pinned: false,
+					kind: "runtime",
+				},
+			],
 		);
 		expect(
 			await edges({ name: "v/mono", "require-dev": { "v/x": "1.2.3" } }),
 		).toEqual([
-			{ from: "x", to: "mono", reason: "require-dev: v/x", pinned: false },
+			{
+				from: "x",
+				to: "mono",
+				reason: "require-dev: v/x",
+				pinned: false,
+				kind: "dev",
+			},
 		]);
 	});
 

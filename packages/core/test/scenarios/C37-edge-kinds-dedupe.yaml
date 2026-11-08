@@ -1,0 +1,17 @@
+description: Duplicate edges merge their dependency kinds, defaulting to runtime.
+plugins:
+  - name: stub
+    units:
+      - { id: a, root: packages/a }
+      - { id: b, root: packages/b }
+    edges:
+      - { from: a, to: b, reason: devDependencies, pinned: false, kind: dev }
+      - { from: a, to: b, reason: dependencies, pinned: false }
+git:
+  commits:
+    - id: c0
+      files: { packages/a/index.ts: "1", packages/b/index.ts: "1" }
+base: null
+expect:
+  edges:
+    - { from: a, to: b, kinds: [dev, runtime] }

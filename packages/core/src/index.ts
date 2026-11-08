@@ -47,6 +47,7 @@ export type {
 	Ctx,
 	Edge,
 	EdgeDraft,
+	EdgeKind,
 	GitReader,
 	IntentSource,
 	MaybePromise,

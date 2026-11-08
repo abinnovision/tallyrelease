@@ -33,6 +33,8 @@ deps:
   - { from: setup, to: docs-site, pinned: false }
 ```
 
+An entry may set `kind` to `runtime` (default), `peer` or `dev`. Absorption and propagation through unreleased units follow it, see [concepts.md](../concepts.md#edges-and-propagation).
+
 ## Inputs
 
 None. Add files that affect every unit with the top-level `globalInputs` key.

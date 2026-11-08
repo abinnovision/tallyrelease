@@ -77,6 +77,7 @@ export const phpPlugin = definePlugin({
 						field,
 						deps,
 						exact: field === "require" ? EXACT : undefined,
+						kind: field === "require" ? "runtime" : "dev",
 					}),
 				);
 			}

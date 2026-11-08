@@ -1,0 +1,48 @@
+description: >-
+  absorbedKinds with dev on the released unit covers only its own dev
+  dependencies, not the dev dependencies of its dependencies.
+plugins:
+  - name: stub
+    units:
+      - { id: app, root: apps/app }
+      - { id: u1, root: packages/u1 }
+      - { id: u2, root: packages/u2 }
+    edges:
+      - { from: u2, to: u1, reason: devDependencies, pinned: false, kind: dev }
+      - { from: u1, to: app, reason: devDependencies, pinned: false, kind: dev }
+config:
+  plugins: { stub: {} }
+  units:
+    apps/app: { release: true, absorbedKinds: [runtime, peer, dev] }
+  branches:
+    - { name: main, line: default }
+git:
+  commits:
+    - id: c0
+      files:
+        apps/app/index.ts: "0"
+        packages/u1/index.ts: "0"
+        packages/u2/index.ts: "0"
+    - id: c1
+      message: "fix: u2"
+      files: { packages/u2/index.ts: "1" }
+    - id: c2
+      message: "fix: u1"
+      files: { packages/u1/index.ts: "2" }
+  tags:
+    - { name: app-v1.0.0, commit: c0 }
+base: c0
+plan: {}
+expect:
+  plan:
+    units:
+      - { id: u2, bump: null, next: null, absorbedFrom: [] }
+      - { id: u1, bump: null, next: null, absorbedFrom: [] }
+      - {
+          id: app,
+          bump: patch,
+          next: 1.0.1,
+          absorbedFrom: [u1],
+          changes: [{ sha: c2, type: fix, via: u1 }],
+        }
+    warnings: []

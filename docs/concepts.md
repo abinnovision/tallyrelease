@@ -29,6 +29,8 @@ Every other unit is build-only: it is built when affected but never versioned. A
 
 An edge `db -> api` says that `api` depends on `db`. Plugins create edges from manifests, and `deps` in the config adds more. An edge is pinned when the dependent's published manifest must change with the dependency's version, for example an exact version in `dependencies`. `api` depends on `@acme/db` with the range `*`, which counts as pinned.
 
+Each edge also has a dependency kind: `runtime`, `peer` or `dev`. Plugins set it from the manifest field (for example `devDependencies` is `dev`), and `deps` entries take `kind`, default `runtime`. The kind does not change which units are built. Absorption and propagation through build-only units follow an edge only when its kind is one of the `absorbedKinds` of the dependent, by default `runtime` and `peer`. A change in a build-only test utility that `api` lists under `devDependencies` therefore does not release `api`. Set `bumps.absorbedKinds`, or `absorbedKinds` on a unit such as a bundled app that ships its dev dependencies, to change this. The setting applies to the unit's own dependencies, not to the dependencies of its dependencies.
+
 When a released unit releases, its released dependents follow their `propagate` policy: `auto` (the default) gives a patch when the edge is pinned and only a rebuild otherwise, `patch` always gives a patch, `rebuild` never bumps. Propagation runs between released units only; changes of build-only units reach released units through absorption. If `db` were released, `api` would follow every `db` release with a patch, because its edge is pinned. This config stops that:
 
 ```yaml

@@ -26,6 +26,8 @@ const releasePr = z.enum(["shared", "separate"]).meta({
 		"Release PR of the release item: shared (one PR for all shared items) or separate (its own PR).",
 });
 
+const edgeKind = z.enum(["runtime", "peer", "dev"]);
+
 const unitId = z.string().regex(/^(?!\.\.?$)[A-Za-z0-9._-]+$/);
 const groupUnits = z.array(unitId).meta({ description: "Member unit ids." });
 const groupTags = z
@@ -102,6 +104,13 @@ const unitOverlay = z.strictObject({
 		.meta({
 			description:
 				"Release PR of this ungrouped unit; set it on the group for grouped units. Glob keys may set it. Defaults to defaults.releasePr.",
+		})
+		.exactOptional(),
+	absorbedKinds: z
+		.array(edgeKind)
+		.meta({
+			description:
+				"Dependency kinds of this unit's own dependencies that count as part of it for absorption and propagation through unreleased units, for example runtime, peer and dev for a bundled app that ships its dev dependencies. Glob keys may set it. An empty list absorbs nothing. Defaults to bumps.absorbedKinds.",
 		})
 		.exactOptional(),
 	versionFiles: z
@@ -230,6 +239,11 @@ const configObject = z.strictObject({
 					.boolean()
 					.meta({
 						description: "Whether the dependent pins an exact version.",
+					})
+					.exactOptional(),
+				kind: edgeKind
+					.meta({
+						description: "Dependency kind: runtime (default), peer or dev.",
 					})
 					.exactOptional(),
 				reason: z
@@ -370,6 +384,13 @@ const configObject = z.strictObject({
 				.meta({
 					description:
 						"Level a released unit gets from bump-producing changes absorbed from unreleased dependencies: patch (default) or minor (feat and breaking give minor, fix gives patch).",
+				})
+				.exactOptional(),
+			absorbedKinds: z
+				.array(edgeKind)
+				.meta({
+					description:
+						"Dependency kinds that count as part of a unit for absorption and propagation through unreleased units. Default runtime and peer; an empty list absorbs nothing. units.<root>.absorbedKinds overrides it per unit.",
 				})
 				.exactOptional(),
 		})

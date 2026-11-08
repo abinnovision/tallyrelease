@@ -1,4 +1,4 @@
-import type { EdgeDraft, Unit } from "@tallyrelease/core";
+import type { EdgeDraft, EdgeKind, Unit } from "@tallyrelease/core";
 
 /** Units of `plugin` keyed by package name; `onDuplicate` sees each shadowed unit. */
 export const unitsByPackage = (
@@ -26,7 +26,7 @@ export const unitsByPackage = (
 export const edgeBetween = (
 	from: Unit | undefined,
 	to: Unit,
-	link: Pick<EdgeDraft, "reason" | "pinned">,
+	link: Pick<EdgeDraft, "reason" | "pinned" | "kind">,
 ): EdgeDraft[] =>
 	from && from.id !== to.id ? [{ from: from.id, to: to.id, ...link }] : [];
 
@@ -38,11 +38,18 @@ export const dependencyEdges = (
 		field,
 		deps,
 		exact,
-	}: { field: string; deps: Record<string, string>; exact: RegExp | undefined },
+		kind,
+	}: {
+		field: string;
+		deps: Record<string, string>;
+		exact: RegExp | undefined;
+		kind: EdgeKind;
+	},
 ): EdgeDraft[] =>
 	Object.entries(deps).flatMap(([name, range]) =>
 		edgeBetween(byName.get(name), to, {
 			reason: `${field}: ${name}`,
 			pinned: exact?.test(range) ?? false,
+			kind,
 		}),
 	);

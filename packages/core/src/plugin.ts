@@ -141,8 +141,13 @@ export interface Unit {
 	readonly buildNumber?: { readonly offset: number };
 	/** Config overlay only; absent when not configured. */
 	readonly releasePr?: ReleasePrMode;
+	/** Config overlay only; absent when not configured. */
+	readonly absorbedKinds?: readonly EdgeKind[];
 	readonly meta: Readonly<Record<string, Readonly<Record<string, unknown>>>>;
 }
+
+/** How `to` depends on `from`: shipped, peer or development only. */
+export type EdgeKind = "runtime" | "peer" | "dev";
 
 /** `to` depends on `from`. */
 export interface EdgeDraft {
@@ -151,6 +156,8 @@ export interface EdgeDraft {
 	reason: string;
 	/** True when `to`'s published manifest changes with `from`'s version. */
 	pinned: boolean;
+	/** Dependency kind, default `runtime`. */
+	kind?: EdgeKind;
 }
 
 export interface Edge {
@@ -158,6 +165,8 @@ export interface Edge {
 	to: string;
 	reasons: string[];
 	pinned: boolean;
+	/** Sorted, unique, non-empty. */
+	kinds: EdgeKind[];
 	sources: string[];
 }
 

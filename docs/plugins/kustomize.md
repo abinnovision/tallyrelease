@@ -41,7 +41,7 @@ When a unit has such extra paths, its `include` is the unit root plus those path
 
 ## Edges
 
-A reference to another kustomization directory is an edge from the referenced unit to the unit that references it, for example from a base to the overlay that lists it under `resources`. Edges are unpinned and have the reason `<field>: <path>`.
+A reference to another kustomization directory is an edge from the referenced unit to the unit that references it, for example from a base to the overlay that lists it under `resources`. Edges are unpinned, have the dependency kind `runtime` and have the reason `<field>: <path>`.
 
 ## Inputs
 

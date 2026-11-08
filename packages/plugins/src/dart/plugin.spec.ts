@@ -126,7 +126,13 @@ describe("dart edges", () => {
 			units,
 		);
 	const edge = (field: string, pinned: boolean) => [
-		{ from: "core", to: "app", reason: `${field}: core`, pinned },
+		{
+			from: "core",
+			to: "app",
+			reason: `${field}: core`,
+			pinned,
+			kind: field === "dependencies" ? "runtime" : "dev",
+		},
 	];
 
 	it("pins a path dependency in dependencies", async () => {

@@ -1,16 +1,22 @@
+import { absorbs } from "./bump.js";
 import { maxLevel, uniqueSorted } from "./util.js";
 
 import type { Graph } from "./graph.js";
 import type { BumpLevel, Edge, Unit } from "./plugin.js";
+import type { ReleaseSettings } from "./release-settings.js";
+
+type KindSettings = Pick<ReleaseSettings, "absorbedKinds">;
 
 /**
  * Edges between released units, `to` to `from` to `pinned`. A path through
  * unreleased units counts as an edge with the first hop's `pinned`; several
- * paths are OR-combined.
+ * paths are OR-combined. Every hop of a path must be absorbed by its
+ * dependent; a direct edge between released units is not filtered.
  */
 export const releasedEdges = (
 	edges: readonly Edge[],
 	released: ReadonlySet<string>,
+	settings: KindSettings,
 ): Map<string, Map<string, boolean>> => {
 	const out = new Map<string, Edge[]>();
 	for (const e of edges) {
@@ -22,10 +28,9 @@ export const releasedEdges = (
 	const result = new Map<string, Map<string, boolean>>();
 	for (const from of released) {
 		const seen = new Set<string>();
-		const queue = (out.get(from) ?? []).map((e) => ({
-			to: e.to,
-			pinned: e.pinned,
-		}));
+		const queue = (out.get(from) ?? [])
+			.filter((e) => released.has(e.to) || absorbs(e, settings))
+			.map((e) => ({ to: e.to, pinned: e.pinned }));
 		for (const { to, pinned } of queue) {
 			const key = `${to}\0${String(pinned)}`;
 			if (to === from || seen.has(key)) {
@@ -38,7 +43,11 @@ export const releasedEdges = (
 				incoming.set(from, (incoming.get(from) ?? false) || pinned);
 				result.set(to, incoming);
 			} else {
-				queue.push(...(out.get(to) ?? []).map((e) => ({ to: e.to, pinned })));
+				queue.push(
+					...(out.get(to) ?? [])
+						.filter((e) => absorbs(e, settings))
+						.map((e) => ({ to: e.to, pinned })),
+				);
 			}
 		}
 	}
@@ -68,8 +77,15 @@ export interface Propagated extends Pending {
  * bump. Terminates because bumps only increase.
  */
 export const propagate = (
-	graph: Pick<Graph, "edges" | "order">,
-	units: readonly Pick<Unit, "id" | "propagate">[],
+	{
+		graph,
+		units,
+		release,
+	}: {
+		graph: Pick<Graph, "edges" | "order">;
+		units: readonly Pick<Unit, "id" | "propagate">[];
+		release: KindSettings;
+	},
 	states: ReadonlyMap<string, Pending>,
 ): Map<string, Propagated> => {
 	const policies = new Map(units.map((u) => [u.id, u.propagate]));
@@ -80,7 +96,7 @@ export const propagate = (
 		}
 	}
 
-	const edges = releasedEdges(graph.edges, new Set(states.keys()));
+	const edges = releasedEdges(graph.edges, new Set(states.keys()), release);
 	const result = new Map<
 		string,
 		{ bump: BumpLevel | null; pending: boolean; propagatedFrom: Set<string> }

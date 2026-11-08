@@ -141,6 +141,23 @@ describe("configJsonSchema", () => {
 		);
 	});
 
+	it("accepts dependency kinds on deps, bumps and unit keys, rejects unknown ones", () => {
+		expect(
+			validate({
+				deps: [{ from: "a", to: "b", kind: "dev" }],
+				bumps: { absorbedKinds: ["runtime"] },
+				units: { "apps/*": { absorbedKinds: ["runtime", "peer", "dev"] } },
+			}),
+		).toBe(true);
+		expect(validate({ deps: [{ from: "a", to: "b", kind: "build" }] })).toBe(
+			false,
+		);
+		expect(validate({ bumps: { absorbedKinds: ["build"] } })).toBe(false);
+		expect(validate({ units: { a: { absorbedKinds: ["build"] } } })).toBe(
+			false,
+		);
+	});
+
 	it("rejects version none and unknown keys", () => {
 		expect(validate({ units: { a: { version: "none" } } })).toBe(false);
 		expect(validate({ nope: 1 })).toBe(false);

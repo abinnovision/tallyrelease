@@ -170,6 +170,7 @@ export const dartPlugin = definePlugin<Options>({
 							...edgeBetween(byName.get(name), to, {
 								reason: `${field}: ${name}`,
 								pinned,
+								kind: field === "dependencies" ? "runtime" : "dev",
 							}),
 						);
 					}

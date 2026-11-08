@@ -1,0 +1,16 @@
+description: An edge with an unknown dependency kind fails.
+plugins:
+  - name: stub
+    units:
+      - { id: a, root: packages/a }
+      - { id: b, root: packages/b }
+    edges:
+      - { from: a, to: b, reason: dependencies, pinned: false, kind: build }
+git:
+  commits:
+    - id: c0
+      files: { packages/a/index.ts: "1", packages/b/index.ts: "1" }
+base: null
+error:
+  code: E_EDGE_KIND
+  details: { from: a, to: b, source: stub, kind: build }

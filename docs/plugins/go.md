@@ -24,7 +24,7 @@ Relative `replace` directives create edges, in single-line and block form:
 replace example.com/b => ../b
 ```
 
-The edge goes from the replaced module (`b`) to the module that declares the directive, is unpinned and has the reason `replace: <module>`. A replacement is ignored when its target is not a relative path, resolves outside the repository or is not the root of another `go` unit. `require` directives add no edges; declare those with `deps` in the config.
+The edge goes from the replaced module (`b`) to the module that declares the directive, is unpinned, has the dependency kind `runtime` and has the reason `replace: <module>`. A replacement is ignored when its target is not a relative path, resolves outside the repository or is not the root of another `go` unit. `require` directives add no edges; declare those with `deps` in the config.
 
 ## Inputs
 

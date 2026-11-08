@@ -42,11 +42,12 @@ const collectEdges = async (
 		edges.push(...drafts.map((d) => ({ ...d, source: plugin.name })));
 	}
 
-	for (const { from, to, pinned, reason } of config.deps ?? []) {
+	for (const { from, to, pinned, kind, reason } of config.deps ?? []) {
 		edges.push({
 			from,
 			to,
 			pinned: pinned ?? false,
+			...(kind && { kind }),
 			reason: reason ?? "config",
 			source: "config",
 		});

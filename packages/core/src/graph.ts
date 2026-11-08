@@ -2,7 +2,9 @@ import { coreCodes } from "./codes.js";
 import { compare, uniqueSorted } from "./util.js";
 
 import type { Warning } from "./errors.js";
-import type { Edge, EdgeDraft, Unit } from "./plugin.js";
+import type { Edge, EdgeDraft, EdgeKind, Unit } from "./plugin.js";
+
+const EDGE_KINDS: readonly string[] = ["runtime", "peer", "dev"];
 
 /** Tarjan's algorithm; components are emitted after everything they reach. */
 const stronglyConnected = (
@@ -119,11 +121,12 @@ export const buildGraph = (
 			to: string;
 			reasons: string[];
 			pinned: boolean;
+			kinds: EdgeKind[];
 			sources: string[];
 		}
 	>();
 
-	for (const { from, to, reason, pinned, source } of drafts) {
+	for (const { from, to, reason, pinned, kind = "runtime", source } of drafts) {
 		for (const id of [from, to]) {
 			if (!known.has(id)) {
 				throw coreCodes.error(
@@ -142,11 +145,20 @@ export const buildGraph = (
 			);
 		}
 
+		if (!EDGE_KINDS.includes(kind)) {
+			throw coreCodes.error(
+				"E_EDGE_KIND",
+				`edge ${from} -> ${to} from "${source}" has unknown dependency kind "${kind}"`,
+				{ from, to, source, kind },
+			);
+		}
+
 		const key = `${from}\n${to}`;
 		const edge = merged.get(key);
 		if (edge) {
 			edge.pinned ||= pinned;
 			edge.reasons.push(reason);
+			edge.kinds.push(kind);
 			edge.sources.push(source);
 		} else {
 			merged.set(key, {
@@ -154,6 +166,7 @@ export const buildGraph = (
 				to,
 				reasons: [reason],
 				pinned,
+				kinds: [kind],
 				sources: [source],
 			});
 		}
@@ -163,6 +176,7 @@ export const buildGraph = (
 		.map((e) => ({
 			...e,
 			reasons: uniqueSorted(e.reasons),
+			kinds: uniqueSorted(e.kinds),
 			sources: uniqueSorted(e.sources),
 		}))
 		.sort((a, b) => compare(a.from, b.from) || compare(a.to, b.to));
