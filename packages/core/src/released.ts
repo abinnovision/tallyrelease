@@ -1,7 +1,7 @@
 import { coreCodes } from "./codes.js";
 import { isCutVersion } from "./cut.js";
 import { renderFloatingTags } from "./floating.js";
-import { matchUnitTags } from "./tags.js";
+import { matchUnitTags, renderTag } from "./tags.js";
 import { compare } from "./util.js";
 
 import type { Warning } from "./errors.js";
@@ -40,11 +40,20 @@ const releasedEntries = async (
 	const built = new Set(
 		plan.units.filter((u) => u.affected !== null).map((u) => u.id),
 	);
+	const releaseTags = new Map(
+		workspace.groups.flatMap(({ name, members, releaseTag }) =>
+			releaseTag === null
+				? []
+				: members.map((id) => [id, { id: name, tagFormat: releaseTag }]),
+		),
+	);
 	const candidates = workspace.units.flatMap((unit) => {
 		const m = matched.get(unit.id);
 		if (!m) {
 			return [];
 		}
+
+		const group = releaseTags.get(unit.id);
 
 		const { scheme } = m;
 		const names = m.tags.map((t) => t.name);
@@ -67,6 +76,7 @@ const releasedEntries = async (
 					path: unit.root,
 					version: tag.version,
 					tag: tag.name,
+					releaseTag: group ? renderTag(group, tag.version) : tag.name,
 					floatingTags: prerelease
 						? []
 						: renderFloatingTags(unit, tag.version, {

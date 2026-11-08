@@ -34,16 +34,23 @@ const groupTags = z
 	.array(z.string())
 	.meta({ description: "Selects released units with any of these tags." });
 
+const groupReleaseTag = z.string().meta({
+	description:
+		"Tag format of one GitHub release for the whole group, pushed at the release commit next to the member tags; tokens {id} (the group name) and {version}. Default: one release per member tag.",
+});
+
 const groupUnion = z.union([
 	z.strictObject({
 		units: groupUnits,
 		tags: groupTags.exactOptional(),
 		releasePr: releasePr.exactOptional(),
+		releaseTag: groupReleaseTag.exactOptional(),
 	}),
 	z.strictObject({
 		units: groupUnits.exactOptional(),
 		tags: groupTags,
 		releasePr: releasePr.exactOptional(),
+		releaseTag: groupReleaseTag.exactOptional(),
 	}),
 ]);
 

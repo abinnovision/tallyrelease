@@ -151,7 +151,7 @@ export interface KnownForge {
 
 /**
  * `released` with `forge` from `known`, else the PR that merged the release
- * commit and the release of the tag; `forge` is null without a forge.
+ * commit and the release of the release tag; `forge` is null without a forge.
  */
 export const releasedForge = async (
 	session: Session,
@@ -168,7 +168,13 @@ export const releasedForge = async (
 			released.filter((r) => !known.prs.has(r.tag)).map((r) => r.releaseSha),
 		),
 	];
-	const tags = released.map((r) => r.tag).filter((t) => !known.releases.has(t));
+	const tags = [
+		...new Set(
+			released
+				.filter((r) => !known.releases.has(r.tag))
+				.map((r) => r.releaseTag),
+		),
+	];
 	const repo =
 		shas.length > 0 || tags.length > 0 ? await repoRef(session) : undefined;
 	const [foundPrs, foundReleases] = repo
@@ -189,9 +195,32 @@ export const releasedForge = async (
 	const releases = new Map(
 		tags.map((t, i) => [t, foundReleases[i]?.url ?? null]),
 	);
+	// Releases from before the group set `releaseTag` live on the member tag.
+	const fallback = [
+		...new Set(
+			released
+				.filter(
+					(r) => r.releaseTag !== r.tag && releases.get(r.releaseTag) === null,
+				)
+				.map((r) => r.tag),
+		),
+	];
+	const fallbackFound =
+		repo && fallback.length > 0
+			? await Promise.all(
+					fallback.map(async (t) => await forge.releaseByTag(repo, t)),
+				)
+			: [];
+	for (const [i, t] of fallback.entries()) {
+		releases.set(t, fallbackFound[i]?.url ?? null);
+	}
 
 	return released.map((r) => {
-		const url = known.releases.get(r.tag) ?? releases.get(r.tag) ?? null;
+		const url =
+			known.releases.get(r.tag) ??
+			releases.get(r.releaseTag) ??
+			releases.get(r.tag) ??
+			null;
 
 		const pr = known.prs.get(r.tag) ?? prs.get(r.releaseSha) ?? null;
 

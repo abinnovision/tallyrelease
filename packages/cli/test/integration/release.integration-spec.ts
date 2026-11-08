@@ -488,6 +488,80 @@ branches:
 		]);
 	});
 
+	it("creates one release on a group's release tag", async () => {
+		const yaml = `
+plugins: { node: {} }
+defaults: { release: true, initialVersion: 1.0.0 }
+groups:
+  sdk: { units: [a, b], releaseTag: "{id}-v{version}" }
+branches:
+  - { name: main, line: default }
+`;
+		const dag = repo(yaml, { ids: ["a", "b"], version: "0.0.0" });
+		const { remote, run, merge, release } = setup(dag);
+		await run("pr", dag);
+		const merged = merge(dag, 1);
+
+		expect((await release(merged)).stdout).toBe(
+			[
+				"PR #1: tagged a-v1.0.0, b-v1.0.0, sdk-v1.0.0 at merge-1",
+				"PR #1: created releases sdk-v1.0.0",
+				"PR #1: labelled released",
+				"",
+			].join("\n"),
+		);
+		expect([...remote.tags]).toEqual([
+			["a-v1.0.0", "merge-1"],
+			["b-v1.0.0", "merge-1"],
+			["sdk-v1.0.0", "merge-1"],
+		]);
+		expect(remote.releases).toEqual([
+			expect.objectContaining({
+				tag: "sdk-v1.0.0",
+				name: "sdk: v1.0.0",
+				makeLatest: true,
+				prerelease: false,
+				body: expect.stringMatching(
+					/^## a 1\.0\.0 .*\n\n## b 1\.0\.0 /su,
+				) as unknown,
+			}),
+		]);
+
+		const out = join(tmpDir("release"), "plan.json");
+		expect(
+			await run("plan", merged, ["--base", "c2", "--out", out]),
+		).toMatchObject({ code: 0 });
+		expect(
+			planSchema.parse(JSON.parse(readFileSync(out, "utf8"))).released,
+		).toMatchObject(
+			["a", "b"].map((id) => ({
+				tag: `${id}-v1.0.0`,
+				releaseTag: "sdk-v1.0.0",
+				forge: { release: { url: "release/sdk-v1.0.0" } },
+			})),
+		);
+
+		// Per-unit releases from before the group set releaseTag.
+		const [group] = remote.releases.splice(0);
+		remote.releases.push(
+			...["a", "b"].map((id, i) => ({
+				...group!,
+				id: i + 1,
+				tag: `${id}-v1.0.0`,
+			})),
+		);
+		expect(
+			await run("plan", merged, ["--base", "c2", "--out", out]),
+		).toMatchObject({ code: 0 });
+		expect(
+			planSchema.parse(JSON.parse(readFileSync(out, "utf8"))).released,
+		).toMatchObject(
+			["a", "b"].map((id) => ({
+				forge: { release: { url: `release/${id}-v1.0.0` } },
+			})),
+		);
+	});
+
 	it("reconciles two merged PRs oldest first (E29)", async () => {
 		const dag = repo(config("", "release: true, releasePr: separate"));
 		const { remote, run, merge, release } = setup(dag);

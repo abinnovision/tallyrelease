@@ -94,6 +94,8 @@ export interface GroupConfig {
 	tags?: string[];
 	/** Default `defaults.releasePr`. */
 	releasePr?: ReleasePrMode;
+	/** Tag format of one forge release for the group; tokens `{id}` and `{version}`. */
+	releaseTag?: string;
 }
 
 /** Attribution of conventional commits to units by their header scope. */

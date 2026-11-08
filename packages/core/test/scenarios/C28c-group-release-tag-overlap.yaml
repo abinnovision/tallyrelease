@@ -1,0 +1,22 @@
+description: A group release tag that renders like a unit's tag format is an overlap.
+plugins:
+  - name: stub
+    units:
+      - { id: a, root: packages/a }
+      - { id: b, root: packages/b }
+config:
+  plugins: { stub: {} }
+  defaults: { release: true }
+  groups:
+    sdk: { units: [a, b], releaseTag: "a-v{version}" }
+git:
+  commits:
+    - id: c0
+      files: { packages/a/index.ts: "0", packages/b/index.ts: "0" }
+base: c0
+plan: { fails: true }
+expect:
+  affected: { units: [] }
+  planError:
+    code: E_TAG_FORMAT_OVERLAP
+    details: { group: sdk, format: "a-v{version}" }

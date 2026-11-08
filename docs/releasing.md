@@ -248,6 +248,15 @@ Without the `fix(web)` commit, `web` would still release 1.0.1 with `api`, with 
   </picture>
 </p>
 
+Each member still gets its own tag and, by default, its own GitHub release. To get one GitHub release for the whole group, set `releaseTag` on the group, a tag format with `{id}` (the group name) and `{version}`:
+
+```yaml
+groups:
+  shop: { units: [api, web], releaseTag: "{id}-v{version}" }
+```
+
+Reconcile then also pushes `shop-v1.0.1` at the merge commit and creates one release `shop: v1.0.1` on it, with the changelog sections of `api` and `web`, each version heading naming its unit. Member tags, changelogs and floating tags stay as they are, and planning never reads the group tag. The tag must not render like a unit's `tagFormat`. Releases made before the setting keep their per-unit GitHub releases, which `plan` and `run` still report.
+
 ## Release PRs
 
 By default all release items share one release PR on `tallyrelease/release/<branch>/shared`. `releasePr: separate` (in `defaults`, on an ungrouped unit or on a group) gives an item its own PR on `tallyrelease/release/<branch>/<item>`. The PR commit updates version files and changelogs. The body has one `<details>` section per unit with its changelog section, followed by a hidden marker with the planned versions, which reconcile compares on merge. When the changelogs are too long for a PR body, whole unit sections are left out with a note; the files in the PR hold all of it.

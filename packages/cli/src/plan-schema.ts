@@ -108,6 +108,7 @@ export const planSchema = z.strictObject({
 			path: z.string(),
 			version: z.string(),
 			tag: z.string(),
+			releaseTag: z.string(),
 			floatingTags: z.array(z.string()),
 			releaseSha: z.string(),
 			catchUp: z.boolean(),
@@ -146,6 +147,12 @@ export const releaseEntrySchema = z
 			.nullable()
 			.describe(
 				"Version tag of a release or cut prerelease, null for a build prerelease.",
+			),
+		releaseTag: z
+			.string()
+			.nullable()
+			.describe(
+				"Tag of the forge release: the group's `releaseTag` for a member of a group that sets it, else `tag`; null for a build prerelease.",
 			),
 		releaseSha: z
 			.string()

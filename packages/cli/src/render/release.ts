@@ -8,6 +8,10 @@ export const releaseName = ({ tag, version }: ReleasedUnit): string =>
 		? `${tag.slice(0, -(version.length + 2))}: v${version}`
 		: tag;
 
+/** Name of a group's release, in the style of `releaseName`: `sdk: v1.2.0`. */
+export const groupReleaseName = (group: string, version: string): string =>
+	`${group}: v${version}`;
+
 /** Reasons a merged release PR is labelled stale. */
 export const staleReason = {
 	noMarker: "its body has no valid tallyrelease marker",

@@ -17,6 +17,7 @@ import { cliCodes } from "../codes.js";
 import { ForgeConflictError } from "../forge/errors.js";
 import { LABELS } from "../forge/forge.js";
 import {
+	groupReleaseName,
 	reconcileLines,
 	reconcileText,
 	releaseName,
@@ -40,10 +41,12 @@ import type {
 } from "@tallyrelease/core";
 
 /**
- * GitHub release per entry unless one exists (a 422 on create means it does);
- * latest for entries marked `latest`, a prerelease for cuts with the body from
- * `notes`. Returns the tags of the missing releases, created unless `dryRun`,
- * and the release URL of every entry, null for one not created in a dry run.
+ * GitHub release per release tag unless one exists (a 422 on create means it
+ * does); latest when any of its entries is `latest`, a prerelease for cuts
+ * with the body from `notes`. A group release tag gets one release named
+ * after the group, joining the members' sections. Returns the release tags of
+ * the missing releases, created unless `dryRun`, and the release URL by entry
+ * tag, null for one not created in a dry run.
  */
 const createReleases = async (
 	session: Session,
@@ -67,40 +70,72 @@ const createReleases = async (
 ): Promise<{ created: string[]; urls: Map<string, string | null> }> => {
 	const created: string[] = [];
 	const urls = new Map<string, string | null>();
-	/* eslint-disable no-await-in-loop -- sequential, avoids secondary rate limits */
+	const byTag = new Map<string, ReleasedUnit[]>();
 	for (const r of released) {
-		const existing = await forge.releaseByTag(repo, r.tag);
+		byTag.set(r.releaseTag, [...(byTag.get(r.releaseTag) ?? []), r]);
+	}
+
+	const body = (r: ReleasedUnit) =>
+		(
+			(r.prerelease
+				? notes?.get(r.id)
+				: releaseNotes(workspace, r.id, (path) =>
+						session.readAt(mergeSha, path),
+					)) ?? ""
+		).trim();
+	/* eslint-disable no-await-in-loop -- sequential, avoids secondary rate limits */
+	for (const [tag, entries] of byTag) {
+		const setUrl = (url: string | null) => {
+			for (const r of entries) {
+				urls.set(r.tag, url);
+			}
+		};
+
+		const existing = await forge.releaseByTag(repo, tag);
 		if (existing !== undefined) {
-			urls.set(r.tag, existing.url);
+			setUrl(existing.url);
 			continue;
 		}
 
-		created.push(r.tag);
+		created.push(tag);
 		if (dryRun) {
-			urls.set(r.tag, null);
+			setUrl(null);
 			continue;
 		}
 
+		const [first] = entries as [ReleasedUnit, ...ReleasedUnit[]];
+		const group =
+			tag === first.tag
+				? undefined
+				: workspace.groups.find((g) => g.members.includes(first.id));
 		try {
 			const release = await forge.createRelease(repo, {
-				tag: r.tag,
-				name: releaseName(r),
-				body:
-					(r.prerelease
-						? notes?.get(r.id)
-						: releaseNotes(workspace, r.id, (path) =>
-								session.readAt(mergeSha, path),
-							)) ?? "",
-				makeLatest: r.latest,
-				prerelease: r.prerelease,
+				tag,
+				name: group
+					? groupReleaseName(group.name, first.version)
+					: releaseName(first),
+				body: group
+					? entries
+							.flatMap((r) => {
+								const text = body(r);
+
+								// Name the member in its version heading.
+								return text === ""
+									? []
+									: [text.replace(/^(#+) /u, `$1 ${r.id} `)];
+							})
+							.join("\n\n")
+					: body(first),
+				makeLatest: entries.some((r) => r.latest),
+				prerelease: first.prerelease,
 			});
-			urls.set(r.tag, release.url);
+			setUrl(release.url);
 		} catch (error) {
 			if (!(error instanceof ForgeConflictError)) {
 				throw error;
 			}
 
-			urls.set(r.tag, (await forge.releaseByTag(repo, r.tag))?.url ?? null);
+			setUrl((await forge.releaseByTag(repo, tag))?.url ?? null);
 		}
 	}
 	/* eslint-enable no-await-in-loop */
@@ -344,12 +379,12 @@ export interface Reconciled {
 /**
  * Tags merged release PRs labelled `tallyrelease: pending` on the branch,
  * oldest merge first: a PR whose marker matches its head and the plan at the
- * first parent of its merge gets its version and floating tags at the merge
- * (one atomic push), a GitHub release per unit and the `released` label; any
- * other PR is labelled `stale` with a comment. Merges that are not in HEAD
- * stay pending. Returns the tagged PRs, including those whose tags existed,
- * or undefined when `command` (`release` or `run`) is skipped. `ready` runs
- * after the skip checks and before any effect.
+ * first parent of its merge gets its version, group release and floating tags
+ * at the merge (one atomic push), a GitHub release per release tag and the
+ * `released` label; any other PR is labelled `stale` with a comment. Merges
+ * that are not in HEAD stay pending. Returns the tagged PRs, including those
+ * whose tags existed, or undefined when `command` (`release` or `run`) is
+ * skipped. `ready` runs after the skip checks and before any effect.
  */
 export const reconcile = async (
 	session: Session,
@@ -489,20 +524,27 @@ export const reconcile = async (
 			git,
 			tags,
 		});
+		const groupTags = [
+			...new Set(
+				released.filter((r) => r.releaseTag !== r.tag).map((r) => r.releaseTag),
+			),
+		];
 		const floating = [...new Set(released.flatMap((r) => r.floatingTags))];
-		const floatingCurrent = await Promise.all(
-			floating.map(async (t) => await git.resolve(t)),
+		const extra = [...groupTags, ...floating];
+		const extraCurrent = await Promise.all(
+			extra.map(async (t) => await git.resolve(t)),
 		);
-		for (const t of floating) {
-			await tag(t, mergeSha, true);
+		// Group release tags are created like version tags, floating tags move.
+		for (const t of extra) {
+			await tag(t, mergeSha, floating.includes(t));
 		}
 
-		if (!tagged || floatingCurrent.some((sha) => sha !== mergeSha)) {
-			lines.push(line.tagged(pr.number, tags, mergeSha));
+		if (!tagged || extraCurrent.some((sha) => sha !== mergeSha)) {
+			lines.push(line.tagged(pr.number, [...tags, ...groupTags], mergeSha));
 			if (!flags.dryRun) {
 				await gitWriter.push(
 					[
-						...tags.map((t) => `refs/tags/${t}`),
+						...[...tags, ...groupTags].map((t) => `refs/tags/${t}`),
 						...floating.map((t) => `+refs/tags/${t}`),
 					],
 					{ atomic: true, token: session.token },

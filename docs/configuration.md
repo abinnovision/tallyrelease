@@ -131,11 +131,12 @@ Fixed groups by name (unit id characters): members release together with one ver
 
 Type: map of object.
 
-| Key                       | Type                       | Required | Description                                                                                    |
-| ------------------------- | -------------------------- | -------- | ---------------------------------------------------------------------------------------------- |
-| `groups.<name>.units`     | list of string             | no       | Member unit ids.                                                                               |
-| `groups.<name>.tags`      | list of string             | no       | Selects released units with any of these tags.                                                 |
-| `groups.<name>.releasePr` | `"shared"` or `"separate"` | no       | Release PR of the release item: shared (one PR for all shared items) or separate (its own PR). |
+| Key                        | Type                       | Required | Description                                                                                                                                                                                  |
+| -------------------------- | -------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `groups.<name>.units`      | list of string             | no       | Member unit ids.                                                                                                                                                                             |
+| `groups.<name>.tags`       | list of string             | no       | Selects released units with any of these tags.                                                                                                                                               |
+| `groups.<name>.releasePr`  | `"shared"` or `"separate"` | no       | Release PR of the release item: shared (one PR for all shared items) or separate (its own PR).                                                                                               |
+| `groups.<name>.releaseTag` | string                     | no       | Tag format of one GitHub release for the whole group, pushed at the release commit next to the member tags; tokens {id} (the group name) and {version}. Default: one release per member tag. |
 
 ## `tags`
 

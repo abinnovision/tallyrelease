@@ -186,13 +186,14 @@ export const coreCodes = defineCodes({
 		fix: "Correct `scheme` on the unit, or enable the plugin that provides it under `plugins`. The default scheme is `semver`.",
 	},
 	E_TAG_FORMAT: {
-		cause: "A unit's `tagFormat` does not contain `{version}` exactly once.",
-		fix: "Set `tagFormat` (on the unit or in `defaults`) to a template with a single `{version}`, for example `{id}-v{version}`.",
+		cause:
+			"A unit's `tagFormat` or a group's `releaseTag` does not contain `{version}` exactly once.",
+		fix: "Set `tagFormat` (on the unit or in `defaults`) or `releaseTag` to a template with a single `{version}`, for example `{id}-v{version}`.",
 	},
 	E_TAG_FORMAT_OVERLAP: {
 		cause:
-			"Two released units render the same tag format, or one existing tag matches the format of more than one released unit.",
-		fix: "Give the units distinct `tagFormat` values, usually by including `{id}`.",
+			"Two released units render the same tag format, one existing tag matches the format of more than one released unit, or a group's `releaseTag` renders like a released unit's tag format or another group's `releaseTag`.",
+		fix: "Give the units distinct `tagFormat` values and the groups distinct `releaseTag` values, usually by including `{id}`.",
 	},
 	E_UNIT_GLOB: {
 		cause:
