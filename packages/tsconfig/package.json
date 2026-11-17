@@ -18,9 +18,9 @@
 	},
 	"prettier": "@abinnovision/prettier-config",
 	"devDependencies": {
-		"@tsconfig/node24": "^24.0.5",
-		"@tsconfig/strictest": "^2.0.8",
-		"prettier": "^3.9.10",
+		"@tsconfig/node24": "^24.0.6",
+		"@tsconfig/strictest": "^2.0.9",
+		"prettier": "^3.10.0",
 		"typescript": "^6.0.3"
 	}
 }
