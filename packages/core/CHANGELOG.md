@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.0](https://github.com/abinnovision/tallyrelease/compare/core-v0.7.0...core-v0.8.0) (2026-11-18)
+
+
+### Features
+
+* terraform plugin for Terraform and OpenTofu modules ([#225](https://github.com/abinnovision/tallyrelease/issues/225)) ([f0d1e0e](https://github.com/abinnovision/tallyrelease/commit/f0d1e0e6792fb0e7773485f686957529ae36c0e9))
+
 ## [0.7.0](https://github.com/abinnovision/tallyrelease/compare/core-v0.6.0...core-v0.7.0) (2026-11-08)
 
 
