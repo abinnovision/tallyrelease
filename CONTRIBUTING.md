@@ -27,7 +27,7 @@ Run `yarn check`, `yarn test-unit` and `yarn turbo test-integration` before open
 
 - `packages/core` is the pure planning core and the plugin contract; it does no I/O, and `yarn check` enforces this.
 - `packages/cli` is the `tallyrelease` binary with config loading, git, forge and CI integration.
-- `packages/plugins` holds the built-in plugins (`node`, `php`, `go`, `kustomize`, `dart`, `changesets`), which use only the public API of `@tallyrelease/core`.
+- `packages/plugins` holds the built-in plugins (`node`, `php`, `go`, `kustomize`, `terraform`, `dart`, `changesets`), which use only the public API of `@tallyrelease/core`.
 - `packages/docs` generates the reference pages in `docs/`.
 - `packages/tsconfig` holds the shared TypeScript configs.
 

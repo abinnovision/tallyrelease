@@ -29,7 +29,7 @@ branches:
   - { name: main, line: default }
 ```
 
-Plugins discover the units and their dependency edges. The `node` plugin finds every workspace package. The built-in plugins are `node`, `php`, `go`, `kustomize`, `dart` and `changesets`, see the [plugin authoring guide](plugins.md).
+Plugins discover the units and their dependency edges. The `node` plugin finds every workspace package. The built-in plugins are `node`, `php`, `go`, `kustomize`, `terraform`, `dart` and `changesets`, see the [plugin authoring guide](plugins.md).
 
 Units are build-only unless they opt in with `release: true` (per unit) or `defaults.release: true`. A change to `db` reaches `api` through the edge `db -> api`.
 

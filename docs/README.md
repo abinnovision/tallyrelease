@@ -21,6 +21,7 @@ tallyrelease computes the affected build units and the release plan of a monorep
 - [php](plugins/php.md): Composer projects.
 - [go](plugins/go.md): Go modules.
 - [kustomize](plugins/kustomize.md): kustomization directories.
+- [terraform](plugins/terraform.md): Terraform and OpenTofu modules.
 - [dart](plugins/dart.md): Dart and Flutter packages.
 - [changesets](plugins/changesets.md): `.changeset/*.md` files as an intent source.
 - [config-only](plugins/config-only.md): units without a plugin or manifest.

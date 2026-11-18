@@ -2,7 +2,7 @@
 
 Know what changed. Release what matters.
 
-tallyrelease computes the affected build units of a monorepo or single repo from git history and a dependency graph supplied by ecosystem plugins (`node`, `php`, `go`, `kustomize`, `dart` and `changesets` are built in). It plans versions from Conventional Commits and runs the release effects on GitHub: version files, release PRs, tags and GitHub releases.
+tallyrelease computes the affected build units of a monorepo or single repo from git history and a dependency graph supplied by ecosystem plugins (`node`, `php`, `go`, `kustomize`, `terraform`, `dart` and `changesets` are built in). It plans versions from Conventional Commits and runs the release effects on GitHub: version files, release PRs, tags and GitHub releases.
 
 ## Install
 

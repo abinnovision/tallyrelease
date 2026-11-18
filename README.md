@@ -200,7 +200,7 @@ See [CI](docs/ci.md) for the build matrix, the outputs and token choices.
 - Operate
   - [CI](docs/ci.md): GitHub Actions setup, outputs and tokens.
   - [Plugin authoring guide](docs/plugins.md): write a plugin for another ecosystem.
-  - Built-in plugins: [node](docs/plugins/node.md), [php](docs/plugins/php.md), [go](docs/plugins/go.md), [kustomize](docs/plugins/kustomize.md), [dart](docs/plugins/dart.md), [changesets](docs/plugins/changesets.md), [config-only](docs/plugins/config-only.md).
+  - Built-in plugins: [node](docs/plugins/node.md), [php](docs/plugins/php.md), [go](docs/plugins/go.md), [kustomize](docs/plugins/kustomize.md), [terraform](docs/plugins/terraform.md), [dart](docs/plugins/dart.md), [changesets](docs/plugins/changesets.md), [config-only](docs/plugins/config-only.md).
 - Reference
   - [CLI](docs/cli.md): every command and flag.
   - [Configuration](docs/configuration.md): every key of `tallyrelease.yaml`.

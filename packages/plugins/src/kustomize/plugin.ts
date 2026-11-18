@@ -1,9 +1,16 @@
-import { defaultUnitId, definePlugin } from "@tallyrelease/core";
+import { definePlugin } from "@tallyrelease/core";
 import { parse as parseYaml } from "yaml";
 import { z } from "zod";
 
 import { edgeBetween } from "../_kit/edges.js";
-import { globIn } from "../_kit/paths.js";
+import {
+	dirOf,
+	escapeGlob,
+	globIn,
+	isInside,
+	pathUnitId,
+	resolvePath,
+} from "../_kit/paths.js";
 
 import type { Ctx, EdgeDraft, Unit, UnitDraft } from "@tallyrelease/core";
 
@@ -23,10 +30,7 @@ interface Ref {
 }
 
 const FILE_NAMES = ["kustomization.yaml", "kustomization.yml", "Kustomization"];
-const GLOB_META = /[[\]{}()!*?+@\\]/g;
 const REMOTE = /:\/\/|^git@|^github\.com\/|\?ref=/;
-
-const escapeGlob = (path: string): string => path.replace(GLOB_META, "\\$&");
 
 const list = (value: unknown): unknown[] => (Array.isArray(value) ? value : []);
 
@@ -37,25 +41,6 @@ const objects = (value: unknown): Kustomization[] =>
 	list(value).filter(
 		(v): v is Kustomization => typeof v === "object" && v !== null,
 	);
-
-/** Joins `rel` onto `root` and normalizes; undefined when it leaves the repo. */
-const resolve = (root: string, rel: string): string | undefined => {
-	const out: string[] = [];
-	for (const part of [...root.split("/"), ...rel.split("/")]) {
-		if (part === "..") {
-			if (out.pop() === undefined) {
-				return undefined;
-			}
-		} else if (part !== "" && part !== ".") {
-			out.push(part);
-		}
-	}
-
-	return out.length === 0 ? "." : out.join("/");
-};
-
-const isInside = (path: string, root: string): boolean =>
-	root === "." || path === root || path.startsWith(`${root}/`);
 
 /** Local path references of a kustomization, relative to its directory. */
 const extractRefs = (k: Kustomization): Ref[] => {
@@ -146,9 +131,6 @@ const readKustomization = (
 	}
 };
 
-const unitId = (root: string, repoName: string): string =>
-	root === "." ? defaultUnitId(root, repoName) : root.replaceAll("/", "-");
-
 export const kustomizePlugin = definePlugin<Options>({
 	apiVersion: 1,
 	name: "kustomize",
@@ -159,9 +141,7 @@ export const kustomizePlugin = definePlugin<Options>({
 		for (const file of ctx.fs.glob(
 			paths.flatMap((p) => FILE_NAMES.map((name) => globIn(p, name))),
 		)) {
-			const root = file.includes("/")
-				? file.slice(0, file.lastIndexOf("/"))
-				: ".";
+			const root = dirOf(file);
 			if (!files.has(root)) {
 				files.set(root, file);
 			}
@@ -178,7 +158,7 @@ export const kustomizePlugin = definePlugin<Options>({
 					continue;
 				}
 
-				const target = resolve(root, ref.path);
+				const target = resolvePath(root, ref.path);
 				if (target === undefined) {
 					ctx.log.warn(
 						`${root}: ${ref.field} "${ref.path}" leaves the repository`,
@@ -198,7 +178,7 @@ export const kustomizePlugin = definePlugin<Options>({
 			}
 
 			return {
-				id: unitId(root, ctx.repo.name),
+				id: pathUnitId(root, ctx.repo.name),
 				root,
 				...(extra.size > 0 && {
 					include: [root === "." ? "**" : `${escapeGlob(root)}/**`, ...extra],
@@ -218,7 +198,7 @@ export const kustomizePlugin = definePlugin<Options>({
 				field: string;
 			}[];
 			for (const { path, field } of refs) {
-				const target = resolve(to.root, path);
+				const target = resolvePath(to.root, path);
 				const from = target === undefined ? undefined : byRoot.get(target);
 				edges.push(
 					...edgeBetween(from, to, {

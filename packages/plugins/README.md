@@ -6,6 +6,7 @@ Built-in ecosystem plugins of [tallyrelease](https://github.com/abinnovision/tal
 - [`php`](https://github.com/abinnovision/tallyrelease/blob/main/docs/plugins/php.md): Composer projects.
 - [`go`](https://github.com/abinnovision/tallyrelease/blob/main/docs/plugins/go.md): Go modules.
 - [`kustomize`](https://github.com/abinnovision/tallyrelease/blob/main/docs/plugins/kustomize.md): kustomization directories.
+- [`terraform`](https://github.com/abinnovision/tallyrelease/blob/main/docs/plugins/terraform.md): Terraform and OpenTofu modules.
 - [`dart`](https://github.com/abinnovision/tallyrelease/blob/main/docs/plugins/dart.md): Dart and Flutter packages.
 - [`changesets`](https://github.com/abinnovision/tallyrelease/blob/main/docs/plugins/changesets.md): `.changeset/*.md` files as an intent source.
 

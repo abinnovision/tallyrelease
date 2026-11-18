@@ -554,3 +554,35 @@ describe("affected with the kustomize plugin", () => {
 		]);
 	});
 });
+
+describe("affected with the terraform plugin", () => {
+	const infra: Dag = {
+		commits: [
+			{
+				id: "t0",
+				files: {
+					"tallyrelease.yaml": "plugins:\n  terraform: {}\n",
+					"modules/vpc/main.tf": "# 0\n",
+					"stacks/prod/main.tf":
+						'module "vpc" { source = "../../modules/vpc" }\n',
+					"stacks/dev/main.tf": "# 0\n",
+				},
+			},
+			{ id: "t1", files: { "modules/vpc/main.tf": "# 1\n" } },
+		],
+	};
+
+	it("marks stacks calling a changed module as dependent", async () => {
+		const result = await runCli(["affected", "--json", "--base", "t0"], {
+			...memoryRepo(infra),
+			env: actionsEnv,
+		});
+		expect(result).toMatchObject({ code: 0 });
+		expect(
+			affectedDocSchema.parse(JSON.parse(result.stdout)).units,
+		).toMatchObject([
+			{ id: "modules-vpc", reason: "direct" },
+			{ id: "stacks-prod", reason: "dependent", via: ["modules-vpc"] },
+		]);
+	});
+});
