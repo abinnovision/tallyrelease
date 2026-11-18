@@ -12,6 +12,7 @@ Each page covers discovery, edges, inputs, version files, options and an example
 - [php](plugins/php.md): Composer projects and local path repositories, versioned through tags.
 - [go](plugins/go.md): Go modules with module-path tags and the major version path check.
 - [kustomize](plugins/kustomize.md): kustomization directories and the local files they reference.
+- [terraform](plugins/terraform.md): Terraform and OpenTofu module directories and the local modules they call.
 - [dart](plugins/dart.md): Dart and Flutter packages, with `pubspec.yaml` as the version file.
 - [changesets](plugins/changesets.md): `.changeset/*.md` files as an intent source.
 - [config-only](plugins/config-only.md): units without a plugin or manifest, versioned through tags and `versionFiles`.
@@ -292,7 +293,7 @@ describe("myScheme", () => {
 
 A plugin is loaded from the config, by the key under `plugins`. The cli resolves each key in this order:
 
-1. A built-in plugin of that name (`node`, `php`, `kustomize`, `dart`, `go`, `changesets`). Built-ins cannot be replaced: setting `path` or `package` on one fails with `E_PLUGIN_LOAD`.
+1. A built-in plugin of that name (`node`, `php`, `kustomize`, `terraform`, `dart`, `go`, `changesets`). Built-ins cannot be replaced: setting `path` or `package` on one fails with `E_PLUGIN_LOAD`.
 2. `plugins.<name>.path`, a local plugin.
 3. `plugins.<name>.package`, an npm package. `path` and `package` exclude each other.
 

@@ -4,6 +4,7 @@ import { goPlugin } from "./go/plugin.js";
 import { kustomizePlugin } from "./kustomize/plugin.js";
 import { nodePlugin } from "./node/plugin.js";
 import { phpPlugin } from "./php/plugin.js";
+import { terraformPlugin } from "./terraform/plugin.js";
 
 import type { Plugin } from "@tallyrelease/core";
 
@@ -12,6 +13,7 @@ export const builtinPlugins: Record<string, Plugin<any>> = {
 	php: phpPlugin,
 	go: goPlugin,
 	kustomize: kustomizePlugin,
+	terraform: terraformPlugin,
 	dart: dartPlugin,
 	changesets: changesetsPlugin,
 };

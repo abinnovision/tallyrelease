@@ -8,7 +8,7 @@ Yarn 4 monorepo with Turbo orchestration. Names in parentheses are used for `tur
 
 - `packages/core` (`@tallyrelease/core`) - pure planning core and the plugin contract. Exports include `.`, `./testing` (fakes: `memoryFs`, `memoryCtx`, `memoryGit`) and `./testing/conformance`.
 - `packages/cli` (`@tallyrelease/cli`) - imperative shell, binary `tallyrelease`. Config loading, git, forge (typed `ForgeError`s), CI integration through `CiProvider` (`src/ci/provider.ts`, GitHub Actions only). Exports include `main(argv, deps)` and `createProgram(deps)`, the commander program builder used by the docs generator.
-- `packages/plugins` (`@tallyrelease/plugins`) - built-in plugins (`node`, `php`, `go`, `kustomize`, `dart`, `changesets`). Exports only `builtinPlugins`.
+- `packages/plugins` (`@tallyrelease/plugins`) - built-in plugins (`node`, `php`, `go`, `kustomize`, `terraform`, `dart`, `changesets`). Exports only `builtinPlugins`.
 - `packages/tsconfig` (`@internal/tsconfig`) - shared TypeScript configs.
 - `packages/docs` (`@internal/docs`) - private generators for `docs/cli.md`, `docs/configuration.md`, `docs/release-list.md`, `docs/errors.md` and the git history SVGs in `docs/assets/` (from `docs/assets/histories/*.json`), run with Node type stripping.
 
