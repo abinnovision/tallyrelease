@@ -56,7 +56,7 @@
 	"dependencies": {
 		"@standard-schema/spec": "^1.1.0",
 		"picomatch": "^4.0.7",
-		"semver": "^7.8.5"
+		"semver": "^7.8.6"
 	},
 	"devDependencies": {
 		"@abinnovision/eslint-config-base": "^3.4.2",
