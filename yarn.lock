@@ -693,13 +693,13 @@ __metadata:
     "@tallyrelease/cli": "workspace:*"
     "@tallyrelease/core": "workspace:*"
     "@types/node": "npm:^26.6.6"
-    "@vitest/coverage-v8": "npm:^5.1.0"
+    "@vitest/coverage-v8": "npm:^5.1.1"
     ajv: "npm:^8.20.0"
     eslint: "npm:^10.15.0"
     prettier: "npm:^3.10.1"
     typescript: "npm:^6.0.3"
     vite: "npm:^8.3.8"
-    vitest: "npm:^5.1.0"
+    vitest: "npm:^5.1.1"
     yaml: "npm:^2.9.1"
   languageName: unknown
   linkType: soft
@@ -1108,7 +1108,7 @@ __metadata:
     "@tallyrelease/plugins": "workspace:^"
     "@types/node": "npm:^26.6.6"
     "@types/picomatch": "npm:^4.0.3"
-    "@vitest/coverage-v8": "npm:^5.1.0"
+    "@vitest/coverage-v8": "npm:^5.1.1"
     ajv: "npm:^8.20.0"
     commander: "npm:^15.0.0"
     eslint: "npm:^10.15.0"
@@ -1118,7 +1118,7 @@ __metadata:
     tinyglobby: "npm:^0.2.17"
     typescript: "npm:^6.0.3"
     vite: "npm:^8.3.8"
-    vitest: "npm:^5.1.0"
+    vitest: "npm:^5.1.1"
     yaml: "npm:^2.9.1"
     zod: "npm:^4.6.7"
   bin:
@@ -1137,14 +1137,14 @@ __metadata:
     "@types/node": "npm:^26.6.6"
     "@types/picomatch": "npm:^4.0.3"
     "@types/semver": "npm:^7.8.0"
-    "@vitest/coverage-v8": "npm:^5.1.0"
+    "@vitest/coverage-v8": "npm:^5.1.1"
     eslint: "npm:^10.15.0"
     picomatch: "npm:^4.0.7"
     prettier: "npm:^3.10.1"
     semver: "npm:^7.8.5"
     typescript: "npm:^6.0.3"
     vite: "npm:^8.3.8"
-    vitest: "npm:^5.1.0"
+    vitest: "npm:^5.1.1"
     yaml: "npm:^2.9.1"
   peerDependencies:
     vitest: ^5.0.3
@@ -1163,12 +1163,12 @@ __metadata:
     "@internal/tsconfig": "workspace:*"
     "@tallyrelease/core": "workspace:^"
     "@types/node": "npm:^26.6.6"
-    "@vitest/coverage-v8": "npm:^5.1.0"
+    "@vitest/coverage-v8": "npm:^5.1.1"
     eslint: "npm:^10.15.0"
     prettier: "npm:^3.10.1"
     typescript: "npm:^6.0.3"
     vite: "npm:^8.3.8"
-    vitest: "npm:^5.1.0"
+    vitest: "npm:^5.1.1"
     yaml: "npm:^2.9.1"
     zod: "npm:^4.6.7"
   languageName: unknown
@@ -1181,16 +1181,16 @@ __metadata:
     "@abinnovision/commitlint-config": "npm:^2.3.1"
     "@abinnovision/prettier-config": "npm:^2.2.0"
     "@commitlint/cli": "npm:^21.2.4"
-    "@vitest/coverage-v8": "npm:^5.1.0"
+    "@vitest/coverage-v8": "npm:^5.1.1"
     esbuild: "npm:^0.28.2"
     husky: "npm:^9.1.7"
-    lint-staged: "npm:^17.6.0"
+    lint-staged: "npm:^17.6.1"
     prettier: "npm:^3.10.1"
     rimraf: "npm:^6.1.4"
     sort-package-json: "npm:^4.1.0"
-    turbo: "npm:2.11.11"
+    turbo: "npm:2.11.13"
     vite: "npm:^8.3.8"
-    vitest: "npm:^5.1.0"
+    vitest: "npm:^5.1.1"
   languageName: unknown
   linkType: soft
 
@@ -1208,44 +1208,44 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@turbo/darwin-64@npm:2.11.11":
-  version: 2.11.11
-  resolution: "@turbo/darwin-64@npm:2.11.11"
+"@turbo/darwin-64@npm:2.11.13":
+  version: 2.11.13
+  resolution: "@turbo/darwin-64@npm:2.11.13"
   conditions: os=darwin & cpu=x64
   languageName: node
   linkType: hard
 
-"@turbo/darwin-arm64@npm:2.11.11":
-  version: 2.11.11
-  resolution: "@turbo/darwin-arm64@npm:2.11.11"
+"@turbo/darwin-arm64@npm:2.11.13":
+  version: 2.11.13
+  resolution: "@turbo/darwin-arm64@npm:2.11.13"
   conditions: os=darwin & cpu=arm64
   languageName: node
   linkType: hard
 
-"@turbo/linux-64@npm:2.11.11":
-  version: 2.11.11
-  resolution: "@turbo/linux-64@npm:2.11.11"
+"@turbo/linux-64@npm:2.11.13":
+  version: 2.11.13
+  resolution: "@turbo/linux-64@npm:2.11.13"
   conditions: (os=android | os=linux) & cpu=x64
   languageName: node
   linkType: hard
 
-"@turbo/linux-arm64@npm:2.11.11":
-  version: 2.11.11
-  resolution: "@turbo/linux-arm64@npm:2.11.11"
+"@turbo/linux-arm64@npm:2.11.13":
+  version: 2.11.13
+  resolution: "@turbo/linux-arm64@npm:2.11.13"
   conditions: (os=android | os=linux) & cpu=arm64
   languageName: node
   linkType: hard
 
-"@turbo/windows-64@npm:2.11.11":
-  version: 2.11.11
-  resolution: "@turbo/windows-64@npm:2.11.11"
+"@turbo/windows-64@npm:2.11.13":
+  version: 2.11.13
+  resolution: "@turbo/windows-64@npm:2.11.13"
   conditions: os=win32 & cpu=x64
   languageName: node
   linkType: hard
 
-"@turbo/windows-arm64@npm:2.11.11":
-  version: 2.11.11
-  resolution: "@turbo/windows-arm64@npm:2.11.11"
+"@turbo/windows-arm64@npm:2.11.13":
+  version: 2.11.13
+  resolution: "@turbo/windows-arm64@npm:2.11.13"
   conditions: os=win32 & cpu=arm64
   languageName: node
   linkType: hard
@@ -1613,9 +1613,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@vitest/coverage-v8@npm:^5.1.0":
-  version: 5.1.0
-  resolution: "@vitest/coverage-v8@npm:5.1.0"
+"@vitest/coverage-v8@npm:^5.1.1":
+  version: 5.1.1
+  resolution: "@vitest/coverage-v8@npm:5.1.1"
   dependencies:
     "@bcoe/v8-coverage": "npm:^1.0.2"
     "@vitest/istanbul-lib-coverage": "npm:^2.1.0"
@@ -1626,12 +1626,12 @@ __metadata:
     std-env: "npm:^4.3.0"
     tinyrainbow: "npm:^3.2.0"
   peerDependencies:
-    "@vitest/browser": 5.1.0
-    vitest: 5.1.0
+    "@vitest/browser": 5.1.1
+    vitest: 5.1.1
   peerDependenciesMeta:
     "@vitest/browser":
       optional: true
-  checksum: 10/3d9990e702e7719e6aa3557c80a03a801864d316455afe0632186da4d9e7c2ac038bf6637129bc70105aefa7d5d0f9e0aa18615bcfbabfcfda9d4487fd44bdaa
+  checksum: 10/82324ab93c2d3eef85d0c486ebff7612129d624cad1b5aec9a0b94eb89ab568487b1539be6c13b2e11569707aa15f385dfb628c7763d4de8323f921266ea04b1
   languageName: node
   linkType: hard
 
@@ -1673,14 +1673,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@vitest/mocker@npm:5.1.0":
-  version: 5.1.0
-  resolution: "@vitest/mocker@npm:5.1.0"
+"@vitest/mocker@npm:5.1.1":
+  version: 5.1.1
+  resolution: "@vitest/mocker@npm:5.1.1"
   dependencies:
     "@jridgewell/trace-mapping": "npm:0.3.31"
-    "@vitest/spy": "npm:5.1.0"
+    "@vitest/spy": "npm:5.1.1"
     estree-walker: "npm:^3.0.3"
-    magic-string: "npm:^1.4.3"
+    magic-string: "npm:^1.4.5"
   peerDependencies:
     msw: ^2.4.9 || ^3.0.0
     vite: ^6.0.0 || ^7.0.0 || ^8.0.0
@@ -1689,14 +1689,14 @@ __metadata:
       optional: true
     vite:
       optional: true
-  checksum: 10/4160807bae9b4d09bb64df70233e96917f6a35b72d3618dbec807e34f2b17f596b33d540532c61a4e04fe69bd322f5c00594eab20db66121b400bd37128007b5
+  checksum: 10/070c0e7eb5581211febd4f5a4e5a2933af565abd0fe05bd1aabe196c061a0b651ea6ee30141b698099602b8c5d9e309cbad3b8b6e615581e9dc44aaf7d40600f
   languageName: node
   linkType: hard
 
-"@vitest/spy@npm:5.1.0":
-  version: 5.1.0
-  resolution: "@vitest/spy@npm:5.1.0"
-  checksum: 10/565fa1393f82598bd9c846e98ab61de3bd1006c2aa95cecfc852999b64e9b1d58783f65ff6491d3ab329e1a97760393f303ca18ae1887e2a56bfe992f7aa57ad
+"@vitest/spy@npm:5.1.1":
+  version: 5.1.1
+  resolution: "@vitest/spy@npm:5.1.1"
+  checksum: 10/d8799f6ffa2e1724646b73ef68b81e50464640d1f5d931f8ea323382b66f19d147cd41b114241a9e172f60ebd59f5fc3b7b11f036ee0959818974b6306b00ef2
   languageName: node
   linkType: hard
 
@@ -2836,12 +2836,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lint-staged@npm:^17.6.0":
-  version: 17.6.0
-  resolution: "lint-staged@npm:17.6.0"
+"lint-staged@npm:^17.6.1":
+  version: 17.6.1
+  resolution: "lint-staged@npm:17.6.1"
   dependencies:
     picomatch: "npm:^4.0.7"
-    string-argv: "npm:^0.3.2"
+    string-argv: "npm:^0.4.0"
     tinyexec: "npm:^1.3.1"
     yaml: "npm:^2.9.1"
   dependenciesMeta:
@@ -2849,7 +2849,7 @@ __metadata:
       optional: true
   bin:
     lint-staged: bin/lint-staged.js
-  checksum: 10/e959c4af383f26db7dc567e4454313f1f94e5450fdd560586b9345331b16916bf8c8176c1f2fd9eec071e6882e37ec9ab76fcb67df7d71c62ad856ea6bcc040e
+  checksum: 10/d449ca6c269e058feb796dd629dbe4393254f56d05d95101edd6baa4519d3cf098f3f9bb628eff15819f64fa76a0dbf8829218bfb2d4199b1089d8fb28e0247c
   languageName: node
   linkType: hard
 
@@ -2869,12 +2869,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"magic-string@npm:^1.4.3":
-  version: 1.4.3
-  resolution: "magic-string@npm:1.4.3"
+"magic-string@npm:^1.4.5":
+  version: 1.4.5
+  resolution: "magic-string@npm:1.4.5"
   dependencies:
     "@jridgewell/sourcemap-codec": "npm:^1.6.0"
-  checksum: 10/8942d4afec7855661d697e48f6f48f0113770878f29e25cdc558ecfd2493ebe5620e18ebee5770e8e5b0afdf72f60330166d1bb59e70eecced712fcf29860ea4
+  checksum: 10/b5639b23f91f3c683e8cfeedee9933538c19ef63ecd2818285fe47524f831e2643fce5cd6ef0b4093e33505026e671daec14040dafba7d0b781c0b69abb277ac
   languageName: node
   linkType: hard
 
@@ -3313,10 +3313,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"string-argv@npm:^0.3.2":
-  version: 0.3.2
-  resolution: "string-argv@npm:0.3.2"
-  checksum: 10/f9d3addf887026b4b5f997a271149e93bf71efc8692e7dc0816e8807f960b18bcb9787b45beedf0f97ff459575ee389af3f189d8b649834cac602f2e857e75af
+"string-argv@npm:^0.4.0":
+  version: 0.4.0
+  resolution: "string-argv@npm:0.4.0"
+  checksum: 10/aa4b835920b4226be886bc1daaa9969dd48e4ac3b5405dfccf72705ea0c530709229836039bcd89a2e4d743677929f8e9cd32c522c0c34ef4ea3ba012e92af3b
   languageName: node
   linkType: hard
 
@@ -3363,10 +3363,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tinybench@npm:^6.2.2":
-  version: 6.2.2
-  resolution: "tinybench@npm:6.2.2"
-  checksum: 10/66fc85c584761dba305f01781f3e579fe35a0067139c14e66d52eb7eaad5626e1e78eb3f2c5f8ece857b181dc0e1ec22f7e967ad49997b3818c8f53643d99b0a
+"tinybench@npm:^6.2.3":
+  version: 6.2.4
+  resolution: "tinybench@npm:6.2.4"
+  checksum: 10/3211b3c88ed975e907b1f40393bf52d9975568ba383f9d3ac81d77be44c410c8abced1d1f97fd9226a40830ab3ce83003aa9f327a838c39bd48cb0f2232180e4
   languageName: node
   linkType: hard
 
@@ -3410,16 +3410,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"turbo@npm:2.11.11":
-  version: 2.11.11
-  resolution: "turbo@npm:2.11.11"
+"turbo@npm:2.11.13":
+  version: 2.11.13
+  resolution: "turbo@npm:2.11.13"
   dependencies:
-    "@turbo/darwin-64": "npm:2.11.11"
-    "@turbo/darwin-arm64": "npm:2.11.11"
-    "@turbo/linux-64": "npm:2.11.11"
-    "@turbo/linux-arm64": "npm:2.11.11"
-    "@turbo/windows-64": "npm:2.11.11"
-    "@turbo/windows-arm64": "npm:2.11.11"
+    "@turbo/darwin-64": "npm:2.11.13"
+    "@turbo/darwin-arm64": "npm:2.11.13"
+    "@turbo/linux-64": "npm:2.11.13"
+    "@turbo/linux-arm64": "npm:2.11.13"
+    "@turbo/windows-64": "npm:2.11.13"
+    "@turbo/windows-arm64": "npm:2.11.13"
   dependenciesMeta:
     "@turbo/darwin-64":
       optional: true
@@ -3435,7 +3435,7 @@ __metadata:
       optional: true
   bin:
     turbo: bin/turbo
-  checksum: 10/a5a647eccfc2ffea002f719e3cae21cb84f507aa86749245d930aa6f310ceaf8637c93396dff759f12c84a50a89c5b1268c59f566d2ef5e3a79557b540ce84b6
+  checksum: 10/d2c39a2c862682c18ae003757d29d499eafc5cccb09bc91c7b635db87e8da28e71ca4232719576be820db160d2ae3527d9c757650080a18bcbfac3b7c36ef29f
   languageName: node
   linkType: hard
 
@@ -3653,20 +3653,20 @@ __metadata:
   languageName: node
   linkType: hard
 
-"vitest@npm:^5.1.0":
-  version: 5.1.0
-  resolution: "vitest@npm:5.1.0"
+"vitest@npm:^5.1.1":
+  version: 5.1.1
+  resolution: "vitest@npm:5.1.1"
   dependencies:
     "@types/chai": "npm:^5.2.2"
-    "@vitest/mocker": "npm:5.1.0"
+    "@vitest/mocker": "npm:5.1.1"
     chai: "npm:^6.3.0"
     es-module-lexer: "npm:^2.3.2"
     expect-type: "npm:^1.4.0"
-    magic-string: "npm:^1.4.3"
+    magic-string: "npm:^1.4.5"
     obug: "npm:^3.0.0"
     picomatch: "npm:^4.0.7"
     std-env: "npm:^4.3.0"
-    tinybench: "npm:^6.2.2"
+    tinybench: "npm:^6.2.3"
     tinyexec: "npm:^1.3.1"
     tinyglobby: "npm:^0.2.17"
     why-is-node-running: "npm:3.2.1"
@@ -3674,12 +3674,12 @@ __metadata:
     "@edge-runtime/vm": "*"
     "@opentelemetry/api": ^1.9.0
     "@types/node": ^22.0.0 || >=24.0.0
-    "@vitest/browser-playwright": 5.1.0
-    "@vitest/browser-preview": 5.1.0
+    "@vitest/browser-playwright": 5.1.1
+    "@vitest/browser-preview": 5.1.1
     "@vitest/browser-webdriverio": ^5.0.0-beta.5 || >=5.0.0
-    "@vitest/coverage-istanbul": 5.1.0
-    "@vitest/coverage-v8": 5.1.0
-    "@vitest/ui": 5.1.0
+    "@vitest/coverage-istanbul": 5.1.1
+    "@vitest/coverage-v8": 5.1.1
+    "@vitest/ui": 5.1.1
     happy-dom: "*"
     jsdom: "*"
     vite: ^6.4.0 || ^7.0.0 || ^8.0.0
@@ -3710,7 +3710,7 @@ __metadata:
       optional: false
   bin:
     vitest: ./vitest.mjs
-  checksum: 10/1e04646b4953e10625794fba01f8393145d617700974b8622ef6966b380bb5271c4e0df79b644d9355b08345cc6d4e5e6ef76004bb5d343fe4cee0f707105cbe
+  checksum: 10/c383c5f40a6b3410b01ac5b2c085bbfe0f7c27f77330568dfed14793f9d4f0d3d2c74c0e240621b6767a0569248d7bca080a53c961e2151ae67558623d182bd9
   languageName: node
   linkType: hard
 
